@@ -101,7 +101,17 @@ Policy gate por rol (cada agente ve solo sus tools), imposibilidad de escribir s
 | Skills en formato Agent Skills | Criterio de cada rol versionado y reutilizable fuera de los prompts. |
 | Validación con Pydantic y policy gate | Salidas estructuradas y autorización fuera del modelo. |
 
-⚠️ A COMPLETAR: modelo(s) elegido(s) y por qué.
+**Modelos por agente** (`config/models.yaml`, punto de partida que la evaluación contrasta en A/B):
+
+| Agente | Modelo | Por qué |
+|---|---|---|
+| Requerimientos (productor) | `gemini-3.8-flash` | Produce el mayor volumen y su error se detecta aguas abajo; modelo del curso. |
+| Crítico | `claude-opus-5-5` | Es la compuerta de calidad; de otro proveedor que el productor, para reducir sesgos correlacionados. El código impide configurar el mismo proveedor y modelo. |
+| Auditor de Proyecto | `claude-opus-5-5` | Pocas llamadas de juicio delicado (evolución contra contradicción). |
+| Supervisor | `claude-sonnet-5-5` (esfuerzo bajo) | Salidas cortas y buen criterio de ruteo. |
+| Integración | `claude-haiku-5-5` (esfuerzo bajo) | Casi todo es código determinístico (hash, idempotencia). |
+
+⚠️ A COMPLETAR: resultados del A/B de modelos.
 
 ## 8. Instalación
 ⚠️ Provisional: verificar los comandos contra el repositorio final.
@@ -113,6 +123,9 @@ git clone <URL-DEL-REPOSITORIO>
 cd backlogguard
 git checkout v1.0-tfi
 cp .env.example .env   # y completar las variables (sección 9)
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e ".[dev,llm]"
+pytest -q   # no requiere claves ni red
 ```
 
 ## 9. Configuración

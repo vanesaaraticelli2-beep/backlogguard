@@ -134,12 +134,17 @@ class ToolRegistry:
                 else dict(call.arguments)
             )
         except ValidationError as exc:
+            # Adaptación del curso: se omite `input` para no devolver valores
+            # (posibles secretos) dentro de la observación ni de las trazas.
             return ToolResult(
                 ok=False,
                 content="Argumentos inválidos",
                 metadata={
                     "error_type": "validation_error",
-                    "details": exc.errors(include_url=False),
+                    "details": [
+                        {key: error[key] for key in ("type", "loc", "msg")}
+                        for error in exc.errors(include_url=False)
+                    ],
                 },
             )
 

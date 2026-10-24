@@ -1,0 +1,24 @@
+# Modelo por agente. Punto de partida: la evaluación compara configuraciones (A/B).
+# Reglas validadas en código (src/backlogguard/llm/model_config.py):
+#   - el Crítico debe ser independiente de Requerimientos (otro proveedor o modelo);
+#   - effort solo aplica a modelos de Anthropic.
+agents:
+  supervisor:
+    provider: anthropic
+    model: claude-sonnet-5-5
+    effort: low
+  requerimientos:
+    provider: gemini
+    model: gemini-3.8-flash
+  critico:
+    provider: anthropic
+    model: claude-opus-5-5
+    effort: medium
+  auditor:
+    provider: anthropic
+    model: claude-opus-5-5
+    effort: medium
+  integracion:
+    provider: anthropic
+    model: claude-haiku-5-5
+    effort: low
