@@ -5,7 +5,7 @@ Ahora existen para poder probar la política de visibilidad con las Tools reales
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Callable
 
 from pydantic import BaseModel, ConfigDict
 
@@ -78,19 +78,32 @@ _SPECS: list[tuple[str, AgentRole, ToolKind, str]] = [
 ]
 
 
-def build_catalog_registry() -> ToolRegistry:
-    """Registry con las 16 Tools; cada una visible solo para su rol."""
+def build_catalog_registry(
+    implementations: dict[str, tuple[Callable[[dict], ToolResult], type[BaseModel], bool]] | None = None,
+) -> ToolRegistry:
+    """Registry con las 16 Tools; cada una visible solo para su rol.
+
+    `implementations` reemplaza el marcador de una Tool por su handler real:
+    {nombre: (handler, args_model, idempotente)}.
+    """
+    implementations = implementations or {}
+    unknown = set(implementations) - {spec[0] for spec in _SPECS}
+    if unknown:
+        raise ValueError(f"Tools que no están en el catálogo: {sorted(unknown)}")
     registry = ToolRegistry()
     for name, role, kind, description in _SPECS:
         is_publish = name == "ejecutar_plan_aprobado"
+        handler, args_model, idempotent = implementations.get(
+            name, (_not_implemented(name), ExecutePlanArgs if is_publish else None, not is_publish)
+        )
         registry.register(
             Tool(
                 name=name,
                 description=description,
                 kind=kind,
-                fn=_not_implemented(name),
-                args_model=ExecutePlanArgs if is_publish else None,
-                idempotent=not is_publish,
+                fn=handler,
+                args_model=args_model,
+                idempotent=idempotent,
                 visible_roles={role},
                 authorize=approved_plan_guard if is_publish else None,
             )

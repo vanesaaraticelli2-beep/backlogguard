@@ -55,7 +55,9 @@ class LLMDecider:
         max_retries: int = 2,
         base_delay_seconds: float = 0.25,
         max_observation_chars: int = 4000,
+        instructions: str | None = None,
     ):
+        self.instructions = instructions
         self.provider = provider
         self.role = role
         self.registry = registry
@@ -106,6 +108,8 @@ class LLMDecider:
 
     def __call__(self, user_message: str, observations: list[ToolResult]) -> AgentDecision:
         system = SYSTEM_TEMPLATE.format(role=self.role)
+        if self.instructions:
+            system = f"{system}\n{self.instructions}"
         prompt = self.build_prompt(user_message, observations)
         last_error: Exception | None = None
 

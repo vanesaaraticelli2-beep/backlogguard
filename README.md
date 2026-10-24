@@ -124,7 +124,7 @@ cd backlogguard
 git checkout v1.0-tfi
 cp .env.example .env   # y completar las variables (sección 9)
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[dev,llm]"
+pip install -e ".[dev,llm,rag]"
 pytest -q   # no requiere claves ni red
 ```
 
