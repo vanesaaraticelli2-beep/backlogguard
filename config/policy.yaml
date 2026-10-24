@@ -1,0 +1,30 @@
+# Política de Tools por rol y condiciones de pausa humana.
+# La autoridad es ToolPolicy (src/backlogguard/tools/policy.py); un test exige que este archivo coincida.
+roles:
+  supervisor:
+    kinds: [read, compute]
+    tools: [delegar_tarea, escalar_a_persona]
+  requerimientos:
+    kinds: [read, compute, local_write]
+    tools: [ingestar_y_fragmentar, buscar_en_fuentes, redactar_historia]
+  critico:
+    kinds: [read, compute]
+    tools: [verificar_cita, buscar_contraevidencia, evaluar_dor_invest]
+  auditor:
+    kinds: [read, compute, local_write]
+    tools:
+      - comparar_con_preventa
+      - detectar_contradicciones
+      - consultar_decisiones_vigentes
+      - registrar_decision_aprobada
+  integracion:
+    kinds: [read, compute, draft, external_effect, write]
+    tools: [buscar_en_backlog, armar_plan_dry_run, revalidar_plan, ejecutar_plan_aprobado]
+
+pauses:
+  - condition: cambio_de_alcance
+    decides: service_manager
+  - condition: desacuerdo_sin_consenso
+    decides: product_owner
+  - condition: plan_de_publicacion
+    decides: full_stack_ia_engineer
