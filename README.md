@@ -74,8 +74,8 @@ flowchart TD
 | Integración | `buscar_en_backlog`, `armar_plan_dry_run`, `revalidar_plan`, `ejecutar_plan_aprobado` | `publicacion-segura` |
 
 ### Estado y memoria
-- **Estado de la corrida:** checkpoints del grafo en SQLite, con un `thread_id` por corrida. Permite pausar, cerrar el proceso y reanudar.
-- **Memoria del proyecto:** decisiones vigentes y preguntas pendientes, con un namespace por proyecto. Solo se escribe tras la aprobación humana.
+- **Estado de la corrida:** checkpoints del grafo en SQLite (`SqliteSaver` de LangGraph), con un `thread_id` por corrida, y snapshots versionados del tablero en JSON (patrón `JsonCheckpointStore` de la clase 11). Permite pausar, cerrar el proceso y reanudar.
+- **Memoria del proyecto:** `MemoryStore` en SQLite (clase 10) con scope por proyecto, Write Gate, TTL y `supersede`. Guarda decisiones vigentes y preguntas pendientes; una decisión que evolucionó deja la anterior como histórica. Solo se escribe tras la aprobación humana.
 - **Tablero compartido:** estado de cada ítem (borrador, objetado, sustentado, aprobado, excluido), objeciones, hallazgos y registro de mensajes entre agentes.
 
 ### Human-in-the-Loop
@@ -96,7 +96,7 @@ Policy gate por rol (cada agente ve solo sus tools), imposibilidad de escribir s
 | Crítico con modelo y prompt independientes | Reduce los sesgos correlacionados con el productor. |
 | LangGraph | Grafo con estado, checkpoints e `interrupt` para el Human-in-the-Loop. |
 | RAG con Qdrant local | Las citas dependen de recuperar fragmentos con reunión, fecha y orador. |
-| SQLite | Persistencia simple y reproducible para checkpoints y memoria. |
+| SQLite y JSON | SQLite para la memoria del proyecto y los checkpoints del grafo; JSON versionado para los snapshots del tablero. Es el enfoque del curso (clases 10 y 11): simple y reproducible. |
 | Adaptador de Azure DevOps con modo simulado y real | Tests y demo estables aunque el servicio externo no responda. |
 | Skills en formato Agent Skills | Criterio de cada rol versionado y reutilizable fuera de los prompts. |
 | Validación con Pydantic y policy gate | Salidas estructuradas y autorización fuera del modelo. |

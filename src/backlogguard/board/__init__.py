@@ -1,3 +1,8 @@
+from backlogguard.board.checkpoint import (
+    BoardCheckpointStore,
+    BoardRunState,
+    StaleCheckpointError,
+)
 from backlogguard.board.models import (
     ALLOWED_TRANSITIONS,
     MAX_ROUNDS,
@@ -22,6 +27,8 @@ __all__ = [
     "AgentRole",
     "BacklogItem",
     "Board",
+    "BoardCheckpointStore",
+    "BoardRunState",
     "Citation",
     "Finding",
     "FindingKind",
@@ -30,4 +37,5 @@ __all__ = [
     "ItemState",
     "Objection",
     "SourceType",
+    "StaleCheckpointError",
 ]
