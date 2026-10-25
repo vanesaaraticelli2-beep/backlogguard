@@ -26,7 +26,7 @@ def raw_config() -> dict:
 
 def test_el_models_yaml_real_carga():
     config = load_models_config(MODELS_YAML)
-    assert config.for_role(AgentRole.REQUERIMIENTOS).provider == "gemini"
+    assert config.for_role(AgentRole.REQUERIMIENTOS).model == "claude-haiku-5-5"  # temporal, ver models.yaml
     assert config.for_role(AgentRole.CRITICO).model == "claude-opus-5-5"
 
 
@@ -82,7 +82,9 @@ def test_live_mode_con_clave_arma_el_proveedor_correcto():
     config = load_models_config(MODELS_YAML)
     settings = Settings(live_mode=True, anthropic_api_key="sk-test", gemini_api_key="g-test")
     assert isinstance(build_provider(config.for_role(AgentRole.CRITICO), settings), AnthropicProvider)
-    assert isinstance(build_provider(config.for_role(AgentRole.REQUERIMIENTOS), settings), GeminiProvider)
+    assert isinstance(build_provider(config.for_role(AgentRole.REQUERIMIENTOS), settings), AnthropicProvider)
+    gemini = ModelSpec(provider="gemini", model="gemini-3.8-flash")
+    assert isinstance(build_provider(gemini, settings), GeminiProvider)
 
 
 def test_settings_no_expone_claves(tmp_path):

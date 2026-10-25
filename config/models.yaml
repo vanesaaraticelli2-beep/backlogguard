@@ -8,8 +8,11 @@ agents:
     model: claude-sonnet-5-5
     effort: low
   requerimientos:
-    provider: gemini
-    model: gemini-3.8-flash
+    # TEMPORAL (2026-10-25): Gemini se reemplaza por Haiku por la cuota gratuita (20 pedidos/día).
+    # Pendiente: decidir el modelo definitivo del productor (volver a gemini-3.8-flash con facturación, o respaldo).
+    provider: anthropic
+    model: claude-haiku-5-5
+    effort: low
   critico:
     provider: anthropic
     model: claude-opus-5-5
