@@ -366,7 +366,8 @@ def test_titulos_casi_iguales_con_otras_palabras_son_duplicados():
     assert similar_titles("Filtrar listado de pedidos por estado", "Listado de pedidos con filtro por estado")
     assert similar_titles("Autenticación mediante SSO corporativo", "Autenticación en el portal mediante SSO corporativo")
     assert not similar_titles("Reporte mensual en Excel", "Notificación por email de cambios de estado")
-    assert not similar_titles("Login", "Login")  # demasiado corto para afirmar nada
+    assert similar_titles("Notificación por email", "notificacion POR email")  # mismo título, aunque sea corto
+    assert not similar_titles("Login con SSO", "Login con Google")  # cortos y distintos: no se afirma nada
 
 
 def test_el_plan_no_publica_dos_items_casi_iguales(env):

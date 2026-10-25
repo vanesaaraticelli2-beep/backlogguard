@@ -138,12 +138,28 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Commit y push (cuando se pida)
 - [ ] Observación: el productor corrige una historia pero deja otra equivalente (dos versiones del mismo requisito). Mejorar en la evaluación del Día 13.
 
-## Día 10 · Human-in-the-Loop (esquema)
-**Objetivo:** que el sistema se detenga y espere a una persona en los tres momentos que importan.
+## Día 10 · Human-in-the-Loop y pantalla de decisiones — [~] etapa 10a hecha (falta commit); 10b pendiente
+**Objetivo:** que el sistema se detenga y espere a la persona correcta, que su decisión quede ligada a la versión exacta que vio y que la corrida continúe hasta publicar lo aprobado.
 
-- [ ] `interrupt` con `SqliteSaver` — pausa la corrida, guarda su estado y la retoma cuando la persona responde.
-- [ ] Tres pausas: cambio de alcance (decide el service manager), desacuerdo sin consenso (decide el PO) y plan de publicación (siempre se aprueba).
-- [ ] Acciones aprobar, editar o rechazar con `args_hash` — si el plan cambia después de aprobarse, la aprobación deja de valer.
+**Etapa 10a · núcleo del HITL — [x]**
+- [x] Contratos (`hitl/models.py`) — `DecisionRequest` (con versión y hash del contenido), `HumanDecision` (aprobar, editar o rechazar, con persona, rol, versión y hash) y `DecisionRecord` (registro de auditoría).
+- [x] Personas y roles (`config/people.yaml`) — sergio (service manager), laura (product owner) y vanesa (full stack IA engineer). Sin autenticación real: se declara como limitación.
+- [x] Agrupación de hallazgos (`hitl/grouping.py`) — los que comparten citas son un único pedido; si el grupo mezcla razones prima la del service manager. En la última corrida real, 5 pedidos de decisión habrían sido 3.
+- [x] Validación (`hitl/logic.py`) — solo decide el rol de la política, la decisión debe llevar la versión y el hash vigentes, y solo se editan los campos permitidos con datos válidos.
+- [x] Efectos idempotentes — desacuerdo sobre un ítem (aprobar → sustentado, rechazar → excluido, editar → ítem corregido) y decisiones de alcance (se registran en la memoria del proyecto con quién las aprobó).
+- [x] Pausas con `interrupt` en el grafo — una por pedido; el estado queda en SQLite y otra instancia del grafo retoma la corrida con `Command(resume=...)`. Una decisión inválida deja el estado intacto y la pausa se ofrece de nuevo con el motivo.
+- [x] Una decisión vigente en la memoria evita volver a escalar el mismo asunto en una corrida posterior.
+- [x] Plan de publicación con aprobación — aprobar publica (los ítems pasan a aprobados), editar excluye ítems y genera un plan nuevo con otro hash, rechazar no publica; un cambio del backlog tras aprobar bloquea la publicación.
+- [x] `scripts/run_pipeline.py` (pausa y `--auto`) y `scripts/decidir.py` — correr y decidir desde la terminal.
+- [x] Regresión corregida: títulos cortos idénticos ("Notificación por email") dejaron de detectarse como duplicados al unificar la similitud; detectado por un test.
+- [x] Tests sin red (284 en total) y especificación `docs/specs/hitl.md` al día.
+- [ ] Commit y push de la etapa 10a (cuando se pida).
+
+**Etapa 10b · pantalla y modo demo — [ ]**
+- [ ] App Streamlit: elegir persona, ver solo los pedidos de su rol, evidencia con citas, aprobar/editar/rechazar con comentario, actividad de los agentes en vivo, tablero y backlog simulado antes y después.
+- [ ] Modo demo sin costo: grabar una corrida real (respuestas de cada modelo, en orden) y reproducirla con proveedores guionados.
+- [ ] Una corrida real con grabación (≈US$1) para generar la demo.
+- [ ] Pruebas de la pantalla con el probador integrado de Streamlit (`AppTest`).
 
 ## Día 11 · Skills y contexto (esquema)
 **Objetivo:** darle a cada agente solo el conocimiento y el contexto que necesita, sin sobrecargarlo.

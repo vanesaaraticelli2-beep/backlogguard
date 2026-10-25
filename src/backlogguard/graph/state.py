@@ -18,6 +18,12 @@ class RunState(TypedDict, total=False):
     reviewed: dict[str, dict]
     audit: dict
     publish_plan: dict
+    requests: list[dict]
+    plan_request: dict | None
+    plan_exclusions: list[str]
+    decision_error: str | None
+    decisions: Annotated[list[dict], operator.add]
+    publication: dict
     audit_passes: int
     escalations: list[dict]
     errors: Annotated[list[dict], operator.add]

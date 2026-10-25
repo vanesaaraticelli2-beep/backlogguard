@@ -35,8 +35,9 @@ class DelegateArgs(_Args):
 
 class EscalateArgs(_Args):
     reason: EscalationReason
-    ref: str = Field(min_length=1, max_length=80, description="id del ítem o del hallazgo")
-    detail: str = Field(default="", max_length=400)
+    ref: str = Field(min_length=1, max_length=80, description="id del ítem o del grupo de hallazgos")
+    detail: str = Field(default="", max_length=800)
+    related: list[str] = Field(default_factory=list, max_length=20, description="ids de los hallazgos del mismo asunto")
 
 
 class Delegation(BaseModel):
@@ -52,6 +53,7 @@ class Escalation(BaseModel):
     decides: str
     ref: str
     detail: str = ""
+    related: list[str] = Field(default_factory=list)
 
 
 def _fail(content: str, error_type: str) -> ToolResult:
@@ -96,7 +98,10 @@ class SupervisorToolkit:
         if any(e.id == escalation_id for e in self.escalations):
             return ToolResult(ok=True, content=f"La escalación {escalation_id} ya estaba registrada.", metadata={"escalation_id": escalation_id})
         self.escalations.append(
-            Escalation(id=escalation_id, reason=args["reason"], decides=decides, ref=args["ref"], detail=args["detail"])
+            Escalation(
+                id=escalation_id, reason=args["reason"], decides=decides, ref=args["ref"], detail=args["detail"],
+                related=args["related"],
+            )
         )
         return ToolResult(
             ok=True,

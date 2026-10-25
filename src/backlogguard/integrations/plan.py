@@ -136,7 +136,15 @@ def _publish_order(items: list[PlanItem]) -> list[PlanItem]:
 
 
 class PublishService:
-    def __init__(self, board: Board, backlog: BacklogGateway, ledger: PublicationLedger, project: str):
+    def __init__(
+        self,
+        board: Board,
+        backlog: BacklogGateway,
+        ledger: PublicationLedger,
+        project: str,
+        excluded: frozenset[str] = frozenset(),
+    ):
+        self.excluded = excluded  # ítems que una persona sacó del plan
         self.board = board
         self.backlog = backlog
         self.ledger = ledger
@@ -145,7 +153,9 @@ class PublishService:
     # ---- armado ----
 
     def build(self) -> PublishPlan:
-        publishable = {item.id: item for item in self.board.items.values() if item.state in PUBLISHABLE}
+        publishable = {
+            item.id: item for item in self.board.items.values() if item.state in PUBLISHABLE and item.id not in self.excluded
+        }
         everything = self.backlog.search()
         plan_items: list[PlanItem] = []
         kept: list[BacklogItem] = []  # ítems a crear en este plan, para no publicar dos casi iguales

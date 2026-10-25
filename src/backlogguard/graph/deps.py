@@ -6,6 +6,7 @@ from typing import Callable
 
 from backlogguard.board import AgentRole
 from backlogguard.graph.budgets import RunBudget
+from backlogguard.hitl import PeopleConfig
 from backlogguard.integrations import BacklogGateway, PublicationLedger
 from backlogguard.llm.model_config import ModelsConfig
 from backlogguard.llm.providers import LLMProvider, build_provider
@@ -47,6 +48,7 @@ class RunDeps:
     backlog: BacklogGateway
     ledger: PublicationLedger
     project: str = "ACME"
+    people: PeopleConfig | None = None
     on_event: Callable[[dict], None] | None = None
 
 

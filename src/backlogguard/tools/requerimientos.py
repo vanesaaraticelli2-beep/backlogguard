@@ -27,6 +27,11 @@ _ID_PREFIX = {
     ItemKind.CASO_DE_PRUEBA: "CP",
 }
 
+def is_gherkin(text: str) -> bool:
+    """¿El criterio tiene la forma Dado/Cuando/Entonces (o Given/When/Then)?"""
+    return bool(_GHERKIN.search(text))
+
+
 DocumentId = Annotated[str, StringConstraints(pattern=r"^[a-z0-9_-]{1,60}$")]
 
 

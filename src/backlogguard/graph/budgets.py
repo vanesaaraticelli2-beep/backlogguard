@@ -27,13 +27,16 @@ def load_budget(path: str | Path) -> RunBudget:
         return BudgetsConfig.model_validate(yaml.safe_load(handle)).run
 
 
-def over_budget(state: dict, budget: RunBudget, *, now: float | None = None) -> str | None:
-    """Motivo por el que la corrida debe cortar, o `None` si puede seguir."""
+def over_budget(state: dict, budget: RunBudget, *, now: float | None = None, check_time: bool = True) -> str | None:
+    """Motivo por el que la corrida debe cortar, o `None` si puede seguir.
+
+    `check_time=False` se usa después de las pausas humanas: esperar a una persona no gasta presupuesto.
+    """
     if state.get("tokens", 0) >= budget.max_tokens:
         return "tokens"
     if len(state.get("reviewed", {})) >= budget.max_items_to_review and state.get("pending"):
         return "items"
     started = state.get("started_at")
-    if started is not None and (now if now is not None else time.time()) - started >= budget.max_seconds:
+    if check_time and started is not None and (now if now is not None else time.time()) - started >= budget.max_seconds:
         return "tiempo"
     return None

@@ -1,16 +1,16 @@
 """Corre el sistema completo y deja ver a los agentes trabajar en vivo.
 
-Recorre: Supervisor → Requerimientos → Crítico → Auditor → escalaciones → plan de publicación.
-El backlog de Azure DevOps es simulado y persiste en `data/` entre corridas.
+Recorre: Supervisor → Requerimientos → Crítico → Auditor → pedidos de decisión → plan de publicación.
+La corrida SE PAUSA cuando necesita a una persona (como hará la pantalla); se retoma con
+`scripts/decidir.py`. El backlog de Azure DevOps es simulado y persiste en `data/` entre corridas.
 
     # corrida con modelos reales (gasta tokens; ver config/models.yaml)
     $env:LIVE_MODE = "1"; .venv\\Scripts\\python scripts\\run_pipeline.py --reset --seed
 
 Opciones:
-  --reset         vacía el backlog simulado y su registro de publicaciones antes de empezar.
-  --seed          carga work items "manuales" de ejemplo (sirven para ver un posible duplicado).
-  --aprobar NOMBRE  simula la aprobación humana: pasa los ítems a aprobados y publica el plan.
-                  (La pausa real con pantalla llega con el Human-in-the-Loop.)
+  --reset   vacía el backlog simulado, su registro de publicaciones y la memoria de decisiones.
+  --seed    carga work items "manuales" de ejemplo (sirven para ver un posible duplicado).
+  --auto    decide todo aprobando, como la persona que corresponde a cada pedido (para una demo sin interacción).
 """
 from __future__ import annotations
 
@@ -19,22 +19,18 @@ import sys
 import uuid
 from pathlib import Path
 
-from backlogguard.agents.integracion import execute_approved_plan
-from backlogguard.board import Board, ItemState
-from backlogguard.graph import RunDeps, build_graph, build_providers, load_budget, run_pipeline, sqlite_checkpointer
+from backlogguard.board import Board
+from backlogguard.graph import load_state, pending_request, resume_pipeline, run_pipeline
 from backlogguard.graph.live import format_event
-from backlogguard.integrations import PublicationLedger, PublishService, SimulatedBacklog
-from backlogguard.llm import Settings, load_models_config
-from backlogguard.memory import ProjectMemory
-from backlogguard.rag import DeterministicLexicalEmbeddings, InMemoryRetriever, SourceLibrary
-from backlogguard.tools import load_policy_config
+from backlogguard.graph.setup import build_run_deps, open_graph
+from backlogguard.llm import Settings
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 OBJECTIVE = "Armá el backlog del portal de autoservicio de ACME a partir de las reuniones y auditalo contra la preventa."
 
 
-def show_backlog(backlog: SimulatedBacklog, title: str) -> None:
+def show_backlog(backlog, title: str) -> None:
     items = backlog.search()
     print(f"\n{title}: {len(items)} work items")
     for work_item in items:
@@ -43,69 +39,68 @@ def show_backlog(backlog: SimulatedBacklog, title: str) -> None:
         print(f"  #{work_item.id} [{work_item.type}] {work_item.title}{parent} · v{work_item.rev} · {origin}")
 
 
+def show_request(request: dict) -> None:
+    print(f"\n⏸  PEDIDO {request['request_id']} v{request['version']} — decide: {request['decides']}")
+    print(f"   {request['title']}")
+    for line in request["summary"].splitlines():
+        print(f"   {line}")
+    for evidence in request["evidence"]:
+        print(f"   · «{evidence['quote']}» — {evidence['source_name']}, {evidence['source_date']}, {evidence['speaker']}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--reset", action="store_true")
     parser.add_argument("--seed", action="store_true")
-    parser.add_argument("--aprobar", metavar="NOMBRE")
+    parser.add_argument("--auto", action="store_true")
     options = parser.parse_args()
 
     settings = Settings.from_env(ROOT / ".env")
-    models = load_models_config(ROOT / "config" / "models.yaml")
-    DATA.mkdir(exist_ok=True)
-    backlog = SimulatedBacklog(DATA / "backlog_simulado.json")
+    deps = build_run_deps(ROOT, settings, on_event=lambda event: (line := format_event(event)) and print(line, flush=True))
     if options.reset:
-        backlog.reset()
-        (DATA / "publicaciones.sqlite").unlink(missing_ok=True)
-    if options.seed and not backlog.search():
-        backlog.seed_demo()
+        deps.backlog.reset()
+        for name in ("publicaciones.sqlite", "memoria.sqlite"):
+            (DATA / name).unlink(missing_ok=True)
+        deps = build_run_deps(ROOT, settings, on_event=deps.on_event)
+    if options.seed and not deps.backlog.search():
+        deps.backlog.seed_demo()
+    graph = open_graph(deps, DATA)
 
-    deps = RunDeps(
-        providers=build_providers(models, settings),
-        library=SourceLibrary(ROOT / "evals" / "fixtures"),
-        retriever=InMemoryRetriever(DeterministicLexicalEmbeddings()),
-        memory=ProjectMemory(DATA / "memoria.sqlite", settings.azdo_project.lower()),
-        policy=load_policy_config(ROOT / "config" / "policy.yaml"),
-        budget=load_budget(ROOT / "config" / "budgets.yaml"),
-        backlog=backlog,
-        ledger=PublicationLedger(DATA / "publicaciones.sqlite"),
-        project=settings.azdo_project,
-        on_event=lambda event: (line := format_event(event)) and print(line, flush=True),
-    )
-    graph = build_graph(deps, sqlite_checkpointer(DATA / "corridas.sqlite"))
     thread_id = f"corrida-{uuid.uuid4().hex[:8]}"
     print(f"live={settings.live_mode} proyecto={settings.azdo_project} corrida={thread_id}")
-    show_backlog(backlog, "Backlog simulado antes")
+    show_backlog(deps.backlog, "Backlog simulado antes")
     state = run_pipeline(graph, OBJECTIVE, thread_id)
 
+    while (payload := pending_request(graph, thread_id)) is not None:
+        show_request(payload["request"])
+        if not options.auto:
+            print(f"\nLa corrida espera una decisión. Retomala con:\n  .venv\\Scripts\\python scripts\\decidir.py {thread_id}")
+            break
+        request = payload["request"]
+        person = deps.people.with_role(request["decides"])[0]
+        print(f"   [auto] {person.display} aprueba")
+        state = resume_pipeline(graph, thread_id, {
+            "decision": "approve", "actor": person.name, "actor_role": person.role, "request_id": request["request_id"],
+            "request_version": request["version"], "args_hash": request["args_hash"], "comment": "Aprobado en la demo automática.",
+        })
+
+    state = load_state(graph, thread_id)
     board = Board.model_validate(state["board"])
     print("\n" + "=" * 70)
     print(f"ESTADO: {state['status']} · tokens={state['tokens']} · corte={state.get('stop_reason')}")
     for item in board.items.values():
-        outcome = state["reviewed"].get(item.id, {})
-        print(f"- {item.id} [{item.state.value}] {item.title} (rondas: {outcome.get('rounds', '-')})")
-    for escalation in state["escalations"]:
-        print(f"! escalación → {escalation['decides']}: {escalation['reason']} ({escalation['ref']})")
+        print(f"- {item.id} [{item.state.value}] {item.title}")
     for error in state["errors"]:
         print(f"x error en {error['node']} ({error['ref']}): {error['error'][:140]}")
-    plan = state.get("publish_plan")
-    if plan:
-        print(f"\nPLAN DE PUBLICACIÓN {plan['hash']} (pendiente de aprobación): {plan['counts']}")
-        for entry in plan["items"]:
-            print(f"  {entry['action'].upper():10} {entry['title']}  — {entry['reason']}")
-    print("\nResumen del Supervisor:\n" + state.get("summary", ""))
-
-    if options.aprobar and plan and plan["has_changes"]:
-        print(f"\n[simulación] {options.aprobar} aprueba el plan {plan['hash']}")
-        for item in board.items.values():
-            if item.state is ItemState.SUSTENTADO:
-                item.transition_to(ItemState.APROBADO, actor=options.aprobar)
-        service = PublishService(board, backlog, deps.ledger, deps.project)
-        report = execute_approved_plan(plan["hash"], service=service, approved_by=options.aprobar, run_id=thread_id)
-        for result in report.results:
-            print(f"  {result.outcome:12} {result.item_id} → #{result.remote_id} {result.detail}")
-        print("Publicación OK" if report.ok else f"Publicación detenida: {report.error}")
-    show_backlog(backlog, "Backlog simulado después")
+    for record in state.get("decisions", []):
+        mark = "✔" if record["accepted"] else "✘"
+        print(f"{mark} {record['actor']} ({record['actor_role']}) {record['decision']} {record['request_id']} v{record['version']}")
+    if state.get("publication"):
+        for result in state["publication"]["results"]:
+            print(f"  {result['outcome']:12} {result['item_id']} → #{result['remote_id']}")
+    if state.get("summary"):
+        print("\nResumen del Supervisor:\n" + state["summary"])
+    show_backlog(deps.backlog, "Backlog simulado después")
     graph.checkpointer.conn.close()
     return 0
 

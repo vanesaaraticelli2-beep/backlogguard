@@ -1,0 +1,12 @@
+# Personas que pueden decidir (simulado: no hay autenticación; se elige en la pantalla).
+# El rol debe coincidir con el que fija config/policy.yaml para cada decisión.
+people:
+  - name: sergio
+    display: Sergio (Service Manager)
+    role: service_manager
+  - name: laura
+    display: Laura (Product Owner)
+    role: product_owner
+  - name: vanesa
+    display: Vanesa (Full Stack IA Engineer)
+    role: full_stack_ia_engineer

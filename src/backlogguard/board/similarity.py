@@ -20,5 +20,7 @@ def title_tokens(title: str) -> set[str]:
 def similar_titles(first: str, second: str) -> bool:
     """¿Los títulos parecen el mismo ítem? (coeficiente de solapamiento sobre las raíces)."""
     mine, theirs = title_tokens(first), title_tokens(second)
+    if mine and mine == theirs:  # mismas palabras: es el mismo título, sea corto o largo
+        return True
     smaller = min(len(mine), len(theirs))
     return smaller >= MIN_TOKENS and len(mine & theirs) / smaller >= DUPLICATE_OVERLAP

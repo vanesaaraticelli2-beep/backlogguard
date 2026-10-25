@@ -1,7 +1,7 @@
 """Construcción del grafo de la corrida (clase 11: StateGraph, arcos condicionales, SqliteSaver).
 
 Recorrido fijo: plan → producir → revisar (un ítem por vuelta) → auditar → [revisar los ítems
-reabiertos, una sola vez] → escalar → armar el plan de publicación → resumir. El Supervisor no puede alterarlo.
+reabiertos, una sola vez] → escalar → decidir (pausas) → armar el plan → aprobar el plan (pausa) → resumir. El Supervisor no puede alterarlo.
 """
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from typing import Any
 
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
+from langgraph.types import Command
 
 from backlogguard.board import Board
 from backlogguard.graph.deps import RunDeps, index_library
@@ -25,6 +26,15 @@ def route_after_work(state: RunState) -> str:
     if state.get("pending"):
         return "review"
     return "audit" if state.get("audit_passes", 0) == 0 else "escalate"
+
+
+def route_to_decisions(state: RunState) -> str:
+    """Mientras haya pedidos de decisión por resolver, se vuelve a pausar."""
+    return "decide" if state.get("requests") else "integrate"
+
+
+def route_to_plan_approval(state: RunState) -> str:
+    return "approve_plan" if state.get("plan_request") else "summarize"
 
 
 def sqlite_checkpointer(path: str | Path) -> SqliteSaver:
@@ -46,8 +56,14 @@ def build_graph(deps: RunDeps, checkpointer: Any):
         builder.add_conditional_edges(
             source, route_after_work, {"review": "review", "audit": "audit", "escalate": "escalate"}
         )
-    builder.add_edge("escalate", "integrate")
-    builder.add_edge("integrate", "summarize")
+    builder.add_conditional_edges("escalate", route_to_decisions, {"decide": "decide", "integrate": "integrate"})
+    builder.add_conditional_edges("decide", route_to_decisions, {"decide": "decide", "integrate": "integrate"})
+    builder.add_conditional_edges(
+        "integrate", route_to_plan_approval, {"approve_plan": "approve_plan", "summarize": "summarize"}
+    )
+    builder.add_conditional_edges(
+        "approve_plan", route_to_plan_approval, {"approve_plan": "approve_plan", "summarize": "summarize"}
+    )
     builder.add_edge("summarize", END)
     return builder.compile(checkpointer=checkpointer)
 
@@ -72,6 +88,20 @@ def initial_state(objective: str, run_id: str) -> RunState:
 def run_pipeline(graph, objective: str, thread_id: str) -> RunState:
     """Corre una corrida completa. El `thread_id` identifica la corrida en el checkpointer."""
     return graph.invoke(initial_state(objective, thread_id), config={"configurable": {"thread_id": thread_id}})
+
+
+def pending_request(graph, thread_id: str) -> dict | None:
+    """Pedido de decisión en el que está pausada la corrida (con el último error, si lo hubo), o `None`."""
+    snapshot = graph.get_state({"configurable": {"thread_id": thread_id}})
+    for task in snapshot.tasks:
+        for interruption in task.interrupts:
+            return interruption.value
+    return None
+
+
+def resume_pipeline(graph, thread_id: str, decision: dict) -> RunState:
+    """Retoma la corrida pausada con la decisión de una persona (`Command(resume=...)`, clase 11)."""
+    return graph.invoke(Command(resume=decision), config={"configurable": {"thread_id": thread_id}})
 
 
 def load_state(graph, thread_id: str) -> RunState:
