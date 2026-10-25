@@ -45,6 +45,10 @@ class SourceLibrary:
     def list_ids(self) -> list[str]:
         return sorted(path.stem for path in self.root.glob("*.md") if DOCUMENT_ID.match(path.stem))
 
+    def describe(self) -> list[tuple[str, SourceMetadata]]:
+        """Id y metadata de cada fuente (sin cargar el texto en el prompt)."""
+        return [(document_id, self.load(document_id).metadata) for document_id in self.list_ids()]
+
     def load(self, document_id: str) -> SourceDocument:
         if not DOCUMENT_ID.match(document_id):
             raise SourceNotFound(f"document_id inválido: {document_id!r}")

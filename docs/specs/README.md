@@ -7,7 +7,7 @@ Cada especificación describe **qué debe cumplir** un agente, en lenguaje funci
 | Requerimientos (productor) | Implementado (Día 5) | [requerimientos.md](requerimientos.md) |
 | Crítico | Implementado (Día 6) | [critico.md](critico.md) |
 | Auditor de Proyecto | Implementado (Día 7) | [auditor.md](auditor.md) |
-| Supervisor | Pendiente (Día 8) | — |
+| Supervisor y grafo | Implementado (Día 8) | [supervisor.md](supervisor.md) |
 | Integración | Pendiente (Día 9) | — |
 
 Las de Requerimientos y Crítico se redactaron **después** de construirlos, a partir del código y los tests. La del Auditor se redactó **antes** de construirlo, y es la base de su plan; se ajustó al terminar.

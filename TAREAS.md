@@ -101,12 +101,23 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Commit y push (cuando se pida)
 - [ ] Observación: el Auditor suma citas de la preventa a sus hallazgos; a medir en la evaluación (Día 13).
 
-## Día 8 · Supervisor y grafo (esquema)
-**Objetivo:** coordinar a los agentes en un flujo único que se puede pausar y reanudar.
+## Día 8 · Supervisor y grafo — [x]
+**Objetivo:** coordinar a los agentes en un flujo único que se puede guardar y consultar desde otra instancia.
 
-- [ ] Grafo de LangGraph — define el orden: productor → Crítico → Auditor → Integración, con vueltas para las rondas.
-- [ ] Planificación del Supervisor, `delegar_tarea` y `escalar_a_persona` — el Supervisor reparte el trabajo, arbitra y pide ayuda humana cuando corresponde.
-- [ ] Presupuestos por agente aplicados desde el grafo — ningún agente puede gastar pasos o tokens sin límite.
+- [x] `delegar_tarea` — el Supervisor registra a quién le asigna qué: valida el agente, la tarea y que las fuentes existan. No ejecuta nada.
+- [x] `escalar_a_persona` — registra una escalación; quién decide lo fija la política, no el modelo, y no se duplica.
+- [x] Agente Supervisor y su `agent.md` — elige las fuentes y la instrucción del productor; si su plan es inválido, se usa el plan por defecto. La preventa nunca se usa para redactar.
+- [x] Grafo de LangGraph (`graph/`) — recorrido fijo: plan → producir → revisar (un ítem por vuelta) → auditar → [revisar los reabiertos, una vez] → escalar → resumir. El Crítico y el Auditor corren siempre.
+- [x] Escalaciones por código — sin consenso y contradicción al PO; cambio de alcance y vendido o tratado sin vender al service manager.
+- [x] `config/budgets.yaml` — tope de tokens, ítems y tiempo por corrida; al agotarse, la corrida corta con `presupuesto_agotado`.
+- [x] Estado guardado en `SqliteSaver` por `thread_id`; otra instancia del grafo lee el mismo estado.
+- [x] Un error de un agente queda registrado y la corrida sigue (`completada_con_errores`).
+- [x] `scripts/run_pipeline.py` — corrida completa; verificada en modo simulado.
+- [x] Tests sin red (232 en total) y especificación `docs/specs/supervisor.md` al día. Dependencias: extra `graph` (`langgraph`, `langgraph-checkpoint-sqlite`).
+- [x] Corrida real completa (≈104 mil tokens): Haiku produjo 3 historias, el Crítico las sustentó en la ronda 1, el Auditor registró 7 hallazgos y se generaron 5 escalaciones (4 al service manager, 1 al PO). Sin errores.
+- [ ] Observación: Haiku no redactó la historia de notificaciones por email (Gemini sí lo había hecho). A medir en la evaluación del Día 13.
+- [ ] Observación: escalaciones redundantes — la app móvil y el cambio PDF→Excel generan cada uno dos hallazgos (`tratado_no_vendido` + `cambio_de_alcance`, `decision_evolucionada` + `cambio_de_alcance`) y por tanto dos escalaciones. Agrupar por tema antes de pedir una decisión humana (Día 10).
+- [x] Commit y push.
 
 ## Día 9 · Integración y Azure DevOps (esquema)
 **Objetivo:** publicar en el backlog real solo lo aprobado, sin duplicar ni pisar nada.

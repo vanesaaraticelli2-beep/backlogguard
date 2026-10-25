@@ -18,6 +18,7 @@ dependencies = [
 dev = ["pytest>=8.0"]
 llm = ["anthropic>=1.0", "google-genai>=1.0"]
 rag = ["numpy>=1.26", "qdrant-client==1.18.0"]
+graph = ["langgraph==1.2.17", "langgraph-checkpoint-sqlite==3.1.2"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
