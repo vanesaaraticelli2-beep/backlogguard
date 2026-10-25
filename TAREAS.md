@@ -111,7 +111,7 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 ## Día 9 · Integración y Azure DevOps (esquema)
 **Objetivo:** publicar en el backlog real solo lo aprobado, sin duplicar ni pisar nada.
 
-- [ ] Decisión MCP vs. cliente REST — se define después de las clases de noviembre.
+- [x] MCP para Azure DevOps — decidido: sí. Falta definir en el plan del Día 9 qué servidor MCP y cómo se aísla.
 - [ ] Modo simulado y modo real — se puede demostrar sin tocar un Azure DevOps verdadero.
 - [ ] `armar_plan_dry_run` — arma el plan (crear, actualizar, vincular u omitir) sin ejecutarlo y le calcula una huella.
 - [ ] `revalidar_plan` y `buscar_en_backlog` — antes de publicar, comprueban que el backlog no cambió desde que se armó el plan.
@@ -151,6 +151,6 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Video de respaldo de 3 a 5 minutos — se graba temprano, por si la demo en vivo falla.
 
 ## Decisiones abiertas
-- [ ] MCP para Azure DevOps o Jira: esperar las clases de noviembre
+- [ ] **Productor con Haiku (temporal, 2026-10-25):** reemplaza a `gemini-3.8-flash` por la cuota gratuita. Resolver: volver a Gemini con facturación, o dejar Haiku/otro respaldo. Con Haiku, productor y Crítico son del mismo proveedor (distinto modelo): revisar la independencia en la evaluación.
+- [x] MCP para Azure DevOps: **sí** (decidido 2026-10-25). Pendiente de detalle en el plan del Día 9: servidor MCP a usar, modo simulado y límites de seguridad.
 - [ ] Embeddings reales (`sentence-transformers`): decidir en la evaluación
-- [ ] Modelo de respaldo de Gemini ante 503 o falta de cuota

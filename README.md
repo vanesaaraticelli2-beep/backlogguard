@@ -105,8 +105,8 @@ Policy gate por rol (cada agente ve solo sus tools), imposibilidad de escribir s
 
 | Agente | Modelo | Por qué |
 |---|---|---|
-| Requerimientos (productor) | `gemini-3.8-flash` | Produce el mayor volumen y su error se detecta aguas abajo; modelo del curso. |
-| Crítico | `claude-opus-5-5` | Es la compuerta de calidad; de otro proveedor que el productor, para reducir sesgos correlacionados. El código impide configurar el mismo proveedor y modelo. |
+| Requerimientos (productor) | `claude-haiku-5-5` (esfuerzo bajo) — **temporal** | Produce el mayor volumen y su error se detecta aguas abajo. Reemplaza provisoriamente a `gemini-3.8-flash` (modelo del curso) por la cuota gratuita de Gemini; ⚠️ A COMPLETAR: decisión definitiva. |
+| Crítico | `claude-opus-5-5` | Es la compuerta de calidad; pensado para ser de otro proveedor que el productor (hoy, con Haiku temporal, solo difiere el modelo). El código impide configurar el mismo proveedor y modelo. |
 | Auditor de Proyecto | `claude-opus-5-5` | Pocas llamadas de juicio delicado (evolución contra contradicción). |
 | Supervisor | `claude-sonnet-5-5` (esfuerzo bajo) | Salidas cortas y buen criterio de ruteo. |
 | Integración | `claude-haiku-5-5` (esfuerzo bajo) | Casi todo es código determinístico (hash, idempotencia). |
