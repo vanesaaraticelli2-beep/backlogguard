@@ -14,7 +14,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
-from backlogguard.board import BacklogItem, Board, Citation, ItemKind, SourceType
+from backlogguard.board import BacklogItem, Board, Citation, ItemKind, ItemState, SourceType
 from backlogguard.rag import SourceLibrary, SourceNotFound, build_chunks
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools.models import ToolResult
@@ -51,6 +51,9 @@ class CitationRef(_Args):
 
 
 class DraftArgs(_Args):
+    revises: str | None = Field(
+        default=None, description="id de un ítem objetado por el Crítico: lo corrige en lugar de crear otro"
+    )
     kind: ItemKind
     title: str = Field(min_length=3, max_length=140)
     description: str = Field(default="", max_length=1200)
@@ -143,6 +146,8 @@ class RequirementsToolkit:
                     speaker=fragment.metadata.get("speaker"),
                 )
             )
+        if args.get("revises"):
+            return self._revise(args, citations)
         kind = ItemKind(args["kind"])
         digest = hashlib.sha1(f"{kind.value}|{' '.join(args['title'].lower().split())}".encode()).hexdigest()[:8]
         item_id = f"{_ID_PREFIX[kind]}-{digest}"
@@ -159,6 +164,24 @@ class RequirementsToolkit:
             )
         )
         return ToolResult(ok=True, content=f"Ítem {item_id} creado en borrador.", metadata={"item_id": item_id})
+
+    def _revise(self, args: dict, citations: list[Citation]) -> ToolResult:
+        """Corrige un ítem objetado conservando su id, sus objeciones y su estado."""
+        current = self.board.items.get(args["revises"])
+        if current is None:
+            return _fail(f"No existe el ítem a corregir: {args['revises']}", "unknown_item")
+        if current.state is not ItemState.OBJETADO:
+            return _fail(f"Solo se corrigen ítems objetados; {current.id} está {current.state.value}", "not_revisable")
+        self.board.items[current.id] = current.model_copy(
+            update={
+                "kind": ItemKind(args["kind"]),
+                "title": args["title"],
+                "description": args.get("description", ""),
+                "acceptance_criteria": args.get("acceptance_criteria", []),
+                "citations": citations,
+            }
+        )
+        return ToolResult(ok=True, content=f"Ítem {current.id} corregido.", metadata={"item_id": current.id})
 
     def implementations(self) -> dict:
         """(handler, args_model, idempotent) por nombre de tool, para el catálogo."""

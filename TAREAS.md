@@ -69,13 +69,20 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Pendiente detectado: historias casi duplicadas (dos de SSO con títulos distintos) → las cubren el Crítico y el Supervisor.
 - [ ] Pendiente detectado: la cuota gratuita de Gemini es de 20 pedidos por día por modelo → activar facturación o definir un modelo de respaldo antes de la evaluación.
 
-## Día 6 · Crítico (esquema)
+## Día 6 · Crítico y negociación — [x] (falta commit)
 **Objetivo:** que un segundo agente, con otro modelo, revise cada historia del productor y objete lo que no esté bien sustentado.
 
-- [ ] `verificar_cita` — comprueba, sin usar un modelo, que la frase citada exista textualmente en la fuente. Detecta citas inventadas o deformadas.
-- [ ] `buscar_contraevidencia` — busca en otras reuniones algo que contradiga la historia.
-- [ ] `evaluar_dor_invest` — revisa si la historia está lista para trabajarse (DoR) y si es independiente, negociable, valiosa, estimable, pequeña y probable (INVEST).
-- [ ] Objeciones y tope de 2 rondas — el Crítico objeta, el productor responde o corrige; si tras 2 rondas no hay acuerdo, decide una persona.
+- [x] `verificar_cita` — comprueba, sin usar un modelo, que la frase citada exista textualmente en la fuente. Ignora espacios, mayúsculas y comillas, pero exige acentos y palabras exactos. También verifica reunión y fecha.
+- [x] `buscar_contraevidencia` — busca en otras reuniones algo que contradiga la historia, sin contar lo que ya cita, y marca lo más reciente que la cita.
+- [x] `evaluar_dor_invest` — devuelve el contenido del ítem y controles objetivos: citas, formato Como/quiero/para, Gherkin, tamaño (≤ 5 criterios) y posibles duplicados. El juicio de INVEST lo emite el modelo con esa evidencia.
+- [x] Agente Crítico y su `agent.md` — corre una vez por ítem con `claude-opus-5-5`; su veredicto (`CriticVerdict`) se valida con Pydantic y se repara una vez si viene mal formado.
+- [x] `negotiate_item` — aplica en código la negociación: verifica citas, registra objeciones por ronda, pide la corrección al productor y corta a las 2 rondas con `sin_consenso`. Una cita falsa impide `sustentado` aunque el modelo diga que sí.
+- [x] `redactar_historia` con `revises` — el productor corrige un ítem objetado conservando su id y sus objeciones.
+- [x] `scripts/run_critico.py` — corrida real con ítems sembrados: detectó cita deformada, reporte vencido (PDF→Excel), filtro de fecha pospuesto y duplicados de SSO, y sustentó el ítem correcto.
+- [x] Tests sin red (182 en total).
+- [ ] Commit y push (cuando se pida)
+- [ ] Pendiente: probar la negociación completa con el productor real cuando haya cuota de Gemini.
+- [ ] Observación: Opus objeta con criterio estricto (criterios Gherkin genéricos). A medir en la evaluación del Día 13.
 
 ## Día 7 · Auditor de Proyecto (esquema)
 **Objetivo:** comparar lo que se trató con lo que se vendió, y detectar cambios de alcance y contradicciones entre reuniones.

@@ -54,3 +54,15 @@ def run_requerimientos(
         policy=policy,
     )
     return {**outcome, "tokens": decider.tokens_used}
+
+
+def revise_item(item_id: str, objections: list[str], **kwargs) -> dict:
+    """Pide al productor que corrija un ítem objetado (usa `redactar_historia` con `revises`)."""
+    listed = "\n".join(f"- {text}" for text in objections)
+    goal = (
+        f"El Crítico objetó el ítem {item_id}. Objeciones:\n{listed}\n"
+        f'Corregilo con redactar_historia usando revises="{item_id}" (mismo tipo, con título, descripción, '
+        "criterios Gherkin y citas corregidos). Podés buscar en las fuentes antes. Si la objeción no tiene "
+        "solución con las fuentes, explicalo en tu respuesta final sin inventar nada."
+    )
+    return run_requerimientos(goal, **kwargs)

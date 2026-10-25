@@ -194,3 +194,34 @@ def test_el_agente_respeta_el_tope_de_tool_calls():
         responses=[tool("buscar_en_fuentes", query="algo repetido")] * 5, max_tool_calls=2
     )
     assert outcome["stop_reason"] == "budget"
+
+
+def objected_item(toolkit, retriever, board):
+    registry, policy = make_registry(toolkit)
+    call(registry, policy, "ingestar_y_fragmentar", document_id="reunion_01_kickoff")
+    created = call(registry, policy, "redactar_historia", **draft_args(email_chunk(retriever)))
+    item = board.items[created.metadata["item_id"]]
+    return registry, policy, item
+
+
+def test_revises_corrige_un_item_objetado_conservando_id_y_objeciones():
+    from backlogguard.board import Objection
+
+    toolkit, retriever, board = make_toolkit()
+    registry, policy, item = objected_item(toolkit, retriever, board)
+    item.transition_to(ItemState.OBJETADO)
+    item.add_objection(Objection(id="O1", raised_by=AgentRole.CRITICO, text="Falta precisar el plazo.", round=1))
+    args = draft_args(email_chunk(retriever), title="Email de cambio de estado en menos de un minuto", revises=item.id)
+    result = call(registry, policy, "redactar_historia", **args)
+    assert result.ok and result.metadata["item_id"] == item.id
+    revised = board.items[item.id]
+    assert revised.title.startswith("Email de cambio") and revised.state is ItemState.OBJETADO
+    assert [o.text for o in revised.objections] == ["Falta precisar el plazo."] and len(board.items) == 1
+
+
+def test_revises_rechaza_items_inexistentes_o_no_objetados():
+    toolkit, retriever, board = make_toolkit()
+    registry, policy, item = objected_item(toolkit, retriever, board)
+    args = draft_args(email_chunk(retriever))
+    assert call(registry, policy, "redactar_historia", **{**args, "revises": "HU-nada"}).metadata["error_type"] == "unknown_item"
+    assert call(registry, policy, "redactar_historia", **{**args, "revises": item.id}).metadata["error_type"] == "not_revisable"
