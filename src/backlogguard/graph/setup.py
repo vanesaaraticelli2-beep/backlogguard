@@ -14,6 +14,7 @@ from backlogguard.graph.deps import Providers, RunDeps, build_providers
 from backlogguard.hitl import load_people
 from backlogguard.integrations import PublicationLedger, SimulatedBacklog
 from backlogguard.llm import Settings, load_models_config
+from backlogguard.llm.recording import Recording, replay_providers
 from backlogguard.memory import ProjectMemory
 from backlogguard.rag import DeterministicLexicalEmbeddings, InMemoryRetriever, SourceLibrary
 from backlogguard.tools import load_policy_config
@@ -25,10 +26,13 @@ def build_run_deps(
     *,
     data_dir: Path | None = None,
     providers: Providers | None = None,
+    replay: Path | None = None,
     on_event: Callable[[dict], None] | None = None,
 ) -> RunDeps:
     data = data_dir or root / "data"
     data.mkdir(parents=True, exist_ok=True)
+    if providers is None and replay is not None:  # modo demo: se repiten las respuestas de una corrida grabada
+        providers = replay_providers(Recording.load(replay))
     return RunDeps(
         providers=providers or build_providers(load_models_config(root / "config" / "models.yaml"), settings),
         library=SourceLibrary(root / "evals" / "fixtures"),

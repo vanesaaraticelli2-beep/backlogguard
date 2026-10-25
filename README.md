@@ -124,7 +124,7 @@ cd backlogguard
 git checkout v1.0-tfi
 cp .env.example .env   # y completar las variables (sección 9)
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[dev,llm,rag,graph]"
+pip install -e ".[dev,llm,rag,graph,ui]"
 pytest -q   # no requiere claves ni red
 ```
 
@@ -133,16 +133,31 @@ Copiá `.env.example` a `.env`. **No se versionan claves, tokens ni credenciales
 
 | Variable | Descripción |
 |---|---|
-| ⚠️ `MODEL_API_KEY` | Clave del proveedor del modelo. |
-| ⚠️ `AZDO_MODE` | `simulated` (por defecto) o `real`. |
-| ⚠️ `AZDO_ORG_URL`, `AZDO_PROJECT`, `AZDO_TOKEN` | Solo para el modo real. |
-| ⚠️ A COMPLETAR | Demás variables según el código. |
+| `LIVE_MODE` | `0` (por defecto): sin red ni costo; la pantalla reproduce la corrida grabada. `1`: usa los modelos reales. |
+| `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` | Claves de los proveedores (solo con `LIVE_MODE=1`). |
+| `AZDO_MODE` | `simulated` (por defecto). El modo `real` (MCP) todavía no está disponible. |
+| `AZDO_PROJECT` | Nombre del proyecto del backlog simulado (si queda vacío, `ACME`). |
+| `BACKLOGGUARD_DB_PATH`, `BACKLOGGUARD_CHECKPOINT_PATH` | Rutas de persistencia (ver `.env.example`). |
+| ⚠️ `AZDO_ORG_URL`, `AZDO_TOKEN` | Reservadas para el modo real; hoy no se usan. |
 
-Otros archivos de configuración: `config/models.yaml` (modelo por agente), `config/policy.yaml` (tools por rol y condiciones de pausa) y `config/context_budget.yaml` (presupuesto de contexto).
+Otros archivos de configuración: `config/models.yaml` (modelo por agente), `config/policy.yaml` (tools por rol y condiciones de pausa), `config/people.yaml` (personas y roles que pueden decidir), `config/budgets.yaml` (presupuesto de una corrida) y ⚠️ `config/context_budget.yaml` (presupuesto de contexto, pendiente).
 
 ## 10. Ejecución
-⚠️ Provisional.
+**Local, sin Docker** (Windows: `.venv\Scripts\...`; Linux/Mac: `.venv/bin/...`):
 
+```bash
+# Pantalla (Streamlit). Con LIVE_MODE=0 reproduce la corrida grabada en evals/recordings/demo_acme.json.
+streamlit run src/backlogguard/ui/app.py --server.address localhost
+
+# Corrida por terminal: muestra a los agentes en vivo y se pausa cuando necesita una persona.
+python scripts/run_pipeline.py --reset --seed        # --auto aprueba todo con la persona que corresponde
+python scripts/decidir.py <corrida>                  # ver el pedido pendiente; --accion approve|edit|reject para decidir
+
+# Grabar una corrida real (gasta tokens) para reproducirla después sin costo.
+LIVE_MODE=1 python scripts/grabar_demo.py
+```
+
+⚠️ Provisional (Docker, todavía sin construir):
 ```bash
 docker compose up --build
 ```

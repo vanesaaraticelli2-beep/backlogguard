@@ -9,6 +9,7 @@ Cada especificación describe **qué debe cumplir** un agente, en lenguaje funci
 | Auditor de Proyecto | Implementado (Día 7) | [auditor.md](auditor.md) |
 | Supervisor y grafo | Implementado (Día 8) | [supervisor.md](supervisor.md) |
 | Integración | Implementado (Día 9, backlog simulado) | [integracion.md](integracion.md) |
+| Human-in-the-Loop y pantalla | Implementado (Día 10) | [hitl.md](hitl.md) |
 
 Las de Requerimientos y Crítico se redactaron **después** de construirlos, a partir del código y los tests. La del Auditor se redactó **antes** de construirlo, y es la base de su plan; se ajustó al terminar.
 

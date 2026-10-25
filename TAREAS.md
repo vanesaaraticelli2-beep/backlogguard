@@ -138,7 +138,7 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Commit y push (cuando se pida)
 - [ ] Observación: el productor corrige una historia pero deja otra equivalente (dos versiones del mismo requisito). Mejorar en la evaluación del Día 13.
 
-## Día 10 · Human-in-the-Loop y pantalla de decisiones — [~] etapa 10a hecha (falta commit); 10b pendiente
+## Día 10 · Human-in-the-Loop y pantalla de decisiones — [x] (10a subida; 10b falta commit)
 **Objetivo:** que el sistema se detenga y espere a la persona correcta, que su decisión quede ligada a la versión exacta que vio y que la corrida continúe hasta publicar lo aprobado.
 
 **Etapa 10a · núcleo del HITL — [x]**
@@ -155,11 +155,18 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] Tests sin red (284 en total) y especificación `docs/specs/hitl.md` al día.
 - [ ] Commit y push de la etapa 10a (cuando se pida).
 
-**Etapa 10b · pantalla y modo demo — [ ]**
-- [ ] App Streamlit: elegir persona, ver solo los pedidos de su rol, evidencia con citas, aprobar/editar/rechazar con comentario, actividad de los agentes en vivo, tablero y backlog simulado antes y después.
-- [ ] Modo demo sin costo: grabar una corrida real (respuestas de cada modelo, en orden) y reproducirla con proveedores guionados.
-- [ ] Una corrida real con grabación (≈US$1) para generar la demo.
-- [ ] Pruebas de la pantalla con el probador integrado de Streamlit (`AppTest`).
+**Etapa 10b · pantalla y modo demo — [x]**
+- [x] Pantalla de Streamlit (`ui/`) — elegir persona (solo ve los pedidos de su rol), pedido con resumen, evidencia con citas y los botones aprobar, editar (crea versión nueva) y rechazar con comentario; estado de la corrida en vivo, tablero con ítems, citas y objeciones, hallazgos, backlog simulado antes y ahora, resultado de la publicación y registro de decisiones.
+- [x] Controlador de la corrida (`ui/controller.py`) — corre el grafo en un hilo y expone el estado; se prueba sin pantalla. Una corrida a la vez por proceso.
+- [x] Modo demo sin costo (`llm/recording.py`) — grabar las respuestas de cada modelo y reproducirlas con proveedores guionados: mismo recorrido, sin red ni claves.
+- [x] Corrida real grabada (`evals/recordings/demo_acme.json`, ≈145 mil tokens): 3 historias, auditoría, 4 pedidos de decisión y un plan de 3 work items publicados. La grabación se reproduce de punta a punta en un test.
+- [x] Pruebas de la pantalla con el probador integrado de Streamlit (`AppTest`) y comprobación de que el servidor arranca (health ok).
+- [x] README: variables de entorno, archivos de configuración y comandos de ejecución locales.
+- [x] Tests sin red (296 en total) y especificación `docs/specs/hitl.md` al día.
+- [ ] Commit y push de la etapa 10b (cuando se pida).
+- [ ] Pendiente: ver la pantalla en un navegador real (las pruebas automáticas cubren el comportamiento, no el aspecto).
+- [ ] Observación: el agente de Integración llamó una vez a `buscar_en_backlog` sin parámetros (error controlado y se recuperó); a medir en la evaluación.
+
 
 ## Día 11 · Skills y contexto (esquema)
 **Objetivo:** darle a cada agente solo el conocimiento y el contexto que necesita, sin sobrecargarlo.

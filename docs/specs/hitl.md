@@ -1,6 +1,6 @@
 # Especificación · Human-in-the-Loop y pantalla de decisiones
 
-**Estado:** etapa 10a implementada (núcleo del HITL, probado y usable por terminal); etapa 10b (pantalla Streamlit y modo demo) pendiente · **Código:** `src/backlogguard/hitl/`, `graph/` (nodos con `interrupt`), `config/people.yaml`, `scripts/decidir.py`; previsto: `ui/`
+**Estado:** implementado (Día 10, etapas 10a y 10b) · **Código:** `src/backlogguard/hitl/`, `graph/` (nodos con `interrupt`), `config/people.yaml`, `ui/` (Streamlit), `llm/recording.py`, `scripts/decidir.py`, `scripts/grabar_demo.py`
 
 ## Propósito
 Que el sistema se detenga y espere a la persona correcta en los momentos que importan, que su decisión quede ligada a la versión exacta que vio y que la corrida continúe desde donde quedó, incluso desde otro proceso. Cierra el recorrido: tras la decisión humana, lo aprobado se publica en el backlog simulado.
@@ -43,22 +43,22 @@ Los desacuerdos sobre ítems se resuelven **antes** de armar el plan, para que u
 | HI-13 | Rechazarlo todo termina en un estado final válido, sin errores. | `test_rechazarlo_todo_termina_bien`, `test_el_recorrido_completo_con_todas_las_decisiones` |
 | HI-14 | Una decisión inválida deja el estado intacto y la pausa vuelve a ofrecerse con el motivo. | `test_una_decision_invalida_no_cambia_el_estado` |
 
-## Pantalla (Streamlit) — etapa 10b, pendiente
+## Pantalla (Streamlit)
 
-| ID | Requisito | Test previsto |
+| ID | Requisito | Test que lo verifica |
 |---|---|---|
 | UI-01 | La persona elige quién es (`config/people.yaml`: nombre y rol) y solo ve los pedidos que le corresponden. | `test_cada_persona_ve_solo_sus_pedidos` |
 | UI-02 | Cada pedido muestra el resumen, la evidencia con sus citas (frase, reunión, fecha y orador) y las acciones aprobar, editar y rechazar con comentario. | `test_el_pedido_muestra_la_evidencia_y_las_acciones` |
-| UI-03 | Decidir en la pantalla reanuda la corrida y el pedido desaparece de la lista. | `test_decidir_en_la_pantalla_reanuda_la_corrida` |
+| UI-03 | Decidir en la pantalla reanuda la corrida y el pedido desaparece de la lista. | `test_decidir_en_la_pantalla_reanuda_la_corrida`, `test_el_recorrido_completo_desde_la_pantalla` |
 | UI-04 | La actividad de los agentes se ve mientras ocurre (decisiones, tools y resultados) y el tablero muestra ítems, estados, objeciones y hallazgos. | `test_la_pantalla_muestra_la_actividad_y_el_tablero` |
 | UI-05 | El backlog simulado se ve antes y después de publicar. | `test_el_backlog_simulado_se_ve_antes_y_despues` |
 
-## Modo demo sin costo (grabación y reproducción) — etapa 10b, pendiente
+## Modo demo sin costo (grabación y reproducción)
 Una corrida real puede grabarse (las respuestas de cada modelo, en orden) y reproducirse después con proveedores guionados: mismo recorrido, sin red ni costo, determinístico. Sirve para la demo estable y el video de respaldo.
 
-| ID | Requisito | Test previsto |
+| ID | Requisito | Test que lo verifica |
 |---|---|---|
-| DM-01 | Grabar una corrida produce un archivo con las respuestas por agente; reproducirlo reproduce el mismo estado final. | `test_grabar_y_reproducir_da_el_mismo_resultado` |
+| DM-01 | Grabar una corrida produce un archivo con las respuestas por agente; reproducirlo reproduce el mismo estado final. | `test_grabar_y_reproducir_da_el_mismo_resultado`, `test_la_grabacion_de_la_demo_se_reproduce_de_punta_a_punta` |
 
 ## Fuera del curso (decisiones propias)
 - Roles de las personas (`people.yaml`) y su control contra la política: la clase 11 trata al actor como identificador de auditoría que no otorga permisos. Aquí **no hay autenticación real**: la persona se elige en la pantalla. Se declara como limitación.
@@ -67,7 +67,9 @@ Una corrida real puede grabarse (las respuestas de cada modelo, en orden) y repr
 - Dependencia nueva: `streamlit` (extra `ui`).
 - Del curso: `ProposedAction` y `HumanDecision` (aquí `DecisionRequest`), `args_hash`, versiones, `interrupt` y `Command(resume=...)` con `SqliteSaver`, y el patrón "revalidar y reautorizar antes de ejecutar".
 
-## Límites conocidos (previstos)
+## Límites conocidos
+- La grabación depende de que el flujo haga las mismas llamadas en el mismo orden: si el flujo cambia, hay que volver a grabar (un test lo avisa).
+- Streamlit se abre por defecto en todas las interfaces de red: para uso local conviene `--server.address localhost`.
 - Aprobar un cambio de alcance solo registra la decisión: no redacta historias nuevas automáticamente. Una corrida posterior puede partir de esa decisión.
 - Sin autenticación real ni permisos finos dentro de la pantalla.
 - Una corrida a la vez por proceso de la pantalla.

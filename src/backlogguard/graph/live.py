@@ -13,6 +13,8 @@ NODE_TITLES = {
     "review": "Crítico revisa un ítem",
     "audit": "Auditor audita el proyecto",
     "escalate": "Escalaciones por reglas",
+    "decide": "Una persona decide",
+    "approve_plan": "Se aprueba el plan de publicación",
     "integrate": "Integración arma el plan de publicación",
     "summarize": "Supervisor resume",
 }
