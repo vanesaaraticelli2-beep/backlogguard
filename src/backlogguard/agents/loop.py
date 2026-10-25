@@ -59,12 +59,14 @@ def run_basic_agent(
     max_tool_calls=None,
     max_tokens: int | None = None,
     tokens_used: Callable[[], int] | None = None,
+    on_event: Callable[[dict], None] | None = None,
 ):
     """Ejecuta Decide → Act → Observe y devuelve respuesta, traza y stop reason.
 
     `decide_next` recibe el mensaje original y las Observations acumuladas.
     Toda Tool se ejecuta a través del Registry para conservar los controles del runtime.
     `max_tokens` se compara con `tokens_used()` antes de cada decisión nueva.
+    `on_event` (opcional) recibe cada entrada de la traza apenas ocurre, para seguir al agente en vivo.
     """
     if max_tokens is not None and tokens_used is None:
         raise ValueError("max_tokens requiere tokens_used")
@@ -73,6 +75,11 @@ def run_basic_agent(
     trace = []
     started = time.perf_counter()
     tool_calls = 0
+
+    def record(entry: dict) -> None:
+        trace.append(entry)
+        if on_event is not None:
+            on_event(entry)
 
     def stop(answer: str, reason: str) -> dict:
         return {
@@ -92,7 +99,7 @@ def run_basic_agent(
         try:
             decision = decide_next(user_message, observations)
         except LLMError as exc:
-            trace.append({
+            record({
                 "run_id": getattr(context, "run_id", None),
                 "step": step,
                 "event": "llm_error",
@@ -100,7 +107,7 @@ def run_basic_agent(
             })
             return stop(f"Falló el modelo: {exc}", "unrecoverable_error")
 
-        trace.append({
+        record({
             "run_id": getattr(context, "run_id", None),
             "step": step,
             "event": "decision",
@@ -129,7 +136,7 @@ def run_basic_agent(
         tool_calls += 1
         observations.append(result)
 
-        trace.append({
+        record({
             "run_id": getattr(context, "run_id", None),
             "step": step,
             "event": "observation",

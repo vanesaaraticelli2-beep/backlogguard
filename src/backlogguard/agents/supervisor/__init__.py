@@ -47,6 +47,7 @@ def plan_run(
     library: SourceLibrary,
     policy: PolicyConfig,
     run_id: str = "run-local",
+    on_event: Callable[[dict], None] | None = None,
 ) -> PlanResult:
     """El Supervisor propone fuentes e instrucción. Un plan inválido cae al plan por defecto."""
     allowed = drafting_sources(library)
@@ -77,6 +78,7 @@ def plan_run(
         tokens_used=lambda: decider.tokens_used,
         context=context,
         policy=policy_gate,
+        on_event=on_event,
     )
     producer = next((d for d in toolkit.delegations if d.agent == "requerimientos"), None)
     sources = [s for s in (producer.sources if producer else []) if s in allowed]

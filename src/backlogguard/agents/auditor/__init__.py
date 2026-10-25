@@ -45,6 +45,7 @@ def run_auditor(
     max_seconds: float = 300.0,
     max_tool_calls: int = 6,
     max_tokens: int = 60_000,
+    on_event: Callable[[dict], None] | None = None,
 ) -> AuditRun:
     """Corre al Auditor sobre todo el proyecto. No aplica el informe: eso lo hace `apply_report`."""
     context = ExecutionContext(user_id="factory", role=AgentRole.AUDITOR, run_id=run_id, approved_by=approved_by)
@@ -72,6 +73,7 @@ def run_auditor(
         tokens_used=lambda: decider.tokens_used,
         context=context,
         policy=policy,
+        on_event=on_event,
     )
     if outcome["stop_reason"] != "final_answer":
         raise InvalidProviderResponseError(f"el Auditor no llegó a un informe ({outcome['stop_reason']})")

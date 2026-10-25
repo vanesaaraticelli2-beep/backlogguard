@@ -117,6 +117,7 @@ class BacklogItem(_Strict):
     objections: list[Objection] = Field(default_factory=list)
     state: ItemState = ItemState.BORRADOR
     approved_by: str | None = None
+    parent_id: str | None = Field(default=None, description="Ítem padre (por ejemplo, la épica de una historia)")
 
     @model_validator(mode="after")
     def _traceability(self) -> BacklogItem:
@@ -153,6 +154,8 @@ class Board(_Strict):
     def add_item(self, item: BacklogItem) -> None:
         if item.id in self.items:
             raise ValueError(f"ya existe un ítem con id {item.id}")
+        if item.parent_id is not None and item.parent_id not in self.items:
+            raise ValueError(f"el ítem padre no existe: {item.parent_id}")
         self.items[item.id] = item
 
     def add_finding(self, finding: Finding) -> None:

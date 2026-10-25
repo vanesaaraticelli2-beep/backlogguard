@@ -27,6 +27,7 @@ def run_requerimientos(
     max_seconds: float = 180.0,
     max_tool_calls: int = 20,
     max_tokens: int = 60_000,
+    on_event: Callable[[dict], None] | None = None,
 ) -> dict:
     """Corre al agente sobre un tablero y devuelve respuesta, traza, stop reason y tokens."""
     toolkit = RequirementsToolkit(library, retriever, board)
@@ -52,6 +53,7 @@ def run_requerimientos(
         tokens_used=lambda: decider.tokens_used,
         context=context,
         policy=policy,
+        on_event=on_event,
     )
     return {**outcome, "tokens": decider.tokens_used}
 

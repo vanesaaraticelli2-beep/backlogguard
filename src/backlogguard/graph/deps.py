@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 from backlogguard.board import AgentRole
 from backlogguard.graph.budgets import RunBudget
+from backlogguard.integrations import BacklogGateway, PublicationLedger
 from backlogguard.llm.model_config import ModelsConfig
 from backlogguard.llm.providers import LLMProvider, build_provider
 from backlogguard.llm.settings import Settings
@@ -20,6 +22,7 @@ class Providers:
     requerimientos: LLMProvider
     critico: LLMProvider
     auditor: LLMProvider
+    integracion: LLMProvider
 
 
 def build_providers(models: ModelsConfig, settings: Settings) -> Providers:
@@ -29,6 +32,7 @@ def build_providers(models: ModelsConfig, settings: Settings) -> Providers:
         requerimientos=build_provider(models.for_role(AgentRole.REQUERIMIENTOS), settings),
         critico=build_provider(models.for_role(AgentRole.CRITICO), settings),
         auditor=build_provider(models.for_role(AgentRole.AUDITOR), settings),
+        integracion=build_provider(models.for_role(AgentRole.INTEGRACION), settings),
     )
 
 
@@ -40,6 +44,10 @@ class RunDeps:
     memory: ProjectMemory
     policy: PolicyConfig
     budget: RunBudget
+    backlog: BacklogGateway
+    ledger: PublicationLedger
+    project: str = "ACME"
+    on_event: Callable[[dict], None] | None = None
 
 
 def index_library(library: SourceLibrary, retriever: InMemoryRetriever | QdrantRetriever) -> int:

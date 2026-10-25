@@ -12,6 +12,7 @@ from typing import Callable
 from backlogguard.agents.auditor import apply_report, run_auditor
 from backlogguard.agents.auditor.entrega import PAUSE_CONDITION, corrections_by_item, deliver_corrections
 from backlogguard.agents.critico import review_item
+from backlogguard.agents.integracion import run_integracion
 from backlogguard.agents.negociacion import negotiate_item
 from backlogguard.agents.requerimientos import revise_item, run_requerimientos
 from backlogguard.agents.supervisor import plan_run, summarize_run
@@ -19,6 +20,7 @@ from backlogguard.board import AgentRole, Board, ItemState
 from backlogguard.graph.budgets import over_budget
 from backlogguard.graph.deps import RunDeps
 from backlogguard.graph.state import RunState
+from backlogguard.integrations import BacklogError, PublishService
 from backlogguard.llm.errors import LLMError
 from backlogguard.tools import ExecutionContext, ToolCall, ToolPolicy, build_catalog_registry
 from backlogguard.tools.supervisor import Escalation, SupervisorToolkit
@@ -39,6 +41,12 @@ def _error(node: str, exc: Exception, ref: str | None = None) -> dict:
 
 
 def make_nodes(deps: RunDeps) -> dict[str, Node]:
+    def sink(agent: str):
+        """Callback que anota qué agente emite cada evento (para seguirlos en vivo)."""
+        if deps.on_event is None:
+            return None
+        return lambda event: deps.on_event({**event, "agent": agent})
+
     def plan(state: RunState) -> dict:
         result = plan_run(
             state["objective"],
@@ -46,6 +54,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             library=deps.library,
             policy=deps.policy,
             run_id=state.get("run_id", "run-local"),
+            on_event=sink("supervisor"),
         )
         plan_data = {
             "sources": result.sources,
@@ -77,6 +86,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             retriever=deps.retriever,
             board=board,
             run_id=state.get("run_id", "run-local"),
+            on_event=sink("requerimientos"),
         )
         pending = [item.id for item in board.items.values() if item.state is ItemState.BORRADOR]
         return {
@@ -97,7 +107,9 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
         spent = [0]
 
         def critic_review(ref: str):
-            outcome = review_item(ref, provider=deps.providers.critico, retriever=deps.retriever, board=board)
+            outcome = review_item(
+                ref, provider=deps.providers.critico, retriever=deps.retriever, board=board, on_event=sink("critico")
+            )
             spent[0] += outcome.tokens
             return outcome.verdict
 
@@ -109,6 +121,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
                 library=deps.library,
                 retriever=deps.retriever,
                 board=board,
+                on_event=sink("requerimientos"),
             )
             spent[0] += outcome["tokens"]
 
@@ -140,6 +153,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
                 board=board,
                 memory=deps.memory,
                 run_id=state.get("run_id", "run-local"),
+                on_event=sink("auditor"),
             )
             tokens += run.tokens
             result = apply_report(run.report, board, deps.retriever)
@@ -154,6 +168,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
                         library=deps.library,
                         retriever=deps.retriever,
                         board=board,
+                        on_event=sink("requerimientos"),
                     )
                     tokens += outcome["tokens"]
                     reopened.append(item_id)
@@ -211,6 +226,40 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             "trace": [{"node": "escalate", "escalations": len(toolkit.escalations), "status": status}],
         }
 
+    def integrate(state: RunState) -> dict:
+        """Arma el plan de publicación en dry-run. No publica: eso exige la aprobación de una persona."""
+        if reason := state.get("stop_reason") or over_budget(state, deps.budget):
+            return {"trace": [{"node": "integrate", "stop": reason}]}
+        service = PublishService(_board(state), deps.backlog, deps.ledger, deps.project)
+        try:
+            run = run_integracion(
+                provider=deps.providers.integracion,
+                service=service,
+                run_id=state.get("run_id", "run-local"),
+                on_event=sink("integracion"),
+            )
+        except BacklogError as exc:
+            return {"errors": [_error("integrate", exc)], "trace": [{"node": "integrate", "error": str(exc)}]}
+        plan = run.plan
+        update = {
+            "publish_plan": {
+                "hash": plan.plan_hash,
+                "project": plan.project,
+                "counts": plan.counts(),
+                "has_changes": plan.has_changes,
+                "items": [
+                    {"item_id": i.item_id, "action": i.action, "type": i.work_item_type, "title": i.title, "reason": i.reason}
+                    for i in plan.items
+                ],
+                "summary": run.summary,
+            },
+            "tokens": state.get("tokens", 0) + run.tokens,
+            "trace": [{"node": "integrate", "plan_hash": plan.plan_hash, "counts": plan.counts()}],
+        }
+        if plan.has_changes:
+            update["status"] = "plan_pendiente_de_aprobacion"
+        return update
+
     def summarize(state: RunState) -> dict:
         board = _board(state)
         facts = {
@@ -224,6 +273,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             ],
             "errors": [{"nodo": e["node"], "ref": e["ref"]} for e in state.get("errors", [])],
             "corte": state.get("stop_reason"),
+            "plan_de_publicacion": state.get("publish_plan", {}).get("counts"),
         }
         exhausted = state.get("tokens", 0) >= deps.budget.max_tokens
         if exhausted:
@@ -232,4 +282,20 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             text, spent = summarize_run(facts, provider=deps.providers.supervisor)
         return {"summary": text, "tokens": state.get("tokens", 0) + spent, "trace": [{"node": "summarize"}]}
 
-    return {"plan": plan, "produce": produce, "review": review, "audit": audit, "escalate": escalate, "summarize": summarize}
+    nodes = {
+        "plan": plan, "produce": produce, "review": review, "audit": audit,
+        "escalate": escalate, "integrate": integrate, "summarize": summarize,
+    }
+
+    def announce(name: str, node: Node) -> Node:
+        def wrapped(state: RunState) -> dict:
+            if deps.on_event:
+                deps.on_event({"agent": "grafo", "event": "node_start", "node": name})
+            update = node(state)
+            if deps.on_event:
+                deps.on_event({"agent": "grafo", "event": "node_end", "node": name, "status": update.get("status")})
+            return update
+
+        return wrapped
+
+    return {name: announce(name, node) for name, node in nodes.items()}

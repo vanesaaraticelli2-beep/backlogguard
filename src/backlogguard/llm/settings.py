@@ -8,7 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,6 +23,8 @@ class Settings(BaseSettings):
 
     app_env: Literal["development", "testing", "production"] = "development"
     live_mode: bool = False
+    azdo_mode: Literal["simulated", "real"] = "simulated"
+    azdo_project: str = "ACME"
     anthropic_api_key: SecretStr | None = None
     gemini_api_key: SecretStr | None = None
 
@@ -32,6 +34,12 @@ class Settings(BaseSettings):
 
     backlogguard_db_path: Path = Path("data/backlogguard.sqlite")
     backlogguard_checkpoint_path: Path = Path("data/checkpoints.json")
+
+    @field_validator("azdo_project", mode="before")
+    @classmethod
+    def _blank_project_uses_default(cls, value):
+        """`AZDO_PROJECT=` vacío en el .env no debe pisar el valor por defecto."""
+        return value if isinstance(value, str) and value.strip() else "ACME"
 
     @classmethod
     def from_env(cls, env_path: str | Path | None = None):

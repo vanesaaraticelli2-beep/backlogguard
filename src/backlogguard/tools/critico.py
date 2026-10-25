@@ -12,16 +12,14 @@ from dataclasses import dataclass
 from pydantic import BaseModel, ConfigDict, Field
 
 from backlogguard.board import BacklogItem, Board, ItemKind
-from backlogguard.rag.embeddings import tokenize
+from backlogguard.board.similarity import similar_titles
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools.models import ToolResult
 
 MAX_CRITERIA = 5
-DUPLICATE_OVERLAP = 0.8
 _STORY = re.compile(r"\bcomo\b.*\bquiero\b.*\bpara\b", re.IGNORECASE | re.DOTALL)
 _GHERKIN = re.compile(r"\b(dado|given)\b.*\b(cuando|when)\b.*\b(entonces|then)\b", re.IGNORECASE | re.DOTALL)
 _QUOTES = str.maketrans({"“": '"', "”": '"', "«": '"', "»": '"', "‘": "'", "’": "'"})
-_STOPWORDS = {"de", "del", "la", "el", "los", "las", "en", "un", "una", "y", "a", "al", "por", "para", "con", "mediante"}
 
 
 class _Args(BaseModel):
@@ -72,10 +70,6 @@ def check_citations(item: BacklogItem, retriever: InMemoryRetriever | QdrantRetr
         else:
             checks.append(CitationCheck(citation.fragment_id, True, "cita textual verificada"))
     return checks
-
-
-def _title_tokens(title: str) -> set[str]:
-    return {token for token in tokenize(title) if token not in _STOPWORDS}
 
 
 def _fail(content: str, error_type: str) -> ToolResult:
@@ -133,15 +127,10 @@ class CriticToolkit:
         if item is None:
             return _fail(f"No existe el ítem {args['item_id']}", "unknown_item")
         needs_gherkin = item.kind in (ItemKind.HISTORIA, ItemKind.CASO_DE_PRUEBA)
-        tokens = _title_tokens(item.title)
         duplicates = [
             other.id
             for other in self.board.items.values()
-            if other.id != item.id
-            and other.kind is item.kind
-            and (other_tokens := _title_tokens(other.title))
-            and min(len(tokens), len(other_tokens)) >= 3
-            and len(tokens & other_tokens) / min(len(tokens), len(other_tokens)) >= DUPLICATE_OVERLAP
+            if other.id != item.id and other.kind is item.kind and similar_titles(item.title, other.title)
         ]
         checks = [
             ("tiene_citas", bool(item.citations), f"{len(item.citations)} cita(s)"),

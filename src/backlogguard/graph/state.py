@@ -17,6 +17,7 @@ class RunState(TypedDict, total=False):
     pending: list[str]
     reviewed: dict[str, dict]
     audit: dict
+    publish_plan: dict
     audit_passes: int
     escalations: list[dict]
     errors: Annotated[list[dict], operator.add]

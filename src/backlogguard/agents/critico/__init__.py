@@ -64,6 +64,7 @@ def review_item(
     max_seconds: float = 180.0,
     max_tool_calls: int = 6,
     max_tokens: int = 40_000,
+    on_event: Callable[[dict], None] | None = None,
 ) -> CriticReview:
     """Corre al Crítico sobre un ítem. Un JSON inválido se repara una vez (patrón de la clase 2)."""
     registry = build_catalog_registry(CriticToolkit(retriever, board).implementations())
@@ -84,6 +85,7 @@ def review_item(
         tokens_used=lambda: decider.tokens_used,
         context=context,
         policy=policy,
+        on_event=on_event,
     )
     if outcome["stop_reason"] != "final_answer":
         raise InvalidProviderResponseError(f"el Crítico no llegó a un veredicto ({outcome['stop_reason']})")

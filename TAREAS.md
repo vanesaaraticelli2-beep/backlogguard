@@ -119,14 +119,24 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Observación: escalaciones redundantes — la app móvil y el cambio PDF→Excel generan cada uno dos hallazgos (`tratado_no_vendido` + `cambio_de_alcance`, `decision_evolucionada` + `cambio_de_alcance`) y por tanto dos escalaciones. Agrupar por tema antes de pedir una decisión humana (Día 10).
 - [x] Commit y push.
 
-## Día 9 · Integración y Azure DevOps (esquema)
-**Objetivo:** publicar en el backlog real solo lo aprobado, sin duplicar ni pisar nada.
+## Día 9 · Integración con Azure DevOps simulado — [x] (falta commit)
+**Objetivo:** convertir lo aprobado en un plan de publicación seguro y poder publicarlo sin duplicar, sobre un backlog simulado realista; y ver a los agentes trabajar en vivo.
 
-- [x] MCP para Azure DevOps — decidido: sí. Falta definir en el plan del Día 9 qué servidor MCP y cómo se aísla.
-- [ ] Modo simulado y modo real — se puede demostrar sin tocar un Azure DevOps verdadero.
-- [ ] `armar_plan_dry_run` — arma el plan (crear, actualizar, vincular u omitir) sin ejecutarlo y le calcula una huella.
-- [ ] `revalidar_plan` y `buscar_en_backlog` — antes de publicar, comprueban que el backlog no cambió desde que se armó el plan.
-- [ ] `ejecutar_plan_aprobado` con idempotencia por ítem — publica solo el plan aprobado, y repetirlo no genera duplicados.
+- [x] `BacklogGateway` y backlog simulado — ids numerados, versiones, etiquetas y padre-hijo; persiste en archivo entre corridas; inyecta fallos para pruebas. El modo real (MCP) queda diferido y avisa con un mensaje claro.
+- [x] Plan de publicación (`PublishPlan`) — acción por ítem (crear, actualizar, vincular, omitir) con su motivo, clave de idempotencia y hash determinístico; omite posibles duplicados (incluso entre ítems del mismo plan).
+- [x] `buscar_en_backlog`, `armar_plan_dry_run`, `revalidar_plan` — leen o preparan; no escriben.
+- [x] `ejecutar_plan_aprobado` — única escritura: exige hash aprobado y permiso de escritura, revalida antes de escribir, publica padres antes que hijos, es idempotente, recupera resultados ambiguos y se detiene ante un fallo parcial.
+- [x] Registro de publicaciones (SQLite) — intención, resultado y planes armados.
+- [x] Agente de Integración y su `agent.md` — arma y revalida el plan; la publicación la dispara la aplicación (`execute_approved_plan`). El plan se arma aunque el modelo falle.
+- [x] Nodo del grafo — arma el plan al final de la corrida y termina en `plan_pendiente_de_aprobacion`; no publica.
+- [x] Vista en vivo — cada paso de cada agente se emite como evento (`on_event`) y se muestra en una línea (`graph/live.py`).
+- [x] `scripts/run_pipeline.py` — levanta todos los agentes con modelos reales, muestra el trabajo en vivo, el plan y el backlog antes y después (`--reset`, `--seed`, `--aprobar`).
+- [x] Corrida real completa (≈158 mil tokens): 3 historias sustentadas, 6 hallazgos, 5 escalaciones, plan de 2 por crear y 1 omitida por duplicado de un work item manual; tras la aprobación simulada, 2 work items publicados.
+- [x] Defectos encontrados en esa corrida y corregidos: `AZDO_PROJECT` vacío pisaba el valor por defecto, y dos historias casi iguales (otro verbo, otro orden) pasaban como distintas.
+- [x] Tests sin red (259 en total) y especificación `docs/specs/integracion.md` al día.
+- [ ] Repetir la corrida real para ver el efecto de la corrección de duplicados (≈US$1).
+- [ ] Commit y push (cuando se pida)
+- [ ] Observación: el productor corrige una historia pero deja otra equivalente (dos versiones del mismo requisito). Mejorar en la evaluación del Día 13.
 
 ## Día 10 · Human-in-the-Loop (esquema)
 **Objetivo:** que el sistema se detenga y espere a una persona en los tres momentos que importan.
@@ -163,5 +173,5 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 
 ## Decisiones abiertas
 - [ ] **Productor con Haiku (temporal, 2026-10-25):** reemplaza a `gemini-3.8-flash` por la cuota gratuita. Resolver: volver a Gemini con facturación, o dejar Haiku/otro respaldo. Con Haiku, productor y Crítico son del mismo proveedor (distinto modelo): revisar la independencia en la evaluación.
-- [x] MCP para Azure DevOps: **sí** (decidido 2026-10-25). Pendiente de detalle en el plan del Día 9: servidor MCP a usar, modo simulado y límites de seguridad.
+- [~] MCP para Azure DevOps: **diferido** (2026-10-25). Se avanza con el modo simulado, detrás de una interfaz (`BacklogGateway`) para enchufar MCP después de las clases de noviembre. El servidor oficial (`@azure-devops/mcp`) exige una cuenta con Entra ID.
 - [ ] Embeddings reales (`sentence-transformers`): decidir en la evaluación

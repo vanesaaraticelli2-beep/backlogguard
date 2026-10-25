@@ -1,7 +1,7 @@
 """Construcción del grafo de la corrida (clase 11: StateGraph, arcos condicionales, SqliteSaver).
 
 Recorrido fijo: plan → producir → revisar (un ítem por vuelta) → auditar → [revisar los ítems
-reabiertos, una sola vez] → escalar → resumir. El Supervisor no puede alterarlo.
+reabiertos, una sola vez] → escalar → armar el plan de publicación → resumir. El Supervisor no puede alterarlo.
 """
 from __future__ import annotations
 
@@ -46,7 +46,8 @@ def build_graph(deps: RunDeps, checkpointer: Any):
         builder.add_conditional_edges(
             source, route_after_work, {"review": "review", "audit": "audit", "escalate": "escalate"}
         )
-    builder.add_edge("escalate", "summarize")
+    builder.add_edge("escalate", "integrate")
+    builder.add_edge("integrate", "summarize")
     builder.add_edge("summarize", END)
     return builder.compile(checkpointer=checkpointer)
 

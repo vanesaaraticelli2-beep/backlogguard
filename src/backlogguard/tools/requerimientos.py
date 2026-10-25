@@ -54,6 +54,7 @@ class DraftArgs(_Args):
     revises: str | None = Field(
         default=None, description="id de un ítem objetado por el Crítico: lo corrige en lugar de crear otro"
     )
+    parent_id: str | None = Field(default=None, description="id del ítem padre, por ejemplo la épica")
     kind: ItemKind
     title: str = Field(min_length=3, max_length=140)
     description: str = Field(default="", max_length=1200)
@@ -153,9 +154,12 @@ class RequirementsToolkit:
         item_id = f"{_ID_PREFIX[kind]}-{digest}"
         if item_id in self.board.items:
             return _fail(f"Ya existe un ítem con ese tipo y título: {item_id}", "duplicate_item")
+        if args.get("parent_id") and args["parent_id"] not in self.board.items:
+            return _fail(f"No existe el ítem padre: {args['parent_id']}", "unknown_parent")
         self.board.add_item(
             BacklogItem(
                 id=item_id,
+                parent_id=args.get("parent_id"),
                 kind=kind,
                 title=args["title"],
                 description=args.get("description", ""),
