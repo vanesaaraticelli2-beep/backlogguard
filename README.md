@@ -105,7 +105,7 @@ Policy gate por rol (cada agente ve solo sus tools), imposibilidad de escribir s
 
 | Agente | Modelo | Por qué |
 |---|---|---|
-| Requerimientos (productor) | `claude-haiku-5-5` (esfuerzo bajo) — **temporal** | Produce el mayor volumen y su error se detecta aguas abajo. Reemplaza provisoriamente a `gemini-3.8-flash` (modelo del curso) por la cuota gratuita de Gemini; ⚠️ A COMPLETAR: decisión definitiva. |
+| Requerimientos (productor) | `claude-sonnet-5-5` (esfuerzo medio) | Es quien convierte la reunión en historias: si cubre poco, el resto del sistema no lo puede compensar. En la prueba con documentos reales `claude-haiku-5-5` cubrió la mitad de los requisitos, así que se pasó a Sonnet; `gemini-3.8-flash` (modelo del curso) se descartó por la cuota gratuita. ⚠️ A COMPLETAR: resultado del A/B de modelos. |
 | Crítico | `claude-opus-5-5` | Es la compuerta de calidad; pensado para ser de otro proveedor que el productor (hoy, con Haiku temporal, solo difiere el modelo). El código impide configurar el mismo proveedor y modelo. |
 | Auditor de Proyecto | `claude-opus-5-5` | Pocas llamadas de juicio delicado (evolución contra contradicción). |
 | Supervisor | `claude-sonnet-5-5` (esfuerzo bajo) | Salidas cortas y buen criterio de ruteo. |
@@ -152,6 +152,11 @@ streamlit run src/backlogguard/ui/app.py --server.address localhost
 # Corrida por terminal: muestra a los agentes en vivo y se pausa cuando necesita una persona.
 python scripts/run_pipeline.py --reset --seed        # --auto aprueba todo con la persona que corresponde
 python scripts/decidir.py <corrida>                  # ver el pedido pendiente; --accion approve|edit|reject para decidir
+
+# Usar tus propios documentos (preventa en PDF y transcripción en texto); requiere LIVE_MODE=1 para correr.
+python scripts/importar_fuentes.py --preventa preventa.pdf --preventa-nombre "Propuesta" --preventa-fecha 2025-10-01 \
+    --reunion minuta.txt --reunion-nombre "Inception" --reunion-fecha 2026-01-25
+python scripts/importar_fuentes.py --listar           # --limpiar vuelve a las fuentes de ejemplo
 
 # Grabar una corrida real (gasta tokens) para reproducirla después sin costo.
 LIVE_MODE=1 python scripts/grabar_demo.py

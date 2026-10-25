@@ -124,6 +124,63 @@ def transcript_chunks(
     return chunks
 
 
+PAGE_MARKER = re.compile(r"^\[\[página (\d+)\]\]\s*$", re.MULTILINE)
+PAGE_TARGET_WORDS = 140
+MIN_PAGE_CHUNK_WORDS = 8
+DIALOGUE_MAX_WORDS = 50
+
+
+def page_chunks(text: str, *, target_words: int = PAGE_TARGET_WORDS) -> list[dict[str, Any]]:
+    """Fragmentos de un documento por páginas (marcadas con `[[página N]]`): por oraciones, sin orador."""
+    marks = list(PAGE_MARKER.finditer(text))
+    if not marks:
+        return [{"text": piece, "speaker": None, "start": 0, "end": len(text), "page": None}
+                for piece in recursive_chunks(text, target_words=target_words, overlap_words=0)]
+    chunks: list[dict[str, Any]] = []
+    for position, mark in enumerate(marks):
+        end = marks[position + 1].start() if position + 1 < len(marks) else len(text)
+        body = text[mark.end():end]
+        for piece in recursive_chunks(body, target_words=target_words, overlap_words=0):
+            if len(piece.split()) >= MIN_PAGE_CHUNK_WORDS:  # un título suelto («Nuestra Propuesta 4») no es contenido
+                chunks.append({"text": piece, "speaker": None, "start": mark.end(), "end": end, "page": int(mark[1])})
+    return chunks
+
+
+def dialogue_chunks(text: str, *, max_words: int = DIALOGUE_MAX_WORDS) -> list[dict[str, Any]]:
+    """Agrupa intervenciones seguidas (hasta `max_words`) para que una pregunta y su respuesta queden juntas.
+
+    Cada línea del fragmento conserva «Nombre (rol): …», y `speaker` lista a quienes hablan en él.
+    """
+    chunks: list[dict[str, Any]] = []
+    current: list[dict[str, Any]] = []
+
+    def close() -> None:
+        if current:
+            speakers = list(dict.fromkeys(turn["speaker"] for turn in current if turn["speaker"]))
+            chunks.append({
+                "text": " ".join(f"{t['speaker']}: {t['text']}" if t["speaker"] else t["text"] for t in current),
+                "speaker": ", ".join(speakers) or None,
+                "start": current[0]["start"],
+                "end": current[-1]["end"],
+                "page": None,
+            })
+            current.clear()
+
+    for turn in split_turns(text):
+        words = len(turn["text"].split())
+        if words > max_words:  # una intervención larga se parte aparte y conserva su orador
+            close()
+            for piece in recursive_chunks(turn["text"], target_words=max_words, overlap_words=0):
+                chunks.append({"text": f"{turn['speaker']}: {piece}" if turn["speaker"] else piece,
+                               "speaker": turn["speaker"], "start": turn["start"], "end": turn["end"], "page": None})
+            continue
+        if current and sum(len(t["text"].split()) for t in current) + words > max_words:
+            close()
+        current.append(turn)
+    close()
+    return chunks
+
+
 def build_chunks(
     document_id: str,
     text: str,
@@ -131,25 +188,37 @@ def build_chunks(
     *,
     target_words: int = 55,
     overlap_words: int = 8,
-    strategy: str = "turnos",
+    strategy: str | None = None,
 ) -> list[dict[str, Any]]:
-    """Chunks listos para indexar: id estable, texto y metadata de la fuente."""
+    """Chunks listos para indexar: id estable, texto y metadata de la fuente.
+
+    La estrategia sale de `metadata["layout"]`: «turnos» (un fragmento por intervención, el formato de las
+    fuentes de ejemplo), «dialogo» (intervenciones seguidas juntas) o «paginas» (documentos como un PDF).
+    """
+    layout = metadata.get("layout", "turnos")
+    strategy = strategy or layout
+    if layout == "paginas":
+        pieces = page_chunks(text)
+    elif layout == "dialogo":
+        pieces = dialogue_chunks(text)
+    else:
+        pieces = transcript_chunks(text, target_words=target_words, overlap_words=overlap_words)
     chunks = []
-    for index, piece in enumerate(
-        transcript_chunks(text, target_words=target_words, overlap_words=overlap_words)
-    ):
+    for index, piece in enumerate(pieces):
+        page = piece.get("page")
         chunks.append({
             "chunk_id": stable_chunk_id(document_id, strategy, index, piece["text"]),
             "document_id": document_id,
             "text": piece["text"],
             "source": metadata.get("source_name", document_id),
-            "page": None,
+            "page": page,
             "metadata": {
                 **metadata,
                 "document_id": document_id,
                 "speaker": piece["speaker"],
                 "start": piece["start"],
                 "end": piece["end"],
+                "page": page,
             },
         })
     return chunks

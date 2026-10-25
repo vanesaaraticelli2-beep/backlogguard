@@ -6,17 +6,20 @@ la pantalla puede mostrar el pedido. Decidir lanza otro hilo que retoma la corri
 """
 from __future__ import annotations
 
+import sqlite3
 import threading
 import uuid
+from contextlib import closing
 from pathlib import Path
 
 from backlogguard.graph import RunDeps, load_state, pending_request, resume_pipeline, run_pipeline
-from backlogguard.graph.live import format_event
-from backlogguard.graph.setup import build_run_deps, open_graph
+from backlogguard.graph.live import format_event, format_trace
+from backlogguard.graph.setup import build_run_deps, has_user_sources, open_graph, user_sources_dir
 from backlogguard.llm import Settings
 
-DEFAULT_OBJECTIVE = "Armá el backlog del portal de autoservicio de ACME a partir de las reuniones y auditalo contra la preventa."
+DEFAULT_OBJECTIVE = "Armá el backlog a partir de las reuniones y auditalo contra la preventa."
 MAX_EVENTS = 3000
+DEFAULT_MAX_STORIES = 12
 
 
 class RunController:
@@ -27,14 +30,18 @@ class RunController:
 
     # ---- armado ----
 
-    def _build(self) -> None:
+    def _build(self, max_stories: int | None = None) -> None:
         self.events: list[dict] = []
+        self.read_only = False  # True mientras se mira una corrida guardada
         self.thread: threading.Thread | None = None
         self.thread_id: str | None = None
         self.error: str | None = None
         self.backlog_before: list[dict] = []
+        own = user_sources_dir(self.data_dir)
+        self.sources_dir: Path | None = own if has_user_sources(own) else None
         self.deps: RunDeps = build_run_deps(
-            self.root, self.settings, data_dir=self.data_dir, replay=self.replay, on_event=self._on_event
+            self.root, self.settings, data_dir=self.data_dir, replay=self.replay, sources_dir=self.sources_dir,
+            max_items=max_stories, on_event=self._on_event,
         )
         self.graph = open_graph(self.deps, self.data_dir)
 
@@ -42,6 +49,17 @@ class RunController:
         with self._lock:
             self.events.append(event)
             del self.events[:-MAX_EVENTS]
+
+    @property
+    def using_own_sources(self) -> bool:
+        """¿La corrida usa las fuentes que cargó la persona (y no las de ejemplo)?"""
+        return self.sources_dir is not None
+
+    def refresh_sources(self) -> None:
+        """Vuelve a elegir la biblioteca después de cargar o borrar fuentes."""
+        if self.running:
+            raise RuntimeError("No se pueden cambiar las fuentes con una corrida en curso.")
+        self._build()
 
     @property
     def mode(self) -> str:
@@ -64,16 +82,29 @@ class RunController:
         self.thread = threading.Thread(target=target, daemon=True)
         self.thread.start()
 
-    def start(self, objective: str = DEFAULT_OBJECTIVE, *, seed: bool = True) -> str:
+    def start(self, objective: str = DEFAULT_OBJECTIVE, *, seed: bool = True, max_stories: int | None = None) -> str:
         if self.running:
             raise RuntimeError("Ya hay una corrida en curso.")
-        self.reset_demo(seed=seed)
+        own = has_user_sources(user_sources_dir(self.data_dir))
+        if own and self.mode != "real":
+            raise RuntimeError(
+                "Con fuentes propias hace falta LIVE_MODE=1: la corrida grabada no sabe responder a documentos nuevos."
+            )
+        if own:  # documentos reales: sin work items de ejemplo y con un tope de historias
+            seed = False
+            max_stories = max_stories or DEFAULT_MAX_STORIES
+            objective = (
+                f"{objective}\nRedactá como máximo {max_stories} historias, priorizando las de mayor valor y riesgo para el negocio."
+            )
+        self.reset_demo(seed=seed, max_stories=max_stories)
         self.thread_id = f"corrida-{uuid.uuid4().hex[:8]}"
         self.backlog_before = [w.model_dump() for w in self.deps.backlog.search()]
         self._spawn(run_pipeline, self.graph, objective, self.thread_id)
         return self.thread_id
 
     def decide(self, decision: dict) -> None:
+        if self.read_only:
+            raise RuntimeError("Estás viendo una corrida guardada: es de solo lectura.")
         if self.running or self.thread_id is None:
             raise RuntimeError("No hay una corrida pausada esperando una decisión.")
         self._spawn(resume_pipeline, self.graph, self.thread_id, decision)
@@ -84,13 +115,13 @@ class RunController:
             self.thread.join(timeout)
         return not self.running
 
-    def reset_demo(self, *, seed: bool = True) -> None:
+    def reset_demo(self, *, seed: bool = True, max_stories: int | None = None) -> None:
         """Deja el backlog simulado, la memoria de decisiones y los registros como al comienzo."""
         if self.running:
             raise RuntimeError("No se puede reiniciar con una corrida en curso.")
         for name in ("publicaciones.sqlite", "memoria.sqlite", "backlog_simulado.json"):
             (self.data_dir / name).unlink(missing_ok=True)
-        self._build()
+        self._build(max_stories)
         if seed:
             self.deps.backlog.seed_demo()
 
@@ -98,7 +129,7 @@ class RunController:
 
     def pending(self) -> dict | None:
         """Pedido en el que está pausada la corrida (con `request` y `last_error`), o `None`."""
-        if self.running or self.thread_id is None:
+        if self.running or self.thread_id is None or self.read_only:
             return None
         return pending_request(self.graph, self.thread_id)
 
@@ -107,7 +138,47 @@ class RunController:
             return {}
         return load_state(self.graph, self.thread_id) or {}
 
+    def list_runs(self) -> list[dict]:
+        """Corridas guardadas en `data/corridas.sqlite` (de esta pantalla o de un script), la más reciente primero."""
+        path = self.data_dir / "corridas.sqlite"
+        if not path.exists():
+            return []
+        try:
+            with closing(sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True)) as conn:
+                rows = conn.execute(
+                    "SELECT thread_id FROM checkpoints GROUP BY thread_id ORDER BY MAX(checkpoint_id) DESC"
+                ).fetchall()
+        except sqlite3.OperationalError:  # el archivo existe pero todavía no se guardó ninguna corrida
+            return []
+        runs = []
+        for (thread_id,) in rows:
+            snapshot = self.graph.get_state({"configurable": {"thread_id": thread_id}})
+            values = snapshot.values or {}
+            runs.append(
+                {
+                    "thread_id": thread_id,
+                    "status": values.get("status", "?"),
+                    "tokens": values.get("tokens", 0),
+                    "items": len((values.get("board") or {}).get("items", {})),
+                    "waiting": any(task.interrupts for task in snapshot.tasks),
+                    "created_at": (snapshot.created_at or "")[:19].replace("T", " "),
+                }
+            )
+        return runs
+
+    def open_run(self, thread_id: str) -> None:
+        """Muestra una corrida guardada, solo para leer: no se puede decidir ni reanudar desde acá."""
+        if self.running:
+            raise RuntimeError("No se puede abrir otra corrida mientras hay una en curso.")
+        if not (self.graph.get_state({"configurable": {"thread_id": thread_id}}).values or {}):
+            raise KeyError(f"No existe la corrida {thread_id}.")
+        self.thread_id, self.read_only = thread_id, True
+        self.events, self.backlog_before, self.error = [], [], None
+        self.deps.backlog.reload()
+
     def activity(self, limit: int = 400) -> list[str]:
+        if self.read_only:
+            return format_trace(self.state().get("trace", []))
         with self._lock:
             events = list(self.events[-limit:])
         return [line for event in events if (line := format_event(event))]

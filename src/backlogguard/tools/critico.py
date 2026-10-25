@@ -105,7 +105,7 @@ class CriticToolkit:
         own = {citation.fragment_id for citation in item.citations}
         cited_on = max(citation.source_date for citation in item.citations) if item.citations else None
         query = args.get("query") or f"{item.title}. {item.description}"
-        found = self.retriever.search(query, top_k=args["top_k"] + len(own))
+        found = self.retriever.hybrid_search(query, top_k=args["top_k"] + len(own))
         fragments = [
             {
                 "chunk_id": r.chunk_id,
@@ -114,6 +114,7 @@ class CriticToolkit:
                 "tipo": r.metadata.get("source_type"),
                 "fecha": r.metadata.get("source_date"),
                 "orador": r.metadata.get("speaker"),
+                "pagina": r.page,
                 "mas_reciente_que_la_cita": bool(cited_on and str(r.metadata.get("source_date")) > cited_on.isoformat()),
                 "score": round(r.score, 3),
             }

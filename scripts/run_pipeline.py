@@ -27,7 +27,7 @@ from backlogguard.llm import Settings
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
-OBJECTIVE = "Armá el backlog del portal de autoservicio de ACME a partir de las reuniones y auditalo contra la preventa."
+OBJECTIVE = "Armá el backlog a partir de las reuniones y auditalo contra la preventa."
 
 
 def show_backlog(backlog, title: str) -> None:

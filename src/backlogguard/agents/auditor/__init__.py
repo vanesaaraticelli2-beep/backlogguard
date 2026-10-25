@@ -41,10 +41,10 @@ def run_auditor(
     memory: ProjectMemory,
     approved_by: str | None = None,
     run_id: str = "run-local",
-    max_steps: int = 8,
-    max_seconds: float = 300.0,
-    max_tool_calls: int = 6,
-    max_tokens: int = 60_000,
+    max_steps: int = 10,
+    max_seconds: float = 600.0,
+    max_tool_calls: int = 8,
+    max_tokens: int = 200_000,
     on_event: Callable[[dict], None] | None = None,
 ) -> AuditRun:
     """Corre al Auditor sobre todo el proyecto. No aplica el informe: eso lo hace `apply_report`."""
@@ -60,7 +60,7 @@ def run_auditor(
         context,
         policy,
         instructions=instructions,
-        max_observation_chars=12_000,
+        max_observation_chars=60_000,
     )
     outcome = run_basic_agent(
         GOAL,

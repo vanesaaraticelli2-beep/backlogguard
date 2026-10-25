@@ -25,7 +25,7 @@ class _Args(BaseModel):
 
 
 class CompareArgs(_Args):
-    matches_per_point: int = Field(default=3, ge=1, le=5)
+    matches_per_point: int = Field(default=2, ge=1, le=5)
 
 
 class ContradictionArgs(_Args):
@@ -46,6 +46,24 @@ class RegisterDecisionArgs(_Args):
     supersedes: str | None = Field(default=None, description="id de la decisión vigente que reemplaza")
 
 
+TEXT_LIMIT = 300  # una fuente grande no debe desbordar lo que el modelo puede leer en una observación
+
+
+def _clip(text: str, limit: int = TEXT_LIMIT) -> str:
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def _compact(result: SearchResult) -> dict:
+    """Lo mínimo para comparar documentos grandes: el id ya dice de qué fuente es, y el texto va recortado."""
+    data = {"chunk_id": result.chunk_id}
+    if result.page:
+        data["pagina"] = result.page
+    if result.metadata.get("speaker"):
+        data["orador"] = result.metadata["speaker"]
+    data["texto"] = _clip(result.text)
+    return data
+
+
 def _fragment(result: SearchResult, *, with_text: bool = True) -> dict:
     data = {
         "chunk_id": result.chunk_id,
@@ -53,8 +71,10 @@ def _fragment(result: SearchResult, *, with_text: bool = True) -> dict:
         "fecha": result.metadata.get("source_date"),
         "orador": result.metadata.get("speaker"),
     }
+    if result.page:
+        data["pagina"] = result.page
     if with_text:
-        data["texto"] = result.text
+        data["texto"] = _clip(result.text)
     return data
 
 
@@ -102,11 +122,11 @@ class AuditorToolkit:
                 for item in self.board.items.values()
             ],
             "preventa": [
-                {**_fragment(c), "mejores_coincidencias": best(c.text, meetings, args["matches_per_point"])}
+                {**_compact(c), "mejores_coincidencias": best(c.text, meetings, args["matches_per_point"])}
                 for c in selling
             ],
             "reuniones": [
-                {**_fragment(c), "mejor_preventa": (best(c.text, selling, 1) or [None])[0]} for c in meetings
+                {**_compact(c), "mejor_preventa": (best(c.text, selling, 1) or [None])[0]} for c in meetings
             ],
         }
         return ToolResult(ok=True, content=json.dumps(report, ensure_ascii=False), metadata={"preventa": len(selling)})

@@ -26,7 +26,7 @@ def raw_config() -> dict:
 
 def test_el_models_yaml_real_carga():
     config = load_models_config(MODELS_YAML)
-    assert config.for_role(AgentRole.REQUERIMIENTOS).model == "claude-haiku-5-5"  # temporal, ver models.yaml
+    assert config.for_role(AgentRole.REQUERIMIENTOS).model == "claude-sonnet-5-5"  # ver models.yaml
     assert config.for_role(AgentRole.CRITICO).model == "claude-opus-5-5"
 
 

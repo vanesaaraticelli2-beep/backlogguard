@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable
 
+from backlogguard.board import SourceType
 from backlogguard.graph.budgets import load_budget
 from backlogguard.graph.builder import build_graph, sqlite_checkpointer
 from backlogguard.graph.deps import Providers, RunDeps, build_providers
@@ -20,6 +21,21 @@ from backlogguard.rag import DeterministicLexicalEmbeddings, InMemoryRetriever, 
 from backlogguard.tools import load_policy_config
 
 
+USER_SOURCES = "fuentes"
+
+
+def user_sources_dir(data_dir: Path) -> Path:
+    return data_dir / USER_SOURCES
+
+
+def has_user_sources(directory: Path) -> bool:
+    """¿Hay fuentes propias utilizables? Hace falta al menos una preventa y una reunión o minuta."""
+    if not directory.is_dir():
+        return False
+    kinds = {metadata.source_type for _, metadata in SourceLibrary(directory).describe()}
+    return SourceType.PREVENTA in kinds and bool(kinds & {SourceType.REUNION, SourceType.MINUTA})
+
+
 def build_run_deps(
     root: Path,
     settings: Settings,
@@ -27,19 +43,24 @@ def build_run_deps(
     data_dir: Path | None = None,
     providers: Providers | None = None,
     replay: Path | None = None,
+    sources_dir: Path | None = None,
+    max_items: int | None = None,
     on_event: Callable[[dict], None] | None = None,
 ) -> RunDeps:
     data = data_dir or root / "data"
     data.mkdir(parents=True, exist_ok=True)
     if providers is None and replay is not None:  # modo demo: se repiten las respuestas de una corrida grabada
         providers = replay_providers(Recording.load(replay))
+    budget = load_budget(root / "config" / "budgets.yaml")
+    if max_items is not None:
+        budget = budget.model_copy(update={"max_items_to_review": max(budget.max_items_to_review, max_items)})
     return RunDeps(
         providers=providers or build_providers(load_models_config(root / "config" / "models.yaml"), settings),
-        library=SourceLibrary(root / "evals" / "fixtures"),
+        library=SourceLibrary(sources_dir or root / "evals" / "fixtures"),
         retriever=InMemoryRetriever(DeterministicLexicalEmbeddings()),
         memory=ProjectMemory(data / "memoria.sqlite", settings.azdo_project.lower()),
         policy=load_policy_config(root / "config" / "policy.yaml"),
-        budget=load_budget(root / "config" / "budgets.yaml"),
+        budget=budget,
         backlog=SimulatedBacklog(data / "backlog_simulado.json"),
         ledger=PublicationLedger(data / "publicaciones.sqlite"),
         project=settings.azdo_project,

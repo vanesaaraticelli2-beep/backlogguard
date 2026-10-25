@@ -55,7 +55,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("corrida")
     parser.add_argument("--accion", choices=["approve", "edit", "reject"])
-    parser.add_argument("--como", help="nombre de la persona (por defecto, la primera con el rol que decide)")
+    parser.add_argument("--como", help="rol con el que decidís (por defecto, el rol que decide el pedido)")
     parser.add_argument("--comentario", default="")
     parser.add_argument("--editar", action="append", default=[], metavar="CAMPO=VALOR")
     options = parser.parse_args()

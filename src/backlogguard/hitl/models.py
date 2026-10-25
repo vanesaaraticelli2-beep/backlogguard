@@ -36,6 +36,7 @@ class Evidence(BaseModel):
     source_name: str
     source_date: str
     speaker: str | None = None
+    page: int | None = None
 
 
 class DecisionRequest(BaseModel):

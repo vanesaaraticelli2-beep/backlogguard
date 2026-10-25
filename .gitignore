@@ -8,3 +8,6 @@ __pycache__/
 *.db
 Curso ITBA/
 data/
+
+# Documentos reales del usuario (no se versionan)
+entrada/

@@ -1,12 +1,13 @@
-# Personas que pueden decidir (simulado: no hay autenticación; se elige en la pantalla).
-# El rol debe coincidir con el que fija config/policy.yaml para cada decisión.
+# Roles con los que se puede decidir. Es genérico: no hay nombres de personas ni autenticación.
+# `name` es lo que queda en el registro de auditoría como quien decidió; `role` debe coincidir con el que
+# fija config/policy.yaml para cada decisión (quién aprueba un cambio de alcance, un desacuerdo o el plan).
 people:
-  - name: sergio
-    display: Sergio (Service Manager)
+  - name: service_manager
+    display: Service Manager
     role: service_manager
-  - name: laura
-    display: Laura (Product Owner)
+  - name: product_owner
+    display: Product Owner
     role: product_owner
-  - name: vanesa
-    display: Vanesa (Full Stack IA Engineer)
+  - name: full_stack_ia_engineer
+    display: Full Stack IA Engineer
     role: full_stack_ia_engineer

@@ -47,11 +47,12 @@ Los desacuerdos sobre ítems se resuelven **antes** de armar el plan, para que u
 
 | ID | Requisito | Test que lo verifica |
 |---|---|---|
-| UI-01 | La persona elige quién es (`config/people.yaml`: nombre y rol) y solo ve los pedidos que le corresponden. | `test_cada_persona_ve_solo_sus_pedidos` |
+| UI-01 | La persona elige con qué rol actúa (`config/people.yaml`, genérico: solo roles, sin nombres) y solo ve los pedidos que le corresponden. | `test_cada_persona_ve_solo_sus_pedidos` |
 | UI-02 | Cada pedido muestra el resumen, la evidencia con sus citas (frase, reunión, fecha y orador) y las acciones aprobar, editar y rechazar con comentario. | `test_el_pedido_muestra_la_evidencia_y_las_acciones` |
 | UI-03 | Decidir en la pantalla reanuda la corrida y el pedido desaparece de la lista. | `test_decidir_en_la_pantalla_reanuda_la_corrida`, `test_el_recorrido_completo_desde_la_pantalla` |
 | UI-04 | La actividad de los agentes se ve mientras ocurre (decisiones, tools y resultados) y el tablero muestra ítems, estados, objeciones y hallazgos. | `test_la_pantalla_muestra_la_actividad_y_el_tablero` |
 | UI-05 | El backlog simulado se ve antes y después de publicar. | `test_el_backlog_simulado_se_ve_antes_y_despues` |
+| UI-06 | Las corridas guardadas (de la pantalla o de un script) se listan y se pueden abrir en solo lectura: tablero con citas y páginas, hallazgos, registro de decisiones, plan y backlog resultante; no se puede decidir ni reanudar desde ahí. La actividad paso a paso no se guarda: se muestra el recorrido por etapa. | `test_la_pantalla_abre_una_corrida_guardada_en_solo_lectura`, `test_una_corrida_guardada_se_abre_desde_otro_proceso_en_solo_lectura`, `test_iniciar_una_corrida_nueva_sale_del_modo_de_solo_lectura`, `test_la_traza_guardada_se_muestra_por_etapa`, `test_el_backlog_simulado_vuelve_a_leer_el_archivo` |
 
 ## Modo demo sin costo (grabación y reproducción)
 Una corrida real puede grabarse (las respuestas de cada modelo, en orden) y reproducirse después con proveedores guionados: mismo recorrido, sin red ni costo, determinístico. Sirve para la demo estable y el video de respaldo.

@@ -29,6 +29,10 @@ class SimulatedBacklog:
         self._items: dict[int, WorkItem] = {}
         self._next_id = FIRST_ID
         self.writes = 0  # cantidad de escrituras aplicadas (útil para probar que el dry-run no escribe)
+        self.reload()
+
+    def reload(self) -> None:
+        """Vuelve a leer el archivo: otro proceso (otra corrida) pudo haber publicado desde que se abrió."""
         if self.path and self.path.exists():
             data = json.loads(self.path.read_text(encoding="utf-8"))
             self._items = {item["id"]: WorkItem(**item) for item in data["items"]}

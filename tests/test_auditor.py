@@ -108,7 +108,7 @@ def test_comparar_preventa_devuelve_evidencia_en_ambos_sentidos(retriever, board
     matched = {m["chunk_id"] for m in erp_point["mejores_coincidencias"]}
     assert all("ERP" not in chunk_text for chunk_text in (retriever.get(m).text for m in matched))
     mobile = next(r for r in report["reuniones"] if "app móvil" in r["texto"])
-    assert mobile["mejor_preventa"]["chunk_id"] and mobile["fecha"] == "2026-03-30"
+    assert mobile["mejor_preventa"]["chunk_id"] and mobile["chunk_id"].startswith("reunion_02_seguimiento")  # el id dice la fuente
 
 
 def test_contradicciones_agrupa_por_tema_y_ordena_por_fecha(retriever, board, memory):
@@ -198,27 +198,27 @@ def decision_args(retriever, **overrides):
 def test_registrar_decision_exige_aprobacion_humana(retriever, board, memory):
     denied = run_tool(retriever, board, memory, "registrar_decision_aprobada", **decision_args(retriever))
     assert denied.metadata["error_type"] == "authorization_error" and memory.current_decisions() == []
-    approved = run_tool(retriever, board, memory, "registrar_decision_aprobada", approved_by="sergio", **decision_args(retriever))
+    approved = run_tool(retriever, board, memory, "registrar_decision_aprobada", approved_by="service_manager", **decision_args(retriever))
     assert approved.ok, approved.content
     (saved,) = memory.current_decisions()
-    assert saved["value"]["approved_by"] == "sergio" and saved["value"]["speaker"] == "Marcos (Cliente)"
+    assert saved["value"]["approved_by"] == "service_manager" and saved["value"]["speaker"] == "Marcos (Cliente)"
     assert saved["value"]["decided_on"] == "2026-03-30"
 
 
 def test_modelo_no_puede_inventar_approved_by(retriever, board, memory):
     result = run_tool(retriever, board, memory, "registrar_decision_aprobada", approved_by_model="yo", **decision_args(retriever))
     assert result.metadata["error_type"] == "validation_error"
-    forged = run_tool(retriever, board, memory, "registrar_decision_aprobada", approved_by="sergio", **decision_args(retriever, quote="lo queremos en Word"))
+    forged = run_tool(retriever, board, memory, "registrar_decision_aprobada", approved_by="service_manager", **decision_args(retriever, quote="lo queremos en Word"))
     assert forged.metadata["error_type"] == "quote_not_found" and memory.current_decisions() == []
 
 
 def test_decision_nueva_reemplaza_a_la_vigente(retriever, board, memory):
     first = run_tool(
-        retriever, board, memory, "registrar_decision_aprobada", approved_by="sergio",
+        retriever, board, memory, "registrar_decision_aprobada", approved_by="service_manager",
         **decision_args(retriever, key="formato-reporte", decision="El reporte mensual se entrega en PDF.",
                         fragment_id=chunk(retriever, "reunion_01_kickoff", "PDF").chunk_id, quote="lo necesitamos en PDF"),
     )
-    run_tool(retriever, board, memory, "registrar_decision_aprobada", approved_by="sergio",
+    run_tool(retriever, board, memory, "registrar_decision_aprobada", approved_by="service_manager",
              **decision_args(retriever, key="formato-reporte", supersedes=first.metadata["memory_id"]))
     vigentes = json.loads(run_tool(retriever, board, memory, "consultar_decisiones_vigentes").content)
     assert [d["decision"] for d in vigentes] == ["El reporte mensual se entrega en Excel."]
@@ -339,7 +339,7 @@ def test_hallazgos_se_agrupan_por_item_y_los_humanos_no_van_al_productor(retriev
 def test_un_item_aprobado_no_se_reabre_y_va_al_supervisor(retriever):
     board = Board()
     item = pdf_item(retriever)
-    item.transition_to(ItemState.APROBADO, actor="laura")
+    item.transition_to(ItemState.APROBADO, actor="product_owner")
     board.add_item(item)
     (finding,) = apply_report(AuditReport(findings=[evolution_draft(retriever)]), board, retriever).applied
     assert finding.addressee is AgentRole.SUPERVISOR and item.state is ItemState.APROBADO and item.objections == []

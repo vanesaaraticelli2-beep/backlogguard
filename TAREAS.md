@@ -143,7 +143,7 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 
 **Etapa 10a · núcleo del HITL — [x]**
 - [x] Contratos (`hitl/models.py`) — `DecisionRequest` (con versión y hash del contenido), `HumanDecision` (aprobar, editar o rechazar, con persona, rol, versión y hash) y `DecisionRecord` (registro de auditoría).
-- [x] Personas y roles (`config/people.yaml`) — sergio (service manager), laura (product owner) y vanesa (full stack IA engineer). Sin autenticación real: se declara como limitación.
+- [x] Roles (`config/people.yaml`) — service manager, product owner y full stack IA engineer. Es genérico: sin nombres de personas y sin autenticación real (se declara como limitación).
 - [x] Agrupación de hallazgos (`hitl/grouping.py`) — los que comparten citas son un único pedido; si el grupo mezcla razones prima la del service manager. En la última corrida real, 5 pedidos de decisión habrían sido 3.
 - [x] Validación (`hitl/logic.py`) — solo decide el rol de la política, la decisión debe llevar la versión y el hash vigentes, y solo se editan los campos permitidos con datos válidos.
 - [x] Efectos idempotentes — desacuerdo sobre un ítem (aprobar → sustentado, rechazar → excluido, editar → ítem corregido) y decisiones de alcance (se registran en la memoria del proyecto con quién las aprobó).
@@ -167,6 +167,23 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Pendiente: ver la pantalla en un navegador real (las pruebas automáticas cubren el comportamiento, no el aspecto).
 - [ ] Observación: el agente de Integración llamó una vez a `buscar_en_backlog` sin parámetros (error controlado y se recuperó); a medir en la evaluación.
 
+
+## Extra · Carga de fuentes propias (preventa en PDF y transcripción) — [x] (falta commit)
+**Objetivo:** correr el sistema con documentos reales en lugar de los de ejemplo.
+
+- [x] Importador de PDF (`rag/importers.py`) — texto por página con el número de página; rechaza PDF escaneados, dañados, protegidos o demasiado grandes. Limpia el ruido que dejan las presentaciones («Icono / Descripción generada automáticamente»).
+- [x] Importador de transcripciones — UTF-8 o Latin-1; formatos `Nombre: texto`, `[00:12:30] Nombre: texto` y `Nombre 00:12` con el texto debajo; lee el bloque «Participantes» para darle rol a cada orador; el encabezado no se confunde con la conversación; las notas del que tomó la minuta se conservan como «Nota de la minuta».
+- [x] Fragmentado por páginas (preventa) y por diálogo (reunión) — la preventa no se divide por «orador» y las citas muestran la página.
+- [x] Búsqueda híbrida BM25 + embeddings con fusión RRF (clase 8) — la búsqueda del productor y del Crítico ahora encuentra lo relevante con documentos reales.
+- [x] Pestaña «Fuentes» en la pantalla y `scripts/importar_fuentes.py` por terminal; fuentes en `data/fuentes/` (no se suben a git).
+- [x] Con fuentes propias: sin work items de ejemplo, tope de historias (12 por defecto), aviso de costo y bloqueo si no hay modelos reales.
+- [x] Presupuestos ajustados para documentos reales (productor, Auditor y corrida) y salida del Auditor recortada para que quepa en lo que puede leer.
+- [x] Tests (321 en total), incluidos los que usan los archivos reales si están en `entrada/`; especificación `docs/specs/fuentes.md` al día.
+- [x] Pestaña «Corridas guardadas»: lista las corridas de `data/corridas.sqlite` (de la pantalla o de un script) y abre una en solo lectura, con el backlog resultante actualizado. Error corregido: la lista fallaba si el archivo existía pero no había corridas.
+- [x] Roles genéricos (sin nombres de personas) y objetivo genérico (sin «portal de ACME»).
+- [x] Corrida real con la preventa y la transcripción de Infobae (2026-10-25, `corrida-2571a98b`, 12,7 min, 564 mil tokens de un tope de 600 mil, estado `publicada`): 4 historias con citas verificadas (3 publicadas, 1 omitida por duplicada), 6 hallazgos reales del Auditor y 8 pedidos de decisión (aprobados automáticamente por el script).
+- [ ] Hallazgos de esa corrida a resolver: (1) el productor (Haiku) redactó solo 4 historias de al menos 8 requisitos distintos de la reunión; (2) los cambios de alcance que detecta el Auditor (domicilio comercial, roles y permisos, historial de reintentos, destinatarios parametrizables) se aprueban pero nadie los convierte en historias; (3) dos historias casi iguales no se fusionaron tras 2 rondas; (4) la cita de un diálogo lista a todos los oradores del fragmento en lugar de quien dijo la frase; (5) el productor reescribía una historia varias veces seguidas (acotado en `revise_item`).
+- [ ] Commit y push (cuando se pida).
 
 ## Día 11 · Skills y contexto (esquema)
 **Objetivo:** darle a cada agente solo el conocimiento y el contexto que necesita, sin sobrecargarlo.
@@ -195,6 +212,6 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Video de respaldo de 3 a 5 minutos — se graba temprano, por si la demo en vivo falla.
 
 ## Decisiones abiertas
-- [ ] **Productor con Haiku (temporal, 2026-10-25):** reemplaza a `gemini-3.8-flash` por la cuota gratuita. Resolver: volver a Gemini con facturación, o dejar Haiku/otro respaldo. Con Haiku, productor y Crítico son del mismo proveedor (distinto modelo): revisar la independencia en la evaluación.
+- [x] **Productor con Sonnet (2026-10-25):** reemplaza a Haiku (que cubrió 4 de al menos 8 requisitos en la prueba real) y a Gemini (cuota gratuita). Productor y Crítico siguen siendo del mismo proveedor (distinto modelo): revisar la independencia y comparar modelos en la evaluación (Día 13).
 - [~] MCP para Azure DevOps: **diferido** (2026-10-25). Se avanza con el modo simulado, detrás de una interfaz (`BacklogGateway`) para enchufar MCP después de las clases de noviembre. El servidor oficial (`@azure-devops/mcp`) exige una cuenta con Entra ID.
 - [ ] Embeddings reales (`sentence-transformers`): decidir en la evaluación

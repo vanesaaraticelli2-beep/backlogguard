@@ -35,7 +35,7 @@ def make_item(item_id, title, *, kind=ItemKind.HISTORIA, state=ItemState.SUSTENT
     if state is not ItemState.BORRADOR:
         item.state = state if state is not ItemState.APROBADO else ItemState.SUSTENTADO
         if state is ItemState.APROBADO:
-            item.transition_to(ItemState.APROBADO, actor="sergio")
+            item.transition_to(ItemState.APROBADO, actor="service_manager")
     return item
 
 
@@ -154,7 +154,7 @@ def test_aprobar_los_items_no_cambia_el_hash(env):
     board, _, service, _ = env
     add(board, make_item("HU-A", "Listado de pedidos con filtros"))
     before = service.build().plan_hash
-    board.items["HU-A"].transition_to(ItemState.APROBADO, actor="sergio")
+    board.items["HU-A"].transition_to(ItemState.APROBADO, actor="service_manager")
     assert service.build().plan_hash == before
 
 
@@ -225,8 +225,8 @@ def test_repetir_la_ejecucion_no_duplica(env):
     board, backlog, service, _ = env
     add(board, make_item("HU-A", "Listado de pedidos con filtros"), make_item("HU-B", "Reporte mensual en Excel"))
     plan = service.arm()
-    first = execute_approved_plan(plan.plan_hash, service=service, approved_by="sergio")
-    second = execute_approved_plan(plan.plan_hash, service=service, approved_by="sergio")
+    first = execute_approved_plan(plan.plan_hash, service=service, approved_by="service_manager")
+    second = execute_approved_plan(plan.plan_hash, service=service, approved_by="service_manager")
     assert first.ok and second.ok and len(backlog.search()) == 2 and backlog.writes == 2
     assert {r.outcome for r in second.results} == {"ya_publicado"}
 
@@ -237,9 +237,9 @@ def test_resultado_ambiguo_no_duplica(tmp_path):
     service = PublishService(board, backlog, PublicationLedger(tmp_path / "p.sqlite"), "ACME")
     add(board, make_item("HU-A", "Listado de pedidos con filtros"))
     plan = service.arm()
-    first = execute_approved_plan(plan.plan_hash, service=service, approved_by="sergio")
+    first = execute_approved_plan(plan.plan_hash, service=service, approved_by="service_manager")
     assert not first.ok and len(backlog.search()) == 1  # se creó, pero se perdió la respuesta
-    retry = execute_approved_plan(plan.plan_hash, service=service, approved_by="sergio")
+    retry = execute_approved_plan(plan.plan_hash, service=service, approved_by="service_manager")
     assert retry.ok and [r.outcome for r in retry.results] == ["recuperado"] and len(backlog.search()) == 1
 
 
@@ -249,7 +249,7 @@ def test_los_padres_van_antes_que_los_hijos(env):
     add(board, make_item("AA-1", "Portal de autoservicio", kind=ItemKind.EPICA), make_item("HU-1", "Listado de pedidos con filtros", parent="AA-1"))
     plan = service.arm()
     assert [i.item_id for i in plan.items] == ["AA-1", "HU-1"]
-    assert execute_approved_plan(plan.plan_hash, service=service, approved_by="sergio").ok
+    assert execute_approved_plan(plan.plan_hash, service=service, approved_by="service_manager").ok
     epic, story = backlog.search(tag="bg-item:AA-1")[0], backlog.search(tag="bg-item:HU-1")[0]
     assert story.parent_id == epic.id and epic.id < story.id
 
@@ -262,11 +262,11 @@ def test_un_fallo_parcial_se_detiene_y_se_reporta(tmp_path):
     plan = service.arm()
     backlog.failures = ["create_error"]
     # el primer create consume el fallo: no se publica nada y los demás quedan sin publicar
-    first = execute_approved_plan(plan.plan_hash, service=service, approved_by="sergio")
+    first = execute_approved_plan(plan.plan_hash, service=service, approved_by="service_manager")
     assert not first.ok and [r.outcome for r in first.results] == ["error", "no_publicado", "no_publicado"]
     assert backlog.search() == []
     # el reintento retoma desde donde quedó
-    retry = execute_approved_plan(plan.plan_hash, service=service, approved_by="sergio")
+    retry = execute_approved_plan(plan.plan_hash, service=service, approved_by="service_manager")
     assert retry.ok and len(backlog.search()) == 3
 
 
@@ -286,10 +286,10 @@ def test_un_fallo_a_mitad_conserva_lo_ya_publicado(tmp_path):
         return original_create(**kwargs)
 
     backlog.create = flaky
-    report = execute_approved_plan(plan.plan_hash, service=service, approved_by="sergio")
+    report = execute_approved_plan(plan.plan_hash, service=service, approved_by="service_manager")
     assert not report.ok and [r.outcome for r in report.results] == ["publicado", "error"] and len(backlog.search()) == 1
     backlog.create = original_create
-    retry = execute_approved_plan(plan.plan_hash, service=service, approved_by="sergio")
+    retry = execute_approved_plan(plan.plan_hash, service=service, approved_by="service_manager")
     assert retry.ok and [r.outcome for r in retry.results] == ["ya_publicado", "publicado"] and len(backlog.search()) == 2
 
 
@@ -381,7 +381,7 @@ def test_el_plan_no_publica_dos_items_casi_iguales(env):
     plan = service.arm()
     assert actions(plan) == {"HU-1": "crear", "HU-2": "omitir", "HU-3": "crear"}
     assert "HU-1" in next(i.reason for i in plan.items if i.item_id == "HU-2")
-    assert execute_approved_plan(plan.plan_hash, service=service, approved_by="sergio").ok and len(backlog.search()) == 2
+    assert execute_approved_plan(plan.plan_hash, service=service, approved_by="service_manager").ok and len(backlog.search()) == 2
 
 
 def test_un_proyecto_vacio_en_el_env_usa_el_valor_por_defecto():

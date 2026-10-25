@@ -225,3 +225,17 @@ def test_revises_rechaza_items_inexistentes_o_no_objetados():
     args = draft_args(email_chunk(retriever))
     assert call(registry, policy, "redactar_historia", **{**args, "revises": "HU-nada"}).metadata["error_type"] == "unknown_item"
     assert call(registry, policy, "redactar_historia", **{**args, "revises": item.id}).metadata["error_type"] == "not_revisable"
+
+
+def test_corregir_un_item_tiene_un_tope_corto_de_pasos():
+    from backlogguard.agents.requerimientos import revise_item
+    from backlogguard.board import Objection
+
+    toolkit, retriever, board = make_toolkit()
+    registry, policy, item = objected_item(toolkit, retriever, board)
+    item.transition_to(ItemState.OBJETADO)
+    item.add_objection(Objection(id="O1", raised_by=AgentRole.CRITICO, text="Falta precisar el plazo.", round=1))
+    again = tool("redactar_historia", **draft_args(email_chunk(retriever), revises=item.id))
+    provider = FakeProvider(delay_seconds=0, responses=[again] * 15)  # un modelo que no deja de reescribir
+    outcome = revise_item(item.id, ["Falta precisar el plazo."], provider=provider, library=SourceLibrary(FIXTURES), retriever=retriever, board=board)
+    assert outcome["stop_reason"] in ("budget", "max_steps") and len(provider.prompts) <= 9  # se corta, no reescribe sin fin

@@ -88,7 +88,7 @@ def test_la_grabacion_de_la_demo_se_reproduce_de_punta_a_punta(tmp_path):
     controller = RunController(ROOT, Settings(live_mode=False), tmp_path / "datos", DEFAULT_RECORDING)
     controller.start()
     assert controller.wait(60)
-    roles = {"service_manager": "sergio", "product_owner": "laura", "full_stack_ia_engineer": "vanesa"}
+    roles = {"service_manager": "service_manager", "product_owner": "product_owner", "full_stack_ia_engineer": "full_stack_ia_engineer"}
     for _ in range(12):
         payload = controller.pending()
         if payload is None:
@@ -104,3 +104,88 @@ def test_la_grabacion_de_la_demo_se_reproduce_de_punta_a_punta(tmp_path):
     assert state["publication"]["ok"] and any(r["outcome"] == "publicado" for r in state["publication"]["results"])
     assert len(controller.deps.backlog.search()) > len(controller.backlog_before)
     controller.close()
+
+
+# ---- corridas guardadas (abrir una corrida anterior, solo lectura) ----
+
+
+def finish_with_roles(controller):
+    for _ in range(12):
+        payload = controller.pending()
+        if payload is None:
+            break
+        request = payload["request"]
+        controller.decide({
+            "decision": "approve", "actor": request["decides"], "actor_role": request["decides"],
+            "request_id": request["request_id"], "request_version": request["version"], "args_hash": request["args_hash"],
+        })
+        assert controller.wait(60)
+
+
+def test_una_corrida_guardada_se_abre_desde_otro_proceso_en_solo_lectura(tmp_path):
+    import pytest
+
+    from backlogguard.llm import Settings
+    from backlogguard.ui.controller import RunController
+    from backlogguard.ui.runtime import ROOT
+
+    recording, _ = record_run(tmp_path)
+    recording.save(tmp_path / "demo.json")
+    data = tmp_path / "datos"
+    viewer = RunController(ROOT, Settings(live_mode=False), data)  # «otro proceso»: se abrió antes de que la corrida terminara
+    assert viewer.list_runs() == [] and viewer.deps.backlog.search() == []
+
+    runner = RunController(ROOT, Settings(live_mode=False), data, tmp_path / "demo.json")
+    thread_id = runner.start()
+    assert runner.wait(60)
+    finish_with_roles(runner)
+    assert runner.state()["status"] == "publicada"
+
+    (saved,) = viewer.list_runs()
+    assert saved["thread_id"] == thread_id and saved["status"] == "publicada" and saved["items"] >= 1 and not saved["waiting"]
+    viewer.open_run(thread_id)
+    state = viewer.state()
+    assert viewer.read_only and state["summary"] and state["decisions"] and viewer.pending() is None
+    assert viewer.deps.backlog.search()  # vuelve a leer lo que publicó el otro proceso
+    lines = viewer.activity()
+    assert any("Requerimientos redacta" in line for line in lines) and any("Se aprueba el plan" in line for line in lines)
+    with pytest.raises(RuntimeError, match="solo lectura"):
+        viewer.decide({"decision": "approve"})
+    with pytest.raises(KeyError):
+        viewer.open_run("corrida-que-no-existe")
+    runner.close()
+
+
+def test_iniciar_una_corrida_nueva_sale_del_modo_de_solo_lectura(tmp_path):
+    from backlogguard.llm import Settings
+    from backlogguard.ui.controller import RunController
+    from backlogguard.ui.runtime import ROOT
+
+    controller = RunController(ROOT, Settings(live_mode=False), tmp_path / "datos")
+    first = controller.start()
+    assert controller.wait(60)
+    controller.open_run(first)
+    assert controller.read_only
+    second = controller.start()
+    assert controller.wait(60)
+    assert not controller.read_only and second != first and {r["thread_id"] for r in controller.list_runs()} == {first, second}
+    controller.close()
+
+
+def test_el_backlog_simulado_vuelve_a_leer_el_archivo(tmp_path):
+    from backlogguard.integrations import SimulatedBacklog
+
+    path = tmp_path / "backlog.json"
+    reader, writer = SimulatedBacklog(path), SimulatedBacklog(path)
+    writer.create(type="User Story", title="Algo publicado", description="", acceptance_criteria=[], tags=[], parent_id=None)
+    assert reader.search() == []
+    reader.reload()
+    assert [w.title for w in reader.search()] == ["Algo publicado"]
+
+
+def test_la_traza_guardada_se_muestra_por_etapa():
+    from backlogguard.graph.live import format_trace
+
+    lines = format_trace([{"node": "plan", "used_default": False, "sources": ["a"]}, {"node": "escalate", "requests": 3, "status": "x"}, {"node": "raro"}])
+    assert lines[0].startswith("▶ Supervisor planifica") and "sources" in lines[0]
+    assert "requests=3" in lines[1] and lines[2] == "▶ raro"

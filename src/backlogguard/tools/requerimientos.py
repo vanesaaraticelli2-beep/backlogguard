@@ -117,7 +117,7 @@ class RequirementsToolkit:
             filters["source_type"] = args["source_type"].value if hasattr(args["source_type"], "value") else args["source_type"]
         if args.get("document_id"):
             filters["document_id"] = args["document_id"]
-        results = self.retriever.search(args["query"], top_k=args["top_k"], filters=filters or None)
+        results = self.retriever.hybrid_search(args["query"], top_k=args["top_k"], filters=filters or None)
         fragments = [
             {
                 "chunk_id": r.chunk_id,
@@ -126,6 +126,7 @@ class RequirementsToolkit:
                 "tipo": r.metadata.get("source_type"),
                 "fecha": r.metadata.get("source_date"),
                 "orador": r.metadata.get("speaker"),
+                "pagina": r.page,
                 "score": round(r.score, 3),
             }
             for r in results
@@ -150,6 +151,7 @@ class RequirementsToolkit:
                     source_type=fragment.metadata["source_type"],
                     source_date=fragment.metadata["source_date"],
                     speaker=fragment.metadata.get("speaker"),
+                    page=fragment.page,
                 )
             )
         if args.get("revises"):

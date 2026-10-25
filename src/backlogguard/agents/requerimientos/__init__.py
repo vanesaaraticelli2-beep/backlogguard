@@ -23,10 +23,10 @@ def run_requerimientos(
     retriever: InMemoryRetriever | QdrantRetriever,
     board: Board,
     run_id: str = "run-local",
-    max_steps: int = 14,
-    max_seconds: float = 180.0,
-    max_tool_calls: int = 20,
-    max_tokens: int = 60_000,
+    max_steps: int = 40,
+    max_seconds: float = 900.0,
+    max_tool_calls: int = 50,
+    max_tokens: int = 150_000,
     on_event: Callable[[dict], None] | None = None,
 ) -> dict:
     """Corre al agente sobre un tablero y devuelve respuesta, traza, stop reason y tokens."""
@@ -65,6 +65,9 @@ def revise_item(item_id: str, objections: list[str], **kwargs) -> dict:
         f"El Crítico objetó el ítem {item_id}. Objeciones:\n{listed}\n"
         f'Corregilo con redactar_historia usando revises="{item_id}" (mismo tipo, con título, descripción, '
         "criterios Gherkin y citas corregidos). Podés buscar en las fuentes antes. Si la objeción no tiene "
-        "solución con las fuentes, explicalo en tu respuesta final sin inventar nada."
+        "solución con las fuentes, explicalo en tu respuesta final sin inventar nada. Corregilo UNA sola vez y terminá."
     )
+    # Corregir un ítem es una tarea corta: sin tope, el modelo puede reescribirlo una y otra vez.
+    for name, limit in (("max_steps", 8), ("max_tool_calls", 8), ("max_tokens", 40_000), ("max_seconds", 240.0)):
+        kwargs.setdefault(name, limit)
     return run_requerimientos(goal, **kwargs)

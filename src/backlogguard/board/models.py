@@ -80,6 +80,7 @@ class Citation(_Strict):
     source_type: SourceType
     source_date: date
     speaker: str | None = None
+    page: int | None = Field(default=None, ge=1, description="Página del documento, si la fuente es un PDF")
 
 
 class Objection(_Strict):

@@ -14,6 +14,7 @@ from uuid import NAMESPACE_URL, uuid5
 import numpy as np
 
 from backlogguard.rag.embeddings import EmbeddingProvider
+from backlogguard.rag.lexical import BM25, RRF_K, rrf, stems
 
 
 @dataclass(frozen=True)
@@ -92,6 +93,27 @@ class InMemoryRetriever:
                 scored.append((score, item))
         scored.sort(key=lambda pair: (-pair[0], pair[1]["chunk_id"]))
         return [_result(item, score) for score, item in scored[:top_k]]
+
+    def hybrid_search(self, query: str, top_k: int = 5, filters: dict | None = None) -> list[SearchResult]:
+        """Embeddings + BM25 fusionados con RRF (clase 8). `score` va de 0 a 1: 1 es el primero en ambos rankings."""
+        _check_query(query, top_k)
+        items = sorted(self._items.values(), key=lambda item: item["chunk_id"])
+        candidates = [
+            item for item in items
+            if not filters or all(item.get("metadata", {}).get(key) == value for key, value in filters.items())
+        ]
+        if not candidates:
+            return []
+        vector = self.embedding_provider.embed_query(query)
+        dense = sorted(range(len(candidates)), key=lambda i: -_cosine(vector, candidates[i]["vector"]))
+        lexical_scores = BM25([stems(item["text"]) for item in items]).scores(stems(query))
+        by_id = {item["chunk_id"]: score for item, score in zip(items, lexical_scores)}
+        lexical = sorted(range(len(candidates)), key=lambda i: -by_id[candidates[i]["chunk_id"]])
+        lexical = [i for i in lexical if by_id[candidates[i]["chunk_id"]] > 0]  # sin coincidencia de palabras no puntúa
+        fused = rrf([dense, lexical])
+        best = 2.0 / (RRF_K + 1)
+        order = sorted(fused, key=lambda i: (-fused[i], candidates[i]["chunk_id"]))[:top_k]
+        return [_result(candidates[i], round(fused[i] / best, 4)) for i in order]
 
     def all_chunks(self, filters: dict | None = None) -> list[SearchResult]:
         """Todos los fragmentos (opcionalmente filtrados), en orden estable."""
@@ -221,6 +243,10 @@ class QdrantRetriever:
             with_vectors=False,
         )
         return [self._from_payload(point.payload, float(point.score)) for point in response.points]
+
+    def hybrid_search(self, query: str, top_k: int = 5, filters: dict | None = None) -> list[SearchResult]:
+        """Qdrant local solo ordena por embeddings; la fusión con BM25 está en el retriever en memoria."""
+        return self.search(query, top_k=top_k, filters=filters)
 
     def get(self, chunk_id: str) -> SearchResult | None:
         points = self.client.retrieve(

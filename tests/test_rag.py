@@ -123,3 +123,40 @@ def test_all_chunks_lista_y_filtra_en_orden_estable(retriever):
     assert [c.chunk_id for c in everything] == sorted(c.chunk_id for c in everything)
     presale = retriever.all_chunks({"source_type": "preventa"})
     assert presale and {c.metadata["source_type"] for c in presale} == {"preventa"}
+
+
+# ---- búsqueda híbrida (clase 8: BM25 + RRF), adaptada al español ----
+
+
+def test_las_raices_unen_variantes_y_se_ignoran_acentos_y_palabras_vacias():
+    from backlogguard.rag.lexical import stems
+
+    assert stems("Parametrizar la vigencia") == stems("parametrizable VIGENCIA") == ["param", "vigen"]
+    assert stems("filtro") == stems("filtrar") and stems("Facturación") == stems("facturacion")
+    assert "de" not in stems("el score de la cuenta")
+
+
+def test_bm25_prefiere_los_terminos_raros_y_rrf_fusiona_los_rankings():
+    from backlogguard.rag.lexical import BM25, rrf
+
+    model = BM25([["cuenta", "cliente"], ["cuenta", "score"], ["cuenta", "factura"]])
+    scores = model.scores(["score", "cuenta"])
+    assert scores[1] > scores[0] and scores[1] > scores[2]
+    fused = rrf([[2, 0, 1], [0, 2, 1]])
+    assert fused[2] == fused[0] > fused[1]  # los dos primeros de cada ranking empatan arriba
+
+
+def test_la_busqueda_hibrida_encuentra_lo_que_los_embeddings_ordenan_mal():
+    retriever = InMemoryRetriever(DeterministicLexicalEmbeddings())
+    text = (
+        "Ana: Los perfiles son comercial, administrativo y administrador.\n"
+        "Luis: El score crediticio debe tener una vigencia parametrizable de 90 días.\n"
+        "Ana: El cliente recibe un correo cuando cambia el estado.\n"
+    )
+    retriever.index(build_chunks("doc", text, {"source_name": "R", "source_type": "reunion", "source_date": "2026-01-01"}))
+    best = retriever.hybrid_search("vigencia parametrizar score", top_k=1)[0]
+    assert "vigencia parametrizable" in best.text and 0 < best.score <= 1
+    assert [r.chunk_id for r in retriever.hybrid_search("zzz", top_k=2)]  # sin coincidencias de palabras, igual ordena por embeddings
+    assert retriever.hybrid_search("score", top_k=3, filters={"source_type": "preventa"}) == []
+    with pytest.raises(ValueError):
+        retriever.hybrid_search("  ")

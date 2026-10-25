@@ -8,8 +8,10 @@ archivos arbitrarios ni inventar la metadata.
 from __future__ import annotations
 
 import re
+import unicodedata
 from datetime import date
 from pathlib import Path
+from typing import Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict
@@ -26,12 +28,21 @@ class SourceMetadata(BaseModel):
     source_name: str
     source_type: SourceType
     source_date: date
+    layout: Literal["turnos", "dialogo", "paginas"] = "turnos"
 
 
 class SourceDocument(BaseModel):
     document_id: str
     metadata: SourceMetadata
     text: str
+
+
+def slugify(name: str, *, limit: int = 60) -> str:
+    """Identificador seguro para una fuente: minúsculas, sin acentos, solo letras, números, guiones y guion bajo."""
+    folded = unicodedata.normalize("NFKD", name.casefold())
+    ascii_name = "".join(char for char in folded if not unicodedata.combining(char))
+    slug = re.sub(r"[^a-z0-9]+", "_", ascii_name).strip("_")[:limit].strip("_")
+    return slug or "fuente"
 
 
 class SourceNotFound(LookupError):
@@ -48,6 +59,35 @@ class SourceLibrary:
     def describe(self) -> list[tuple[str, SourceMetadata]]:
         """Id y metadata de cada fuente (sin cargar el texto en el prompt)."""
         return [(document_id, self.load(document_id).metadata) for document_id in self.list_ids()]
+
+    def delete(self, document_id: str) -> bool:
+        if not DOCUMENT_ID.match(document_id):
+            raise SourceNotFound(f"document_id inválido: {document_id!r}")
+        path = self.root / f"{document_id}.md"
+        existed = path.is_file()
+        path.unlink(missing_ok=True)
+        return existed
+
+    def write(self, document_id: str, metadata: SourceMetadata, text: str, *, overwrite: bool = False) -> Path:
+        """Guarda una fuente como `.md` con su metadata en el encabezado, dentro de la biblioteca (y nada más)."""
+        if not DOCUMENT_ID.match(document_id):
+            raise SourceNotFound(f"document_id inválido: {document_id!r}")
+        path = self.root / f"{document_id}.md"
+        if path.exists() and not overwrite:
+            raise FileExistsError(f"Ya existe la fuente {document_id!r}.")
+        self.root.mkdir(parents=True, exist_ok=True)
+        header = yaml.safe_dump(
+            {
+                "source_name": metadata.source_name,
+                "source_type": metadata.source_type.value,
+                "source_date": metadata.source_date.isoformat(),
+                "layout": metadata.layout,
+            },
+            allow_unicode=True,
+            sort_keys=False,
+        )
+        path.write_text(f"---\n{header}---\n{text}", encoding="utf-8")
+        return path
 
     def load(self, document_id: str) -> SourceDocument:
         if not DOCUMENT_ID.match(document_id):

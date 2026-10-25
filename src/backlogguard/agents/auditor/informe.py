@@ -124,6 +124,7 @@ def _build_citations(
                 source_type=fragment.metadata["source_type"],
                 source_date=fragment.metadata["source_date"],
                 speaker=fragment.metadata.get("speaker"),
+                page=fragment.page,
             )
         )
     return citations, None

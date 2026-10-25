@@ -21,7 +21,7 @@ from backlogguard.memory import ProjectMemory
 
 ROOT = Path(__file__).resolve().parent.parent
 PEOPLE = load_people(ROOT / "config" / "people.yaml")
-ROLE = {"sergio": "service_manager", "laura": "product_owner", "vanesa": "full_stack_ia_engineer"}
+ROLE = {"service_manager": "service_manager", "product_owner": "product_owner", "full_stack_ia_engineer": "full_stack_ia_engineer"}
 OWNER = {role: name for name, role in ROLE.items()}
 TITLE = "Notificación por email"
 
@@ -88,7 +88,7 @@ def a_request():
 
 
 def a_decision(request, **overrides):
-    base = {"decision": "approve", "actor": "sergio", "actor_role": "service_manager", "request_id": request.request_id,
+    base = {"decision": "approve", "actor": "service_manager", "actor_role": "service_manager", "request_id": request.request_id,
             "request_version": request.version, "args_hash": request.args_hash}
     return HumanDecision(**{**base, **overrides})
 
@@ -110,8 +110,8 @@ def test_una_decision_vieja_o_adulterada_se_rechaza():
 
 def test_solo_decide_el_rol_que_corresponde():
     request = a_request()
-    assert "service_manager" in validate_decision(request, a_decision(request, actor="laura", actor_role="product_owner"), PEOPLE)
-    assert "tiene el rol" in validate_decision(request, a_decision(request, actor="laura", actor_role="service_manager"), PEOPLE)
+    assert "service_manager" in validate_decision(request, a_decision(request, actor="product_owner", actor_role="product_owner"), PEOPLE)
+    assert "tiene el rol" in validate_decision(request, a_decision(request, actor="product_owner", actor_role="service_manager"), PEOPLE)
     assert "No conozco" in validate_decision(request, a_decision(request, actor="intruso"), PEOPLE)
 
 
@@ -219,7 +219,7 @@ def test_una_decision_invalida_no_cambia_el_estado(tmp_path):
     world.run()
     request = pending_request(world.graph, "t1")["request"]
     before = board_of(load_state(world.graph, "t1")).model_dump()
-    for tamper in ({"args_hash": "0" * 24}, {"request_version": 9}, {"actor": "sergio", "actor_role": "service_manager"}):
+    for tamper in ({"args_hash": "0" * 24}, {"request_version": 9}, {"actor": "service_manager", "actor_role": "service_manager"}):
         resume_pipeline(world.graph, "t1", decision_for(request, **tamper))
         again = pending_request(world.graph, "t1")
         assert again["request"] == request and again["last_error"]  # se vuelve a ofrecer, con el motivo
@@ -237,7 +237,7 @@ def test_cada_decision_queda_auditada(tmp_path):
     log = load_state(world.graph, "t1")["decisions"]
     assert [d["accepted"] for d in log[:2]] == [False, True]
     accepted = log[1]
-    assert accepted["actor"] == "laura" and accepted["actor_role"] == "product_owner" and accepted["decision"] == "approve"
+    assert accepted["actor"] == "product_owner" and accepted["actor_role"] == "product_owner" and accepted["decision"] == "approve"
     assert accepted["version"] == 1 and accepted["args_hash"] == request["args_hash"] and accepted["at"] and accepted["comment"]
     assert log[0]["error"]
 
@@ -288,7 +288,7 @@ def test_la_decision_queda_en_la_memoria_con_su_aprobador(tmp_path):
     assert len(decisions) == 3
     texts = sorted(d["value"]["decision"] for d in decisions.values())
     assert sum(t.startswith("Se aprueba") for t in texts) == 2 and sum(t.startswith("Se rechaza") for t in texts) == 1
-    assert {d["value"]["approved_by"] for d in decisions.values()} == {"sergio", "laura"}
+    assert {d["value"]["approved_by"] for d in decisions.values()} == {"service_manager", "product_owner"}
     assert final_state["status"] == "completada" and final_state["summary"] and pending_request(world.graph, "t1") is None
 
 
@@ -335,7 +335,7 @@ def test_aprobar_el_plan_publica(tmp_path):
     assert request["decides"] == "full_stack_ia_engineer" and request["kind"] == "plan"
     state = answer(world, "approve")
     item = board_of(state).items[item_id(TITLE)]
-    assert item.state is ItemState.APROBADO and item.approved_by == "vanesa"
+    assert item.state is ItemState.APROBADO and item.approved_by == "full_stack_ia_engineer"
     assert state["status"] == "publicada" and state["publication"]["ok"] and world.backlog.writes == 1
     assert state["summary"] and nodes(state)[-1] == "summarize"
 
@@ -401,4 +401,4 @@ def test_el_recorrido_completo_con_todas_las_decisiones(tmp_path):
         "integrate", "approve_plan", "summarize",
     ]  # una pausa por pedido: el desacuerdo, tres asuntos de alcance y, al final, el plan
     assert state["status"] == "publicada" and world.backlog.writes == 1
-    assert [d["actor"] for d in state["decisions"]] == ["laura", "sergio", "laura", "sergio", "vanesa"]
+    assert [d["actor"] for d in state["decisions"]] == ["product_owner", "service_manager", "product_owner", "service_manager", "full_stack_ia_engineer"]

@@ -37,6 +37,18 @@ def _args(arguments: dict) -> str:
     return ", ".join(f"{key}={_short(value, 40)}" for key, value in arguments.items())
 
 
+def format_trace(entries: list[dict]) -> list[str]:
+    """Recorrido guardado de una corrida (una entrada por etapa), para verla después.
+
+    La actividad paso a paso de cada agente no se guarda: solo queda este resumen por etapa.
+    """
+    lines = []
+    for entry in entries:
+        detail = ", ".join(f"{key}={_short(value, 60)}" for key, value in entry.items() if key != "node" and value not in (None, [], {}, ""))
+        lines.append(f"▶ {NODE_TITLES.get(entry['node'], entry['node'])}" + (f"  ·  {detail}" if detail else ""))
+    return lines
+
+
 def format_event(event: dict) -> str | None:
     """Línea de texto para un evento, o `None` si no aporta a la vista."""
     agent = AGENT_NAMES.get(event.get("agent", ""), event.get("agent", "?"))

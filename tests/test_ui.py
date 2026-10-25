@@ -47,23 +47,23 @@ def start_and_wait(at, controller):
 def test_la_pantalla_arranca_en_modo_demo_con_las_personas(screen):
     at, controller = screen
     assert not at.exception and controller.mode == "demo"
-    assert len(at.sidebar.selectbox(key="persona").options) == 3 and "Sergio" in at.sidebar.selectbox(key="persona").options[0]
+    assert len(at.sidebar.selectbox(key="persona").options) == 3 and "Service Manager" in at.sidebar.selectbox(key="persona").options[0]
     assert at.button(key="iniciar").disabled is False
 
 
 def test_cada_persona_ve_solo_sus_pedidos(screen):
     at, controller = screen
     start_and_wait(at, controller)
-    pick(at, "sergio")  # el primer pedido lo decide el product owner
+    pick(at, "service_manager")  # el primer pedido lo decide el product owner
     assert "No tenés pedidos pendientes" in texts(at) and not at.get("form_submit_button") and not [b for b in at.button if b.key == "aprobar"]
-    pick(at, "laura")
+    pick(at, "product_owner")
     assert [b for b in at.button if b.key == "aprobar"] and "Desacuerdo sin consenso" in texts(at)
 
 
 def test_el_pedido_muestra_la_evidencia_y_las_acciones(screen):
     at, controller = screen
     start_and_wait(at, controller)
-    pick(at, "laura")
+    pick(at, "product_owner")
     keys = {b.key for b in at.button}
     assert {"aprobar", "editar", "rechazar"} <= keys
     body = texts(at)
@@ -74,14 +74,14 @@ def test_el_pedido_muestra_la_evidencia_y_las_acciones(screen):
 def test_decidir_en_la_pantalla_reanuda_la_corrida(screen):
     at, controller = screen
     start_and_wait(at, controller)
-    pick(at, "laura")
+    pick(at, "product_owner")
     pending = controller.pending()["request"]
     at.button(key="aprobar").click().run()
     assert controller.wait(30)
     at.run()
     following = controller.pending()["request"]
     assert following["request_id"] != pending["request_id"]  # el pedido anterior desapareció
-    pick(at, "vanesa")
+    pick(at, "full_stack_ia_engineer")
     assert following["kind"] in ("alcance", "plan")
 
 
@@ -94,7 +94,7 @@ def test_el_recorrido_completo_desde_la_pantalla(screen):
         if request is None:
             break
         request = request["request"]
-        decider = {"service_manager": "sergio", "product_owner": "laura", "full_stack_ia_engineer": "vanesa"}[request["decides"]]
+        decider = {"service_manager": "service_manager", "product_owner": "product_owner", "full_stack_ia_engineer": "full_stack_ia_engineer"}[request["decides"]]
         pick(at, decider)
         at.button(key="aprobar").click().run()
         assert controller.wait(30)
@@ -124,7 +124,7 @@ def test_el_backlog_simulado_se_ve_antes_y_despues(screen):
         request = controller.pending()
         if request is None:
             break
-        decider = {"service_manager": "sergio", "product_owner": "laura", "full_stack_ia_engineer": "vanesa"}[request["request"]["decides"]]
+        decider = {"service_manager": "service_manager", "product_owner": "product_owner", "full_stack_ia_engineer": "full_stack_ia_engineer"}[request["request"]["decides"]]
         pick(at, decider)
         at.button(key="aprobar").click().run()
         assert controller.wait(30)
@@ -138,3 +138,26 @@ def test_el_controlador_rechaza_decidir_sin_pausa_y_dos_corridas_a_la_vez(tmp_pa
     with pytest.raises(RuntimeError):
         controller.decide({"decision": "approve"})
     assert controller.pending() is None and controller.state() == {} and controller.mode == "simulado"
+
+
+def test_la_pantalla_abre_una_corrida_guardada_en_solo_lectura(screen):
+    at, controller = screen
+    start_and_wait(at, controller)
+    for _ in range(10):
+        request = controller.pending()
+        if request is None:
+            break
+        pick(at, request["request"]["decides"])
+        at.button(key="aprobar").click().run()
+        assert controller.wait(30)
+        at.run()
+    thread_id = controller.thread_id
+    controller.start()  # una corrida nueva reemplaza a la mostrada...
+    assert controller.wait(30)
+    at.run()
+    at.selectbox(key="corrida_guardada").select(thread_id)  # ...y la anterior se puede abrir desde el historial
+    at.button(key="abrir_corrida").click().run()
+    assert not at.exception and controller.read_only and controller.thread_id == thread_id
+    body = texts(at)
+    assert "solo lectura" in body and "Notificación por email" in " ".join(df.value.to_csv() for df in at.dataframe)
+    assert not [b for b in at.button if b.key == "aprobar"]  # no se puede decidir

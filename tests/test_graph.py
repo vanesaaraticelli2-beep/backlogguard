@@ -334,9 +334,9 @@ def test_el_grafo_arma_el_plan_y_no_publica(tmp_path):
     # Lo que hará la pausa humana del Día 10: aprobar los ítems y publicar el plan aprobado.
     board = Board.model_validate(state["board"])
     for item in board.items.values():
-        item.transition_to(ItemState.APROBADO, actor="sergio")
+        item.transition_to(ItemState.APROBADO, actor="service_manager")
     service = PublishService(board, world.backlog, world.deps.ledger, world.deps.project)
-    report = execute_approved_plan(plan["hash"], service=service, approved_by="sergio")
+    report = execute_approved_plan(plan["hash"], service=service, approved_by="service_manager")
     assert report.ok and world.backlog.writes == 1
     published = world.backlog.search(tag=f"bg-item:{item_id(title)}")[0]
     assert published.title == title and published.type == "User Story"
