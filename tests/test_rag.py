@@ -114,3 +114,12 @@ def test_biblioteca_carga_fuentes_con_metadata():
 def test_biblioteca_rechaza_ids_invalidos_o_inexistentes(document_id):
     with pytest.raises(SourceNotFound):
         SourceLibrary(FIXTURES).load(document_id)
+
+
+def test_all_chunks_lista_y_filtra_en_orden_estable(retriever):
+    index_fixtures(retriever)
+    everything = retriever.all_chunks()
+    assert len(everything) == retriever.count()
+    assert [c.chunk_id for c in everything] == sorted(c.chunk_id for c in everything)
+    presale = retriever.all_chunks({"source_type": "preventa"})
+    assert presale and {c.metadata["source_type"] for c in presale} == {"preventa"}

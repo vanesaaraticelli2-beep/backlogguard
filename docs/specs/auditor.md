@@ -1,6 +1,6 @@
 # Especificación · Agente Auditor de Proyecto
 
-**Estado:** PROPUESTA (Día 7, sin construir) · **Modelo:** `claude-opus-5-5`, esfuerzo medio · **Código previsto:** `src/backlogguard/agents/auditor/`, `tools/auditor.py`
+**Estado:** implementado (Día 7) · **Modelo:** `claude-opus-5-5`, esfuerzo medio · **Código:** `src/backlogguard/agents/auditor/` (`informe.py`, `entrega.py`), `tools/auditor.py`
 
 ## Propósito
 Comparar lo que se **trató** en las reuniones con lo que se **vendió** en la preventa, detectar cambios de alcance y contradicciones entre reuniones, y custodiar la memoria de decisiones del proyecto. No redacta ítems ni los aprueba.
@@ -9,6 +9,7 @@ Comparar lo que se **trató** en las reuniones con lo que se **vendió** en la p
 - **Entrada:** el tablero (ítems del productor), el índice de fuentes y la memoria del proyecto (`ProjectMemory`).
 - **Tools (4):** `comparar_con_preventa` (`read`), `detectar_contradicciones` (`read`), `consultar_decisiones_vigentes` (`read`), `registrar_decision_aprobada` (`local_write`).
 - **Salida:** un `AuditReport` validado con Pydantic: lista de hallazgos (`kind`, descripción, ítem afectado opcional, citas y destinatario). La aplicación los convierte en `Finding` del tablero; el Auditor no escribe hallazgos directamente.
+- **Entrega de correcciones:** un único informe por pasada; el productor recibe un mensaje por ítem afectado con todos sus hallazgos corregibles juntos (AU-11).
 - **Pausas:** un hallazgo `cambio_de_alcance` pide decisión del service manager (según `config/policy.yaml`). La pausa en sí la implementa el Día 10; hoy el código solo indica **quién** debe decidir.
 
 ## Tipos de hallazgo (ya definidos en el tablero)
@@ -16,7 +17,7 @@ Comparar lo que se **trató** en las reuniones con lo que se **vendió** en la p
 
 ## Requisitos
 
-| ID | Requisito | Test previsto |
+| ID | Requisito | Test que lo verifica |
 |---|---|---|
 | AU-01 | `comparar_con_preventa` entrega, por cada punto de la preventa, la evidencia de reuniones e ítems que lo cubren, y por cada tema de reunión si tiene respaldo en la preventa. La clasificación final la hace el modelo. | `test_comparar_preventa_devuelve_evidencia_en_ambos_sentidos` |
 | AU-02 | `detectar_contradicciones` agrupa fragmentos de distintas reuniones sobre el mismo tema y los entrega **ordenados por fecha**, con orador y rol. | `test_contradicciones_agrupa_por_tema_y_ordena_por_fecha` |
@@ -28,6 +29,8 @@ Comparar lo que se **trató** en las reuniones con lo que se **vendió** en la p
 | AU-08 | Solo el Auditor ve sus tools; las de consulta no escriben y solo `registrar_decision_aprobada` es `local_write`. | `test_las_tools_del_auditor_son_solo_del_auditor` |
 | AU-09 | El texto de reuniones y preventa es dato no confiable: una orden dentro de un fragmento no se ejecuta. | `test_inyeccion_no_altera_al_auditor` |
 | AU-10 | Respeta presupuesto de pasos, tiempo, tools y tokens; si no llega a un informe válido, falla de forma explícita (con una reparación de formato). | `test_auditor_sin_informe_valido_falla` |
+| AU-11 | Los hallazgos corregibles se entregan al productor agrupados por ítem, una vez por informe (un `AgentMessage` por ítem afectado). Los que requieren decisión humana (`cambio_de_alcance`, `contradiccion` sin resolver, `vendido_no_tratado`) no pasan por el productor. El Auditor no abre una negociación propia: tras la corrección, el ítem vuelve al Crítico, que mantiene el tope de 2 rondas. | `test_hallazgos_se_agrupan_por_item_y_los_humanos_no_van_al_productor`, `test_el_auditor_no_agrega_rondas_de_negociacion` |
+| AU-12 | Un hallazgo `decision_evolucionada` sobre un ítem desactualizado reabre el ítem (de borrador o sustentado a objetado, con una objeción del Auditor). Un ítem aprobado no se reabre: el hallazgo va al Supervisor. Un ítem sustentado nunca vuelve a borrador. | `test_un_item_aprobado_no_se_reabre_y_va_al_supervisor`, `test_un_item_sustentado_puede_reabrirse_pero_no_volver_a_borrador` |
 
 ## Resultado esperado sobre el corpus sintético (`evals/fixtures/`)
 | Hallazgo | Fuente |
@@ -39,12 +42,16 @@ Comparar lo que se **trató** en las reuniones con lo que se **vendió** en la p
 | `contradiccion`: frecuencia de notificaciones | dos reuniones (línea a agregar al corpus) |
 
 ## Fuera del curso (decisiones propias)
+- Nueva transición del tablero: `sustentado → objetado`, para que un hallazgo posterior reabra un ítem aún no aprobado.
+- Dos condiciones de pausa en `config/policy.yaml` (`contradiccion` → PO, `vendido_no_tratado` → service manager), que extienden la política del Día 2.
 - El Auditor no escribe hallazgos; la aplicación los registra (mismo criterio que el Crítico).
 - `approved_by` viaja en el contexto de ejecución, igual que `approved_plan_hash`.
 - Informe estructurado y verificación determinística de las citas de cada hallazgo.
 - Los tipos `decision` y `pregunta_pendiente` de `ProjectMemory` y su fachada (Día 3).
 
-## Límites conocidos (previstos)
+## Límites conocidos
 - Los embeddings determinísticos agrupan por palabras, no por significado: la agrupación de temas es una ayuda, no un veredicto.
 - La clasificación (evolución vs. contradicción) es juicio del modelo; se mide en la evaluación (Día 13).
 - Un solo proyecto por corrida.
+- Con embeddings léxicos, la similitud de `comparar_con_preventa` ordena la evidencia pero no separa lo cubierto de lo no cubierto; por eso no hay umbrales y el modelo lee los textos.
+- Un hallazgo `decision_evolucionada` sin ítem afectado es informativo: queda en el tablero para el Supervisor.

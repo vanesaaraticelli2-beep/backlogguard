@@ -28,3 +28,8 @@ pauses:
     decides: product_owner
   - condition: plan_de_publicacion
     decides: full_stack_ia_engineer
+  # Hallazgos del Auditor que ningún agente resuelve (extensión propia; ver docs/specs/auditor.md).
+  - condition: contradiccion
+    decides: product_owner
+  - condition: vendido_no_tratado
+    decides: service_manager

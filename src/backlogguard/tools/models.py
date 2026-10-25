@@ -41,6 +41,7 @@ class ExecutionContext(BaseModel):
     allow_drafts: bool = False
     allow_external_writes: bool = False
     approved_plan_hash: str | None = None
+    approved_by: str | None = None  # persona que aprobó escribir en la memoria; lo completa la aplicación
     run_id: str = "run-local"
 
 

@@ -84,13 +84,22 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Pendiente: probar la negociación completa con el productor real cuando haya cuota de Gemini.
 - [ ] Observación: Opus objeta con criterio estricto (criterios Gherkin genéricos). A medir en la evaluación del Día 13.
 
-## Día 7 · Auditor de Proyecto (esquema)
+## Día 7 · Auditor de Proyecto — [x] (falta commit)
 **Objetivo:** comparar lo que se trató con lo que se vendió, y detectar cambios de alcance y contradicciones entre reuniones.
 
-- [ ] `comparar_con_preventa` — marca lo tratado que no estaba vendido y lo vendido que no se trató.
-- [ ] `detectar_contradicciones` — encuentra reuniones que se contradicen y distingue una contradicción de una decisión que evolucionó.
-- [ ] `consultar_decisiones_vigentes` — lee la memoria del proyecto para no volver a discutir lo ya decidido.
-- [ ] `registrar_decision_aprobada` — guarda en la memoria una decisión que una persona aprobó.
+- [x] `comparar_con_preventa` — reúne la evidencia en ambos sentidos: qué reuniones e ítems cubren cada punto vendido, y qué temas de reunión tienen respaldo en la preventa. El modelo clasifica.
+- [x] `detectar_contradicciones` — pares de fragmentos parecidos ordenados por fecha, con orador y marca de "misma fecha". El modelo distingue evolución de contradicción.
+- [x] `consultar_decisiones_vigentes` — lee la memoria del proyecto para no volver a discutir lo ya decidido.
+- [x] `registrar_decision_aprobada` — guarda una decisión en la memoria solo si la aplicación entrega la aprobación humana (`approved_by` del contexto, nunca del modelo) y la frase citada existe en la fuente.
+- [x] Agente Auditor y su `agent.md` — entrega un `AuditReport` validado; si viene mal formado se repara una vez (ayudante compartido con el Crítico).
+- [x] `apply_report` — verifica cada cita, descarta lo que no se puede verificar, decide a quién va cada hallazgo y reabre los ítems que el productor debe corregir.
+- [x] `entrega.py` — un mensaje por ítem afectado al productor; lo que exige decisión humana va al Supervisor con quién decide según la política.
+- [x] Corpus: líneas nuevas del ERP (vendido y no tratado) y de la frecuencia de notificaciones (contradicción).
+- [x] Tablero: transición `sustentado → objetado`. Política: pausas para `contradiccion` y `vendido_no_tratado`.
+- [x] Corrida real con Opus: 6 hallazgos con citas verificadas (ERP, app móvil, cambio de alcance, PDF→Excel, contradicción de frecuencia, filtro de fecha) y la inyección informada como dato.
+- [x] Tests sin red (205 en total) y especificación `docs/specs/auditor.md` al día.
+- [ ] Commit y push (cuando se pida)
+- [ ] Observación: el Auditor suma citas de la preventa a sus hallazgos; a medir en la evaluación (Día 13).
 
 ## Día 8 · Supervisor y grafo (esquema)
 **Objetivo:** coordinar a los agentes en un flujo único que se puede pausar y reanudar.

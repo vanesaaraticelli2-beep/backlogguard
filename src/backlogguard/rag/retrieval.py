@@ -93,6 +93,14 @@ class InMemoryRetriever:
         scored.sort(key=lambda pair: (-pair[0], pair[1]["chunk_id"]))
         return [_result(item, score) for score, item in scored[:top_k]]
 
+    def all_chunks(self, filters: dict | None = None) -> list[SearchResult]:
+        """Todos los fragmentos (opcionalmente filtrados), en orden estable."""
+        return [
+            _result(item, 1.0)
+            for item in sorted(self._items.values(), key=lambda i: i["chunk_id"])
+            if not filters or all(item.get("metadata", {}).get(k) == v for k, v in filters.items())
+        ]
+
     def get(self, chunk_id: str) -> SearchResult | None:
         item = self._items.get(chunk_id)
         return _result(item, 1.0) if item else None
@@ -219,6 +227,20 @@ class QdrantRetriever:
             collection_name=self.collection_name, ids=[_point_id(chunk_id)], with_payload=True
         )
         return self._from_payload(points[0].payload, 1.0) if points else None
+
+    def all_chunks(self, filters: dict | None = None) -> list[SearchResult]:
+        results, offset = [], None
+        while True:
+            points, offset = self.client.scroll(
+                collection_name=self.collection_name,
+                scroll_filter=self._filter(filters),
+                limit=128,
+                offset=offset,
+                with_payload=True,
+            )
+            results.extend(self._from_payload(point.payload, 1.0) for point in points)
+            if offset is None:
+                return sorted(results, key=lambda r: r.chunk_id)
 
     def count(self) -> int:
         return int(self.client.count(collection_name=self.collection_name, exact=True).count)

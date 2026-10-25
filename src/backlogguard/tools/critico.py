@@ -43,6 +43,11 @@ def _normalize_quote(text: str) -> str:
     return " ".join(text.translate(_QUOTES).casefold().split())
 
 
+def quote_matches(quote: str, text: str) -> bool:
+    """¿La frase figura textualmente en el texto? (mismo criterio que `verificar_cita`)."""
+    return _normalize_quote(quote) in _normalize_quote(text)
+
+
 @dataclass(frozen=True)
 class CitationCheck:
     fragment_id: str
@@ -57,7 +62,7 @@ def check_citations(item: BacklogItem, retriever: InMemoryRetriever | QdrantRetr
         fragment = retriever.get(citation.fragment_id)
         if fragment is None:
             checks.append(CitationCheck(citation.fragment_id, False, "el fragmento no existe en las fuentes"))
-        elif _normalize_quote(citation.quote) not in _normalize_quote(fragment.text):
+        elif not quote_matches(citation.quote, fragment.text):
             checks.append(CitationCheck(citation.fragment_id, False, "la frase citada no figura textualmente en el fragmento"))
         elif (
             fragment.metadata.get("source_name") != citation.source_name

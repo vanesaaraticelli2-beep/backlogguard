@@ -1,26 +1,23 @@
 """Agente Crítico: revisa un ítem con sus tools y devuelve un veredicto validado."""
 from __future__ import annotations
 
-import json
-import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from backlogguard.agents.decider import LLMDecider
 from backlogguard.agents.loop import run_basic_agent
+from backlogguard.agents.structured import extract_json, parse_with_repair
 from backlogguard.board import AgentRole, Board
 from backlogguard.llm.errors import InvalidProviderResponseError
 from backlogguard.llm.providers import LLMProvider
-from backlogguard.llm.resilience import generate_with_resilience_sync
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools import ExecutionContext, ToolPolicy, build_catalog_registry
 from backlogguard.tools.critico import CriticToolkit
 
 INSTRUCTIONS_PATH = Path(__file__).with_name("agent.md")
-_FENCE = re.compile(r"^```(?:json)?\s*|\s*```$", re.IGNORECASE)
 
 
 class CriticVerdict(BaseModel):
@@ -50,11 +47,7 @@ class CriticReview:
 
 
 def parse_verdict(text: str, item_id: str) -> CriticVerdict:
-    cleaned = _FENCE.sub("", text.strip())
-    start, end = cleaned.find("{"), cleaned.rfind("}")
-    if start == -1 or end == -1:
-        raise ValueError("la respuesta no contiene un objeto JSON")
-    verdict = CriticVerdict.model_validate_json(cleaned[start : end + 1])
+    verdict = CriticVerdict.model_validate_json(extract_json(text))
     if verdict.item_id != item_id:
         raise ValueError(f"el veredicto es del ítem {verdict.item_id}, no de {item_id}")
     return verdict
@@ -95,20 +88,15 @@ def review_item(
     if outcome["stop_reason"] != "final_answer":
         raise InvalidProviderResponseError(f"el Crítico no llegó a un veredicto ({outcome['stop_reason']})")
 
-    answer, tokens = outcome["answer"], decider.tokens_used
-    try:
-        verdict = parse_verdict(answer, item_id)
-    except (ValueError, ValidationError) as exc:
-        repair = generate_with_resilience_sync(
-            provider,
-            f"Tu respuesta anterior no cumplió el formato: {exc}\n\nRespuesta anterior:\n{json.dumps(answer, ensure_ascii=False)}\n\n"
-            f'Respondé solo con el JSON {{"item_id": "{item_id}", "verdict": "sustentado"|"objetado", '
-            '"objections": [...], "reasoning": "..."}',
-            system=instructions,
-        )
-        tokens += repair.result.input_tokens + repair.result.output_tokens
-        try:
-            verdict = parse_verdict(repair.result.text, item_id)
-        except (ValueError, ValidationError) as second:
-            raise InvalidProviderResponseError(f"el Crítico no devolvió un veredicto válido: {second}") from second
+    verdict, repair_tokens = parse_with_repair(
+        outcome["answer"],
+        lambda text: parse_verdict(text, item_id),
+        provider=provider,
+        system=instructions,
+        expected_format=(
+            f'{{"item_id": "{item_id}", "verdict": "sustentado"|"objetado", "objections": [...], "reasoning": "..."}}'
+        ),
+        subject="el Crítico",
+    )
+    tokens = decider.tokens_used + repair_tokens
     return CriticReview(verdict=verdict, stop_reason=outcome["stop_reason"], tokens=tokens)

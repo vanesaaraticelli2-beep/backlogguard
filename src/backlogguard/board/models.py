@@ -58,7 +58,8 @@ class FindingKind(StrEnum):
 ALLOWED_TRANSITIONS: dict[ItemState, frozenset[ItemState]] = {
     ItemState.BORRADOR: frozenset({ItemState.OBJETADO, ItemState.SUSTENTADO}),
     ItemState.OBJETADO: frozenset({ItemState.SUSTENTADO, ItemState.EXCLUIDO}),
-    ItemState.SUSTENTADO: frozenset({ItemState.APROBADO, ItemState.EXCLUIDO}),
+    # Un hallazgo posterior del Auditor puede reabrir un ítem sustentado (aún no aprobado).
+    ItemState.SUSTENTADO: frozenset({ItemState.APROBADO, ItemState.EXCLUIDO, ItemState.OBJETADO}),
     ItemState.APROBADO: frozenset(),
     ItemState.EXCLUIDO: frozenset(),
 }

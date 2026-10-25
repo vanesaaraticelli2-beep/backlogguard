@@ -79,12 +79,12 @@ _SPECS: list[tuple[str, AgentRole, ToolKind, str]] = [
 
 
 def build_catalog_registry(
-    implementations: dict[str, tuple[Callable[[dict], ToolResult], type[BaseModel], bool]] | None = None,
+    implementations: dict[str, tuple] | None = None,
 ) -> ToolRegistry:
     """Registry con las 16 Tools; cada una visible solo para su rol.
 
     `implementations` reemplaza el marcador de una Tool por su handler real:
-    {nombre: (handler, args_model, idempotente)}.
+    {nombre: (handler, args_model, idempotente[, guarda de autorización])}.
     """
     implementations = implementations or {}
     unknown = set(implementations) - {spec[0] for spec in _SPECS}
@@ -93,7 +93,7 @@ def build_catalog_registry(
     registry = ToolRegistry()
     for name, role, kind, description in _SPECS:
         is_publish = name == "ejecutar_plan_aprobado"
-        handler, args_model, idempotent = implementations.get(
+        handler, args_model, idempotent, *guard = implementations.get(
             name, (_not_implemented(name), ExecutePlanArgs if is_publish else None, not is_publish)
         )
         registry.register(
@@ -105,7 +105,7 @@ def build_catalog_registry(
                 args_model=args_model,
                 idempotent=idempotent,
                 visible_roles={role},
-                authorize=approved_plan_guard if is_publish else None,
+                authorize=approved_plan_guard if is_publish else (guard[0] if guard else None),
             )
         )
     return registry

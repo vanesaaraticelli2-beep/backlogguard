@@ -7,3 +7,4 @@ Vendedor: La solución incluye un portal de autoservicio para que los clientes d
 Vendedor: El portal permite iniciar sesión con el directorio corporativo mediante SSO.
 Vendedor: Los clientes reciben una notificación por email cada vez que cambia el estado de un pedido.
 Vendedor: Se entrega un reporte mensual de pedidos exportable en PDF.
+Vendedor: La solución se integra con el ERP de ACME para sincronizar los pedidos automáticamente.
