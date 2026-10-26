@@ -6,6 +6,7 @@ from pathlib import Path
 
 from backlogguard.agents.auditor.informe import ApplyResult, AuditReport, apply_report, parse_report
 from backlogguard.agents.decider import LLMDecider
+from backlogguard.agents.dossier import dossier_enabled
 from backlogguard.agents.loop import run_basic_agent
 from backlogguard.agents.structured import parse_with_repair
 from backlogguard.board import AgentRole, Board
@@ -17,6 +18,7 @@ from backlogguard.tools import ExecutionContext, ToolPolicy, build_catalog_regis
 from backlogguard.tools.auditor import AuditorToolkit
 
 INSTRUCTIONS_PATH = Path(__file__).with_name("agent.md")
+DOSSIER = ("consultar_decisiones_vigentes", "comparar_con_preventa", "detectar_contradicciones")  # lo que corre el código
 GOAL = "Auditá el proyecto: compará lo tratado con lo vendido y detectá cambios de alcance y contradicciones."
 REPORT_FORMAT = (
     '{"findings": [{"kind": "...", "description": "...", "item_id": null, '
@@ -46,6 +48,7 @@ def run_auditor(
     max_tool_calls: int = 8,
     max_tokens: int = 200_000,
     on_event: Callable[[dict], None] | None = None,
+    precompute: bool | None = None,
 ) -> AuditRun:
     """Corre al Auditor sobre todo el proyecto. No aplica el informe: eso lo hace `apply_report`."""
     context = ExecutionContext(user_id="factory", role=AgentRole.AUDITOR, run_id=run_id, approved_by=approved_by)
@@ -74,6 +77,7 @@ def run_auditor(
         context=context,
         policy=policy,
         on_event=on_event,
+        initial_calls=[(name, {}) for name in DOSSIER] if dossier_enabled("auditor", precompute) else None,
     )
     if outcome["stop_reason"] != "final_answer":
         raise InvalidProviderResponseError(f"el Auditor no llegó a un informe ({outcome['stop_reason']})")

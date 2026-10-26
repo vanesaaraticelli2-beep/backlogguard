@@ -60,6 +60,7 @@ def run_basic_agent(
     max_tokens: int | None = None,
     tokens_used: Callable[[], int] | None = None,
     on_event: Callable[[dict], None] | None = None,
+    initial_calls: list[tuple[str, dict]] | None = None,
 ):
     """Ejecuta Decide → Act → Observe y devuelve respuesta, traza y stop reason.
 
@@ -67,6 +68,8 @@ def run_basic_agent(
     Toda Tool se ejecuta a través del Registry para conservar los controles del runtime.
     `max_tokens` se compara con `tokens_used()` antes de cada decisión nueva.
     `on_event` (opcional) recibe cada entrada de la traza apenas ocurre, para seguir al agente en vivo.
+    `initial_calls` (fuera del curso) son tools que corre el código antes de la primera decisión: pasan por el
+    Registry con la misma política, quedan en la traza marcadas `precalculada` y llegan al modelo como observaciones.
     """
     if max_tokens is not None and tokens_used is None:
         raise ValueError("max_tokens requiere tokens_used")
@@ -88,6 +91,21 @@ def run_basic_agent(
             "observations": observations,
             "stop_reason": reason,
         }
+
+    for name, arguments in initial_calls or []:
+        result = registry.run(
+            ToolCall(tool_name=name, arguments=arguments), allowed_kinds=allowed_kinds, context=context, policy=policy
+        )
+        observations.append(result)
+        record({
+            "run_id": getattr(context, "run_id", None),
+            "step": 0,
+            "event": "observation",
+            "tool": name,
+            "arguments": sanitize_for_trace(arguments),
+            "observation": sanitize_for_trace(result.model_dump()),
+            "precalculada": True,
+        })
 
     for step in range(1, max_steps + 1):
         if time.perf_counter() - started > max_seconds:

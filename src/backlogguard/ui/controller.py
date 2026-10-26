@@ -160,6 +160,8 @@ class RunController:
                     "status": values.get("status", "?"),
                     "tokens": values.get("tokens", 0),
                     "items": len((values.get("board") or {}).get("items", {})),
+                    "tasks": len(values.get("tasks", [])),
+                    "corrections": sum(1 for task in values.get("tasks", []) if task["kind"] == "corregir"),
                     "waiting": any(task.interrupts for task in snapshot.tasks),
                     "created_at": (snapshot.created_at or "")[:19].replace("T", " "),
                 }

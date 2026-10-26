@@ -14,6 +14,7 @@ import streamlit as st
 
 from backlogguard.board import Board, SourceType
 from backlogguard.graph.setup import has_user_sources, user_sources_dir
+from backlogguard.graph.tasks import KIND_TITLES, PARTIES, summarize_tasks
 from backlogguard.rag import SourceLibrary, build_chunks
 from backlogguard.rag.importers import SourceImportError, estimate, import_pdf, import_transcript
 from backlogguard.rag.sources import SourceChangeNeedsConfirmation, SourceMetadata, SourceUnchanged, slugify
@@ -35,6 +36,10 @@ STATUS_TEXT = {
     "completada": "completada",
     "completada_con_errores": "completada con errores",
     "presupuesto_agotado": "presupuesto agotado",
+}
+TASK_STATUS = {
+    "hecha": "hecha", "con_aviso": "hecha con aviso", "incompleta": "incompleta", "fallida": "falló",
+    "sin_correccion": "sin corrección", "escalada": "escalada a una persona",
 }
 NODE_ORDER = ["plan", "produce", "review", "audit", "escalate", "decide", "integrate", "approve_plan", "summarize"]
 NODE_NAMES = {
@@ -199,7 +204,7 @@ def tab_runs(controller: RunController) -> None:
         return
     st.dataframe(
         [{"corrida": r["thread_id"], "momento": r["created_at"], "estado": STATUS_TEXT.get(r["status"], r["status"]),
-          "ítems": r["items"], "tokens": r["tokens"], "espera una decisión": "sí" if r["waiting"] else ""} for r in runs],
+          "ítems": r["items"], "tareas": r["tasks"], "correcciones": r["corrections"], "tokens": r["tokens"], "espera una decisión": "sí" if r["waiting"] else ""} for r in runs],
         width="stretch", hide_index=True,
     )
     chosen = st.selectbox("Corrida a abrir", [r["thread_id"] for r in runs], key="corrida_guardada")
@@ -208,6 +213,63 @@ def tab_runs(controller: RunController) -> None:
         st.rerun()
     if controller.read_only:
         st.info(f"Estás viendo la corrida **{controller.thread_id}** (solo lectura). «Iniciar corrida» vuelve al modo normal.")
+
+
+def tab_tasks(controller: RunController) -> None:
+    st.caption(
+        "El backlog de la corrida: cada tarea que un agente le pasa a otro (o a una persona), en orden, con lo que costó en tokens. "
+        "Mirá una corrida guardada abriéndola en «Corridas guardadas»."
+    )
+    tasks = controller.state().get("tasks", [])
+    if not tasks:
+        st.info("Esta corrida todavía no tiene tareas registradas (o es anterior a este registro).")
+        return
+    totals = summarize_tasks(tasks)
+    columns = st.columns(6)
+    columns[0].metric("Tareas", totals["tasks"])
+    columns[1].metric("Pedidos de corrección", totals["corrections"])
+    columns[2].metric("Correcciones logradas", totals["corrections_ok"])
+    columns[3].metric("Reintentos frenados por el tope", totals["rejected"])
+    columns[4].metric("Tokens (entrada + salida)", f"{totals['tokens']:,}".replace(",", "."))
+    columns[5].metric("Costo estimado", f"US$ {totals['cost']:.2f}")
+    if totals["unpriced_models"]:
+        st.caption("Sin precio en config/pricing.yaml, no se suman al costo: " + ", ".join(totals["unpriced_models"]))
+    left, right = st.columns(2)
+    with left:
+        st.markdown("**Gasto por agente que hizo la tarea**")
+        st.dataframe(
+            [{"agente": r["agente"], "tareas": r["tareas"], "entrada": r["entrada"], "salida": r["salida"], "tokens": r["tokens"],
+              "% del gasto": f"{r['parte']:.0%}", "US$": r["costo"]} for r in totals["by_agent"]],
+            width="stretch", hide_index=True,
+        )
+    with right:
+        st.markdown("**Quién le pasa tareas a quién**")
+        st.dataframe(totals["by_pair"], width="stretch", hide_index=True)
+    kinds = ["(todas)"] + sorted({KIND_TITLES.get(t["kind"], t["kind"]) for t in tasks})
+    only = st.selectbox("Mostrar", kinds, key="filtro_tareas")
+    rows = [
+        {
+            "tarea": t["id"],
+            "de": PARTIES.get(t["origin"], t["origin"]),
+            "para": PARTIES.get(t["target"], t["target"]),
+            "qué": KIND_TITLES.get(t["kind"], t["kind"]),
+            "ítem": t["ref"] or "",
+            "ronda": t["round"] or "",
+            "estado": TASK_STATUS.get(t["status"], t["status"]),
+            "entrada": t.get("input_tokens", 0),
+            "salida": t.get("output_tokens", 0),
+            "tokens": t["tokens"],
+            "llamadas": t.get("llm_calls", 0),
+            "modelo": t["model"],
+            "pasos": t["steps"] or "",
+            "correcciones": t["corrections"] or "",
+            "frenadas": t["rejected"] or "",
+            "detalle": t["detail"],
+        }
+        for t in tasks
+        if only in ("(todas)", KIND_TITLES.get(t["kind"], t["kind"]))
+    ]
+    st.dataframe(rows, width="stretch", hide_index=True)
 
 
 def tab_decisions(controller: RunController, who) -> None:
@@ -373,8 +435,8 @@ def main() -> None:
 
     st.title("Del dicho al backlog")
     live_status(controller)
-    run, sources, saved, decisions, board, backlog, activity = st.tabs(
-        ["Corrida", "Fuentes", "Corridas guardadas", "Mis decisiones", "Tablero", "Backlog simulado", "Actividad"]
+    run, sources, saved, tasks, decisions, board, backlog, activity = st.tabs(
+        ["Corrida", "Fuentes", "Corridas guardadas", "Tareas entre agentes", "Mis decisiones", "Tablero", "Backlog simulado", "Actividad"]
     )
     with run:
         tab_run(controller)
@@ -382,6 +444,8 @@ def main() -> None:
         tab_sources(controller)
     with saved:
         tab_runs(controller)
+    with tasks:
+        tab_tasks(controller)
     with decisions:
         tab_decisions(controller, who)
     with board:

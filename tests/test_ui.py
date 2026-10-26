@@ -171,3 +171,14 @@ def test_la_pantalla_distingue_linea_base_y_evidencia_y_muestra_las_fuentes_de_l
     tables = " ".join(df.value.to_csv() for df in at.dataframe)
     assert "Fuentes usadas" in " ".join(str(m.value) for m in at.markdown)
     assert "Línea base" in tables and "Evidencia" in tables and "huella" in tables
+
+
+def test_la_solapa_de_tareas_muestra_el_backlog_entre_agentes(screen):
+    at, controller = screen
+    assert "Tareas entre agentes" in [tab.label for tab in at.tabs]
+    start_and_wait(at, controller)
+    assert not at.exception
+    tasks = controller.state()["tasks"]
+    assert {t["kind"] for t in tasks} >= {"planificar", "redactar", "revisar", "auditar"}
+    assert "Pedidos de corrección" in " ".join(m.label for m in at.metric)
+    assert any(len(df.value) == len(tasks) for df in at.dataframe)

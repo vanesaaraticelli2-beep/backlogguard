@@ -80,6 +80,7 @@ def initial_state(objective: str, run_id: str) -> RunState:
         "errors": [],
         "tokens": 0,
         "trace": [],
+        "tasks": [],
         "stop_reason": None,
         "status": "en_curso",
     }

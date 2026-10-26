@@ -100,6 +100,7 @@ class RequirementsToolkit:
         self.library = library
         self.retriever = retriever
         self.board = board
+        self.corrected: set[str] = set()  # ítems ya corregidos con éxito en esta ejecución (tope de una corrección por tarea)
 
     def ingestar_y_fragmentar(self, args: dict) -> ToolResult:
         try:
@@ -146,6 +147,12 @@ class RequirementsToolkit:
         )
 
     def redactar_historia(self, args: dict) -> ToolResult:
+        if args.get("revises") in self.corrected:
+            return _fail(
+                f"Ya corregiste {args['revises']} en esta tarea: terminá con tu respuesta final. "
+                "El Crítico revisará la versión corregida.",
+                "ya_corregido",
+            )
         citations = []
         for ref in args["citations"]:
             fragment = self.retriever.get(ref["chunk_id"])
@@ -206,6 +213,7 @@ class RequirementsToolkit:
                 "citations": citations,
             }
         )
+        self.corrected.add(current.id)  # solo cuenta una corrección que salió bien
         return ToolResult(ok=True, content=f"Ítem {current.id} corregido.", metadata={"item_id": current.id})
 
     def implementations(self) -> dict:

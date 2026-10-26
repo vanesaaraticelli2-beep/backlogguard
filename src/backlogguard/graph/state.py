@@ -34,3 +34,4 @@ class RunState(TypedDict, total=False):
     tokens: int
     started_at: float
     trace: Annotated[list[dict], operator.add]
+    tasks: Annotated[list[dict], operator.add]  # tareas que se pasan los agentes, en orden

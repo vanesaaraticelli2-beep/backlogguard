@@ -1,0 +1,7 @@
+# Contexto que reciben los agentes (fuera del curso). Se documenta acá; el código aplica lo que dice.
+# Expediente precalculado: los controles fijos del agente los corre el código antes de la primera decisión
+# del modelo. Quedan en la traza marcados "precalculada" y pasan por el ToolRegistry con la política habitual.
+# Poné false para volver a que el modelo pida cada control con su propio paso.
+precalculated_dossier:
+  critico: true
+  auditor: true

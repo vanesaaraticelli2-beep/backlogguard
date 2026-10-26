@@ -8,6 +8,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from backlogguard.agents.decider import LLMDecider
+from backlogguard.agents.dossier import dossier_enabled
 from backlogguard.agents.loop import run_basic_agent
 from backlogguard.agents.structured import extract_json, parse_with_repair
 from backlogguard.board import AgentRole, Board
@@ -18,6 +19,7 @@ from backlogguard.tools import ExecutionContext, ToolPolicy, build_catalog_regis
 from backlogguard.tools.critico import CriticToolkit
 
 INSTRUCTIONS_PATH = Path(__file__).with_name("agent.md")
+DOSSIER = ("evaluar_dor_invest", "verificar_cita", "buscar_contraevidencia")  # sus tres controles, que corre el código
 
 
 class CriticVerdict(BaseModel):
@@ -62,9 +64,10 @@ def review_item(
     run_id: str = "run-local",
     max_steps: int = 8,
     max_seconds: float = 180.0,
-    max_tool_calls: int = 6,
+    max_tool_calls: int = 4,
     max_tokens: int = 40_000,
     on_event: Callable[[dict], None] | None = None,
+    precompute: bool | None = None,
 ) -> CriticReview:
     """Corre al Crítico sobre un ítem. Un JSON inválido se repara una vez (patrón de la clase 2)."""
     registry = build_catalog_registry(CriticToolkit(retriever, board).implementations())
@@ -86,6 +89,7 @@ def review_item(
         context=context,
         policy=policy,
         on_event=on_event,
+        initial_calls=[(name, {"item_id": item_id}) for name in DOSSIER] if dossier_enabled("critico", precompute) else None,
     )
     if outcome["stop_reason"] != "final_answer":
         raise InvalidProviderResponseError(f"el Crítico no llegó a un veredicto ({outcome['stop_reason']})")

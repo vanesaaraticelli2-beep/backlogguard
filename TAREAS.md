@@ -199,6 +199,16 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Siguiente: Bloque A restante del punto 4 (medición, tope de reescrituras y expedientes del Crítico y del Auditor) y luego el Bloque B.
 - [ ] Commit y push (cuando se pida).
 
+## Bloque A (parcial) · Tareas entre agentes, tope de correcciones y expediente — [x] (falta commit)
+**Objetivo:** ver qué se pasan los agentes y cuánto cuesta, y bajar el gasto sin tocar la trazabilidad.
+
+- [x] Registro de tareas entre agentes — cada encargo (planificar, redactar, revisar, corregir, auditar, armar el plan, resumir, decisión de una persona) queda con origen, destino, ítem, ronda, estado, tokens y modelo.
+- [x] Solapa «Tareas entre agentes» — totales, gasto por agente, quién le pasa tareas a quién y el backlog completo con filtro; «Corridas guardadas» suma tareas y correcciones.
+- [x] Tope de corrección — dentro de una tarea, un ítem se corrige con éxito una sola vez; el segundo intento se rechaza y un intento fallido no cuenta.
+- [x] Expediente precalculado — los controles fijos del Crítico y del Auditor los corre el código antes del primer paso del modelo, pasan por el ToolRegistry, quedan en la traza como «precalculada» y se pueden apagar en `config/context_budget.yaml`.
+- [x] Medición con costo estimado — cada llamada a un modelo se mide (entrada/salida) y se reparte entre las tareas; precios en `config/pricing.yaml`; un modelo sin precio se avisa en lugar de inventar el costo. Se ve en la solapa «Tareas entre agentes».
+- [x] Prueba de calidad con Opus real (`scripts/comparar_expediente.py`, 5 ítems sembrados): mismo veredicto en 5 de 5; llamadas 17 → 5, tokens de entrada 41.369 → 17.948, costo ~US$ 0,28 → ~US$ 0,14.
+
 ## Día 11 · Skills y contexto (esquema)
 **Objetivo:** darle a cada agente solo el conocimiento y el contexto que necesita, sin sobrecargarlo.
 

@@ -18,8 +18,9 @@ from backlogguard.agents.requerimientos import revise_item, run_requerimientos
 from backlogguard.agents.supervisor import plan_run, summarize_run
 from backlogguard.board import AgentRole, Board, ItemState
 from backlogguard.graph.budgets import over_budget
-from backlogguard.graph.deps import RunDeps
+from backlogguard.graph.deps import Providers, RunDeps
 from backlogguard.graph.state import RunState
+from backlogguard.graph.tasks import TaskLog, describe_outcome, model_of
 from backlogguard.hitl import (
     DecisionRecord,
     DecisionRequest,
@@ -34,6 +35,8 @@ from backlogguard.hitl import (
 )
 from backlogguard.integrations import BacklogError, PublishService
 from backlogguard.llm.errors import LLMError
+from backlogguard.llm.metering import Meter, MeteredProvider
+from backlogguard.llm.recording import ROLES
 from langgraph.types import interrupt
 from pydantic import ValidationError
 from backlogguard.tools import ExecutionContext, ToolCall, ToolPolicy, build_catalog_registry
@@ -55,6 +58,9 @@ def _error(node: str, exc: Exception, ref: str | None = None) -> dict:
 
 
 def make_nodes(deps: RunDeps) -> dict[str, Node]:
+    meter = Meter()  # cuenta lo que gasta cada llamada a un modelo, para repartirlo entre las tareas
+    providers = Providers(**{role: MeteredProvider(getattr(deps.providers, role), meter) for role in ROLES})
+
     def sink(agent: str):
         """Callback que anota qué agente emite cada evento (para seguirlos en vivo)."""
         if deps.on_event is None:
@@ -62,9 +68,10 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
         return lambda event: deps.on_event({**event, "agent": agent})
 
     def plan(state: RunState) -> dict:
+        mark = meter.mark()
         result = plan_run(
             state["objective"],
-            provider=deps.providers.supervisor,
+            provider=providers.supervisor,
             library=deps.library,
             policy=deps.policy,
             run_id=state.get("run_id", "run-local"),
@@ -77,7 +84,13 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             "used_default": result.used_default,
         }
         inventory = deps.library.inventory()
+        log = TaskLog(len(state.get("tasks", [])))
+        log.add(
+            "persona", "supervisor", "planificar", detail=state["objective"], status="hecha" if not result.error else "con_aviso",
+            usage=meter.since(mark), model=model_of(providers.supervisor),
+        )
         return {
+            "tasks": log.tasks,
             "plan": plan_data,
             "sources": inventory,
             "started_at": time.time(),
@@ -90,6 +103,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             return {"stop_reason": reason, "pending": [], "trace": [{"node": "produce", "stop": reason}]}
         board = _board(state)
         plan_data = state["plan"]
+        mark = meter.mark()
         goal = (
             f"{plan_data['instruction']}\n"
             f"Redactá solo a partir de estas fuentes: {', '.join(plan_data['sources'])}. "
@@ -97,7 +111,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
         )
         outcome = run_requerimientos(
             goal,
-            provider=deps.providers.requerimientos,
+            provider=providers.requerimientos,
             library=deps.library,
             retriever=deps.retriever,
             board=board,
@@ -105,7 +119,15 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             on_event=sink("requerimientos"),
         )
         pending = [item.id for item in board.items.values() if item.state is ItemState.BORRADOR]
+        log = TaskLog(len(state.get("tasks", [])))
+        log.add(
+            "supervisor", "requerimientos", "redactar",
+            detail=f"Fuentes: {', '.join(plan_data['sources'])}. Ítems redactados: {len(pending)}.",
+            status="hecha" if outcome["stop_reason"] == "final_answer" else "incompleta", stop_reason=outcome["stop_reason"],
+            usage=meter.since(mark), model=model_of(providers.requerimientos), steps=describe_outcome(outcome)["steps"],
+        )
         return {
+            "tasks": log.tasks,
             "board": _dump(board),
             "pending": pending,
             "tokens": state.get("tokens", 0) + outcome["tokens"],
@@ -121,25 +143,52 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
         item_id, rest = pending[0], pending[1:]
         board = _board(state)
         spent = [0]
+        log = TaskLog(len(state.get("tasks", [])))
+        round_number = [0]
 
         def critic_review(ref: str):
-            outcome = review_item(
-                ref, provider=deps.providers.critico, retriever=deps.retriever, board=board, on_event=sink("critico")
-            )
+            round_number[0] += 1
+            mark = meter.mark()
+            try:
+                outcome = review_item(
+                    ref, provider=providers.critico, retriever=deps.retriever, board=board, on_event=sink("critico")
+                )
+            except LLMError as exc:
+                log.add("requerimientos", "critico", "revisar", ref=ref, round=round_number[0], status="fallida",
+                        detail=str(exc), model=model_of(providers.critico))
+                raise
             spent[0] += outcome.tokens
-            return outcome.verdict
+            verdict = outcome.verdict
+            log.add(
+                "requerimientos", "critico", "revisar", ref=ref, round=round_number[0],
+                detail=verdict.verdict + (": " + "; ".join(verdict.objections) if verdict.objections else ""),
+                stop_reason=outcome.stop_reason, usage=meter.since(mark), model=model_of(providers.critico),
+            )
+            return verdict
 
         def producer_revise(ref: str, objections: list[str]) -> None:
-            outcome = revise_item(
-                ref,
-                objections,
-                provider=deps.providers.requerimientos,
-                library=deps.library,
-                retriever=deps.retriever,
-                board=board,
-                on_event=sink("requerimientos"),
-            )
+            mark = meter.mark()
+            try:
+                outcome = revise_item(
+                    ref,
+                    objections,
+                    provider=providers.requerimientos,
+                    library=deps.library,
+                    retriever=deps.retriever,
+                    board=board,
+                    on_event=sink("requerimientos"),
+                )
+            except LLMError as exc:
+                log.add("critico", "requerimientos", "corregir", ref=ref, round=round_number[0], status="fallida",
+                        detail=str(exc), model=model_of(providers.requerimientos))
+                raise
             spent[0] += outcome["tokens"]
+            done = describe_outcome(outcome)
+            log.add(
+                "critico", "requerimientos", "corregir", ref=ref, round=round_number[0], detail="; ".join(objections),
+                status="hecha" if done["corrections"] else "sin_correccion", stop_reason=outcome["stop_reason"],
+                usage=meter.since(mark), model=model_of(providers.requerimientos), **done,
+            )
 
         errors: list[dict] = []
         try:
@@ -149,6 +198,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             info = {"outcome": "error", "rounds": 0, "objections": []}
             errors.append(_error("review", exc, item_id))
         return {
+            "tasks": log.tasks,
             "board": _dump(board),
             "pending": rest,
             "reviewed": {**state.get("reviewed", {}), item_id: info},
@@ -162,9 +212,11 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             return {"stop_reason": reason, "audit_passes": 1, "pending": [], "trace": [{"node": "audit", "stop": reason}]}
         board = _board(state)
         tokens, errors, reopened, applied_ids = state.get("tokens", 0), [], [], []
+        log = TaskLog(len(state.get("tasks", [])))
         try:
+            mark_audit = meter.mark()
             run = run_auditor(
-                provider=deps.providers.auditor,
+                provider=providers.auditor,
                 retriever=deps.retriever,
                 board=board,
                 memory=deps.memory,
@@ -173,14 +225,20 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             )
             tokens += run.tokens
             result = apply_report(run.report, board, deps.retriever)
+            log.add(
+                "supervisor", "auditor", "auditar",
+                detail=f"Hallazgos aplicados: {len(result.applied)}; descartados: {len(result.discarded)}.",
+                stop_reason=run.stop_reason, usage=meter.since(mark_audit), model=model_of(providers.auditor),
+            )
             deliver_corrections(board, result.applied)
             applied_ids = [finding.id for finding in result.applied]
             for item_id, corrections in corrections_by_item(result.applied).items():
+                mark = meter.mark()
                 try:
                     outcome = revise_item(
                         item_id,
                         corrections,
-                        provider=deps.providers.requerimientos,
+                        provider=providers.requerimientos,
                         library=deps.library,
                         retriever=deps.retriever,
                         board=board,
@@ -188,13 +246,23 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
                     )
                     tokens += outcome["tokens"]
                     reopened.append(item_id)
+                    done = describe_outcome(outcome)
+                    log.add(
+                        "auditor", "requerimientos", "corregir", ref=item_id, detail="; ".join(corrections),
+                        status="hecha" if done["corrections"] else "sin_correccion", stop_reason=outcome["stop_reason"],
+                        usage=meter.since(mark), model=model_of(providers.requerimientos), **done,
+                    )
                 except LLMError as exc:
                     errors.append(_error("audit", exc, item_id))
+                    log.add("auditor", "requerimientos", "corregir", ref=item_id, status="fallida", detail=str(exc),
+                            model=model_of(providers.requerimientos))
             discarded = len(result.discarded)
         except LLMError as exc:
             errors.append(_error("audit", exc))
+            log.add("supervisor", "auditor", "auditar", status="fallida", detail=str(exc), model=model_of(providers.auditor))
             discarded = 0
         return {
+            "tasks": log.tasks,
             "board": _dump(board),
             "audit": {"findings": applied_ids, "discarded": discarded, "reopened": reopened},
             "audit_passes": 1,
@@ -237,6 +305,10 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             register(group.reason, group.group_id, group.summary, [f.id for f in group.findings])
             requests.append(request_for_group(group, deps.policy).model_dump(mode="json"))
 
+        log = TaskLog(len(state.get("tasks", [])))
+        for raw in requests:
+            log.add("critico" if raw["kind"] == "item" else "auditor", "persona", "decidir", ref=raw["ref"], status="escalada")
+
         stop = state.get("stop_reason") or over_budget(state, deps.budget)
         if stop:
             status = "presupuesto_agotado"
@@ -247,6 +319,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
         else:
             status = "completada"
         return {
+            "tasks": log.tasks,
             "escalations": [e.model_dump() for e in toolkit.escalations],
             "requests": requests,
             "status": status,
@@ -335,9 +408,10 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             return {"trace": [{"node": "integrate", "stop": reason}]}
         excluded = frozenset(state.get("plan_exclusions", []))
         service = PublishService(_board(state), deps.backlog, deps.ledger, deps.project, excluded)
+        mark = meter.mark()
         try:
             run = run_integracion(
-                provider=deps.providers.integracion,
+                provider=providers.integracion,
                 service=service,
                 run_id=state.get("run_id", "run-local"),
                 on_event=sink("integracion"),
@@ -346,7 +420,13 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             return {"errors": [_error("integrate", exc)], "trace": [{"node": "integrate", "error": str(exc)}]}
         plan = run.plan
         summary = _plan_summary(plan, run.summary)
+        log = TaskLog(len(state.get("tasks", [])))
+        log.add(
+            "supervisor", "integracion", "armar_plan", detail=f"Plan {plan.plan_hash}: {plan.counts()}",
+            stop_reason=run.stop_reason, usage=meter.since(mark), model=model_of(providers.integracion),
+        )
         update: dict = {
+            "tasks": log.tasks,
             "publish_plan": summary,
             "tokens": state.get("tokens", 0) + run.tokens,
             "trace": [{"node": "integrate", "plan_hash": plan.plan_hash, "counts": plan.counts()}],
@@ -432,11 +512,14 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             "plan_de_publicacion": state.get("publish_plan", {}).get("counts"),
         }
         exhausted = state.get("tokens", 0) >= deps.budget.max_tokens
+        mark = meter.mark()
         if exhausted:
             text, spent = f"Corrida {facts['status']} (presupuesto de tokens agotado): {facts['items']} ítems.", 0
         else:
-            text, spent = summarize_run(facts, provider=deps.providers.supervisor)
-        return {"summary": text, "tokens": state.get("tokens", 0) + spent, "trace": [{"node": "summarize"}]}
+            text, spent = summarize_run(facts, provider=providers.supervisor)
+        log = TaskLog(len(state.get("tasks", [])))
+        log.add("persona", "supervisor", "resumir", usage=meter.since(mark), model=model_of(providers.supervisor))
+        return {"tasks": log.tasks, "summary": text, "tokens": state.get("tokens", 0) + spent, "trace": [{"node": "summarize"}]}
 
     nodes = {
         "plan": plan, "produce": produce, "review": review, "audit": audit, "escalate": escalate,

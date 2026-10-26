@@ -195,10 +195,45 @@ def test_agente_critico_devuelve_un_veredicto_validado(world):
             final(item_id="HU-1", verdict="objetado", objections=["Hay una reunión posterior que pasa el reporte a Excel."]),
         ],
     )
-    review = review_item("HU-1", provider=provider, retriever=retriever, board=board)
+    review = review_item("HU-1", provider=provider, retriever=retriever, board=board, precompute=False)
     assert review.verdict.verdict == "objetado" and review.tokens > 0
     assert "Dado" not in provider.prompts[0] and "HU-1" in provider.prompts[0]
     assert "verificador adversarial" in provider.systems[0]
+
+
+def test_el_critico_recibe_el_expediente_y_la_traza_lo_registra(world):
+    retriever, board = world
+    add_item(board, citation_for(retriever, "reunion_01_kickoff", "reporte mensual PDF"))
+    events = []
+    provider = FakeProvider(
+        delay_seconds=0,
+        responses=[final(item_id="HU-1", verdict="objetado", objections=["Hay una reunión posterior que pasa el reporte a Excel."])],
+    )
+    review = review_item("HU-1", provider=provider, retriever=retriever, board=board, on_event=events.append)
+    assert len(provider.prompts) == 1  # un solo paso del modelo en lugar de cuatro
+    assert "Dado" in provider.prompts[0] and "controles" in provider.prompts[0]
+    marked = [e["tool"] for e in events if e.get("precalculada")]
+    assert marked == ["evaluar_dor_invest", "verificar_cita", "buscar_contraevidencia"]
+    assert review.verdict.verdict == "objetado"
+
+
+def test_el_critico_da_el_mismo_veredicto_con_y_sin_expediente(world):
+    retriever, board = world
+    add_item(board, citation_for(retriever, "reunion_01_kickoff", "reporte mensual PDF"))
+    answer = final(item_id="HU-1", verdict="objetado", objections=["Hay una reunión posterior que pasa el reporte a Excel."])
+    steps = [tool("evaluar_dor_invest", item_id="HU-1"), tool("verificar_cita", item_id="HU-1"), tool("buscar_contraevidencia", item_id="HU-1")]
+    without = review_item("HU-1", provider=FakeProvider(delay_seconds=0, responses=[*steps, answer]), retriever=retriever, board=board, precompute=False)
+    with_dossier = review_item("HU-1", provider=FakeProvider(delay_seconds=0, responses=[answer]), retriever=retriever, board=board, precompute=True)
+    assert with_dossier.verdict == without.verdict
+
+
+def test_el_interruptor_de_config_apaga_el_expediente(tmp_path):
+    from backlogguard.agents.dossier import dossier_enabled
+
+    path = tmp_path / "ctx.yaml"
+    path.write_text("precalculated_dossier: {critico: false}", encoding="utf-8")
+    assert dossier_enabled("critico", path=path) is False and dossier_enabled("auditor", path=path) is True
+    assert dossier_enabled("critico", True, path=path) is True and dossier_enabled("critico", path=tmp_path / "no.yaml") is True
 
 
 def test_veredicto_invalido_se_repara_una_vez_y_luego_falla(world):

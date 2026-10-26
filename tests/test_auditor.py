@@ -286,6 +286,18 @@ def test_agente_auditor_devuelve_un_informe_validado(retriever, board, memory):
     assert "Auditás el proyecto" in provider.systems[0]
 
 
+def test_el_auditor_recibe_el_expediente(retriever, board, memory):
+    report = AuditReport(findings=[evolution_draft(retriever)], summary="Un cambio de formato.").model_dump(mode="json")
+    events = []
+    provider = FakeProvider(delay_seconds=0, responses=[final(report)])
+    run = run_auditor(provider=provider, retriever=retriever, board=board, memory=memory, on_event=events.append)
+    assert len(provider.prompts) == 1 and run.report.findings[0].kind is FindingKind.DECISION_EVOLUCIONADA
+    assert [e["tool"] for e in events if e.get("precalculada")] == [
+        "consultar_decisiones_vigentes", "comparar_con_preventa", "detectar_contradicciones",
+    ]
+    assert "comparar_con_preventa" in provider.prompts[0]
+
+
 def test_inyeccion_no_altera_al_auditor(retriever, board, memory):
     provider = FakeProvider(
         delay_seconds=0,
