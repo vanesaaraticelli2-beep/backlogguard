@@ -5,3 +5,13 @@
 precalculated_dossier:
   critico: true
   auditor: true
+
+# Compactación del historial: cada paso reenvía las observaciones anteriores. Solo las últimas `window` viajan completas;
+# las anteriores se resumen con una regla fija (sin modelo). El expediente precalculado no se compacta. La traza guarda todo.
+# `max_prompt_chars` es el tope de prompt del agente: si se supera, se compacta más y el paso queda registrado.
+context:
+  supervisor: {window: 2, max_prompt_chars: 40000}
+  requerimientos: {window: 2, max_prompt_chars: 100000}
+  critico: {window: 2, max_prompt_chars: 80000}
+  auditor: {window: 2, max_prompt_chars: 200000}
+  integracion: {window: 2, max_prompt_chars: 40000}

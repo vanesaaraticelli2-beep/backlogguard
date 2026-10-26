@@ -7,6 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from backlogguard.agents.context import load_limits
 from backlogguard.agents.decider import LLMDecider
 from backlogguard.agents.dossier import dossier_enabled
 from backlogguard.agents.loop import run_basic_agent
@@ -14,6 +15,7 @@ from backlogguard.agents.structured import extract_json, parse_with_repair
 from backlogguard.board import AgentRole, Board
 from backlogguard.llm.errors import InvalidProviderResponseError
 from backlogguard.llm.providers import LLMProvider
+from backlogguard.skills import skill_instructions
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools import ExecutionContext, ToolPolicy, build_catalog_registry
 from backlogguard.tools.critico import CriticToolkit
@@ -64,7 +66,7 @@ def review_item(
     run_id: str = "run-local",
     max_steps: int = 8,
     max_seconds: float = 180.0,
-    max_tool_calls: int = 4,
+    max_tool_calls: int = 6,
     max_tokens: int = 40_000,
     on_event: Callable[[dict], None] | None = None,
     precompute: bool | None = None,
@@ -73,9 +75,10 @@ def review_item(
     registry = build_catalog_registry(CriticToolkit(retriever, board).implementations())
     context = ExecutionContext(user_id="factory", role=AgentRole.CRITICO, run_id=run_id)
     policy = ToolPolicy()
-    instructions = INSTRUCTIONS_PATH.read_text(encoding="utf-8")
+    instructions = skill_instructions("critico", INSTRUCTIONS_PATH)
     decider = LLMDecider(
-        provider, AgentRole.CRITICO.value, registry, context, policy, instructions=instructions
+        provider, AgentRole.CRITICO.value, registry, context, policy, instructions=instructions,
+        limits=load_limits("critico"),
     )
     outcome = run_basic_agent(
         f"Revisá el ítem {item_id} del tablero.",

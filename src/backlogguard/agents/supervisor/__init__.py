@@ -9,12 +9,14 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from backlogguard.agents.context import load_limits
 from backlogguard.agents.decider import LLMDecider
 from backlogguard.agents.loop import run_basic_agent
 from backlogguard.board import AgentRole, SourceType
 from backlogguard.llm.errors import LLMError
 from backlogguard.llm.providers import LLMProvider
 from backlogguard.llm.resilience import generate_with_resilience_sync
+from backlogguard.skills import skill_instructions
 from backlogguard.rag.sources import SourceLibrary
 from backlogguard.tools import ExecutionContext, ToolPolicy, build_catalog_registry
 from backlogguard.tools.policy_config import PolicyConfig
@@ -65,7 +67,8 @@ def plan_run(
         registry,
         context,
         policy_gate,
-        instructions=INSTRUCTIONS_PATH.read_text(encoding="utf-8"),
+        instructions=skill_instructions("supervisor", INSTRUCTIONS_PATH),
+        limits=load_limits("supervisor"),
     )
     outcome = run_basic_agent(
         f"Objetivo de la corrida: {objective}\nFuentes disponibles:\n{catalog}",

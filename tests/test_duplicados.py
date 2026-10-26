@@ -19,7 +19,7 @@ def test_dos_redacciones_del_mismo_requisito_se_reconocen_aunque_el_titulo_cambi
     assert repeat_requirement(
         "Conservar historial de reprocesos de facturas con cada intento como evento independiente", HISTORIAL, {"f1"},
         "Historial de reintentos de factura y visualización de su línea de tiempo completa",
-        "Como analista quiero ver el historial de reintentos de una factura para saber cuántas veces fue reprocesada.", {"f1"},
+        "Como analista quiero ver el historial de cada reintento de una factura para saber cuántas veces fue reprocesada.", {"f1"},
     )
 
 
@@ -76,3 +76,15 @@ def test_un_duplicado_se_excluye_sin_pedir_ni_gastar_rondas():
     assert board.items["HU-2"].state is ItemState.EXCLUIDO and "Duplicado de HU-1" in result.objections[-1]
     # el ítem más viejo sigue su camino normal
     assert negotiate_item("HU-1", board=board, retriever=retriever, review=review, revise=lambda *_: None).outcome == "sustentado"
+
+
+def test_una_historia_que_se_muestra_distinto_no_se_excluye_aunque_comparta_fuente_y_una_frase():
+    # corrida 91ad5002: registrar cada reintento vs visualizar la línea de tiempo (mismo fragmento, resultado visible distinto)
+    assert not repeat_requirement(
+        "Registrar cada reintento de una factura como evento independiente",
+        "Como responsable de facturación quiero que cada reintento de una factura quede registrado como un evento independiente, "
+        "incluso si el reproceso termina siendo exitoso, para saber cuántas veces fue reprocesada.", {"f1"},
+        "Visualizar la línea de tiempo completa de una factura, con todos sus intentos",
+        "Como usuario de negocio quiero visualizar la línea de tiempo completa de una factura, incluyendo cada intento de "
+        "procesamiento registrado como evento independiente, para saber cuántas veces fue reprocesada.", {"f1"},
+    )

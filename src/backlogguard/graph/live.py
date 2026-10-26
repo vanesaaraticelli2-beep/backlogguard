@@ -67,6 +67,11 @@ def format_event(event: dict) -> str | None:
         mark = "ok" if observation["ok"] else "ERROR"
         origin = f"  {agent} (precalculada) {event['tool']}\n" if event.get("precalculada") else ""
         return f"{origin}      ↳ {mark}: {_short(observation['content'])}"
+    if kind == "context":
+        if not (event["compacted"] or event["compressed"]):
+            return None
+        note = f"  {agent}: contexto de {event['chars']:,} caracteres, {event['compacted']} observación(es) resumida(s)"
+        return note + (" · tope de contexto superado: se comprimió más" if event["compressed"] else "")
     if kind == "llm_error":
         return f"  {agent}: falló el modelo → {_short(event['error'])}"
     return json.dumps(event, ensure_ascii=False)[:160]

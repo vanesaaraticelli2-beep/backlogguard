@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable
 
+from backlogguard.agents.context import load_limits
+from backlogguard.skills import skill_instructions
 from backlogguard.agents.decider import LLMDecider
 from backlogguard.agents.loop import run_basic_agent
 from backlogguard.board import AgentRole
@@ -51,7 +53,8 @@ def run_integracion(
         registry,
         context,
         policy,
-        instructions=INSTRUCTIONS_PATH.read_text(encoding="utf-8"),
+        instructions=skill_instructions("integracion", INSTRUCTIONS_PATH),
+        limits=load_limits("integracion"),
         max_observation_chars=8_000,
     )
     outcome = run_basic_agent(

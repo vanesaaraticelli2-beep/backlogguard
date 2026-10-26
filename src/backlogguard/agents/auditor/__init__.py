@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from backlogguard.agents.auditor.informe import ApplyResult, AuditReport, apply_report, parse_report
+from backlogguard.agents.context import load_limits
 from backlogguard.agents.decider import LLMDecider
 from backlogguard.agents.dossier import dossier_enabled
 from backlogguard.agents.loop import run_basic_agent
@@ -13,6 +14,7 @@ from backlogguard.board import AgentRole, Board
 from backlogguard.llm.errors import InvalidProviderResponseError
 from backlogguard.llm.providers import LLMProvider
 from backlogguard.memory import ProjectMemory
+from backlogguard.skills import skill_instructions
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools import ExecutionContext, ToolPolicy, build_catalog_registry
 from backlogguard.tools.auditor import AuditorToolkit
@@ -55,7 +57,7 @@ def run_auditor(
     toolkit = AuditorToolkit(retriever, board, memory, context)
     registry = build_catalog_registry(toolkit.implementations())
     policy = ToolPolicy()
-    instructions = INSTRUCTIONS_PATH.read_text(encoding="utf-8")
+    instructions = skill_instructions("auditor", INSTRUCTIONS_PATH)
     decider = LLMDecider(
         provider,
         AgentRole.AUDITOR.value,
@@ -63,6 +65,7 @@ def run_auditor(
         context,
         policy,
         instructions=instructions,
+        limits=load_limits("auditor"),
         max_observation_chars=60_000,
     )
     outcome = run_basic_agent(

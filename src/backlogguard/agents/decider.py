@@ -14,6 +14,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from backlogguard.agents.context import ContextLimits, compactable, digest
 from backlogguard.agents.loop import AgentDecision, sanitize_for_trace
 from backlogguard.llm.errors import InvalidProviderResponseError
 from backlogguard.llm.providers import LLMProvider
@@ -56,7 +57,10 @@ class LLMDecider:
         base_delay_seconds: float = 0.25,
         max_observation_chars: int = 4000,
         instructions: str | None = None,
+        limits: ContextLimits | None = None,
     ):
+        self.limits = limits or ContextLimits()
+        self.context_report: dict | None = None
         self.instructions = instructions
         self.provider = provider
         self.role = role
@@ -74,24 +78,57 @@ class LLMDecider:
     def tokens_used(self) -> int:
         return self.input_tokens + self.output_tokens
 
-    def _render_observations(self, observations: list[ToolResult]) -> str:
-        rendered = []
-        for item in observations:
+    def _render_observations(self, observations: list[ToolResult], window: int | None = None, limit: int | None = None) -> tuple[str, int]:
+        """Observaciones para el prompt: las últimas `window` completas, las demás resumidas. Devuelve el texto y cuántas se resumieron."""
+        window = self.limits.window if window is None else window
+        limit = self.max_observation_chars if limit is None else limit
+        rendered, compacted = [], 0
+        for index, item in enumerate(observations):
             data = sanitize_for_trace(item.model_dump())
             content = str(data.get("content", ""))
-            if len(content) > self.max_observation_chars:
-                data["content"] = content[: self.max_observation_chars] + " [truncado]"
+            tool = item.metadata.get("tool")
+            if index < len(observations) - window and compactable(tool, item.ok, bool(item.metadata.get("precalculada"))):
+                data["content"] = digest(tool, content)
+                compacted += 1
+            elif len(content) > limit:
+                data["content"] = content[:limit] + " [truncado]"
+            data["metadata"] = {k: v for k, v in data.get("metadata", {}).items() if k not in ("tool", "precalculada")} | (
+                {"precalculada": True} if item.metadata.get("precalculada") else {}
+            )
             rendered.append(data)
-        return _escape_markup(json.dumps(rendered, ensure_ascii=False))
+        return _escape_markup(json.dumps(rendered, ensure_ascii=False)), compacted
 
     def build_prompt(self, user_message: str, observations: list[ToolResult]) -> str:
         declarations = self.registry.function_declarations(context=self.context, policy=self.policy)
-        return (
-            f"<objetivo>\n{user_message}\n</objetivo>\n\n"
-            f"<tools_disponibles>\n{json.dumps(declarations, ensure_ascii=False)}\n</tools_disponibles>\n\n"
-            f"<observaciones_no_confiables>\n{self._render_observations(observations)}\n"
-            f"</observaciones_no_confiables>"
-        )
+
+        def assemble(rendered: str) -> str:
+            return (
+                f"<objetivo>\n{user_message}\n</objetivo>\n\n"
+                f"<tools_disponibles>\n{json.dumps(declarations, ensure_ascii=False)}\n</tools_disponibles>\n\n"
+                f"<observaciones_no_confiables>\n{rendered}\n"
+                f"</observaciones_no_confiables>"
+            )
+
+        window, limit = self.limits.window, self.max_observation_chars
+        rendered, compacted = self._render_observations(observations, window, limit)
+        prompt = assemble(rendered)
+        # Tope de contexto del agente: primero se compacta más, después se recortan las observaciones largas.
+        while len(prompt) > self.limits.max_prompt_chars and (window > 0 or limit > 500):
+            if window > 0:
+                window -= 1
+            else:
+                limit = max(500, limit // 2)
+            rendered, compacted = self._render_observations(observations, window, limit)
+            prompt = assemble(rendered)
+        self.context_report = {
+            "chars": len(prompt),
+            "observations": len(observations),
+            "compacted": compacted,
+            "window": window,
+            "compressed": window < self.limits.window or limit < self.max_observation_chars,
+            "over_budget": len(prompt) > self.limits.max_prompt_chars,
+        }
+        return prompt
 
     @staticmethod
     def _parse(text: str) -> AgentDecision:

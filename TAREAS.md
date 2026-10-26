@@ -209,11 +209,14 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] Medición con costo estimado — cada llamada a un modelo se mide (entrada/salida) y se reparte entre las tareas; precios en `config/pricing.yaml`; un modelo sin precio se avisa en lugar de inventar el costo. Se ve en la solapa «Tareas entre agentes».
 - [x] Prueba de calidad con Opus real (`scripts/comparar_expediente.py`, 5 ítems sembrados): mismo veredicto en 5 de 5; llamadas 17 → 5, tokens de entrada 41.369 → 17.948, costo ~US$ 0,28 → ~US$ 0,14.
 
-## Día 11 · Skills y contexto (esquema)
+## Día 11 · Skills y contexto — [x] (falta commit; falta medir el ahorro con una corrida real)
 **Objetivo:** darle a cada agente solo el conocimiento y el contexto que necesita, sin sobrecargarlo.
 
-- [ ] Cinco skills en formato Agent Skills (`SKILL.md`, references, scripts, assets) — guías reutilizables por agente. Explican cómo hacer algo, pero no dan permisos.
-- [ ] `context_budget.yaml` y context builder — limitan cuánto contexto recibe cada agente y arman ese contexto de forma ordenada.
+- [x] Cinco skills en formato Agent Skills (`skills/<nombre>/SKILL.md`) — una por rol: redacción de historias, revisión adversarial, auditoría de alcance, delegación de tareas y plan de publicación. Explican cómo hacer algo y no dan permisos (un `allowed-tools` se rechaza); el procedimiento y los criterios pasaron del `agent.md` a la skill, y el `agent.md` conserva el rol y las reglas duras.
+- [x] `SkillLoader` (clase 10) — nivel 1 (encabezado), nivel 2 (cuerpo) y nivel 3 (recursos sin salir de la carpeta). Adaptación fuera del curso: cada skill declara su rol y la asigna el código, no un selector léxico. Los recursos de nivel 3 (`references/`) todavía no se usan: se agregan cuando haya una forma de leerlos bajo demanda.
+- [x] Compactación del historial — solo las últimas 2 observaciones viajan completas; las antiguas se resumen con una regla fija por herramienta (sin modelo, sin agregar texto, conservando los ids). El expediente precalculado no se compacta. La traza guarda siempre el contenido completo.
+- [x] Presupuesto de contexto por agente (`config/context_budget.yaml`) — tope de caracteres de prompt por agente; si se supera, se compacta más y el paso queda registrado en la traza y en la vista en vivo.
+- [ ] Medir el ahorro con una corrida real (productor, que reenviaba todo en cada paso).
 
 ## Día 12 · Interfaz (esquema)
 **Objetivo:** que una persona pueda usar el sistema sin tocar código.

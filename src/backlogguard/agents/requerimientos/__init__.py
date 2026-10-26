@@ -3,10 +3,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from backlogguard.agents.context import load_limits
 from backlogguard.agents.decider import LLMDecider
 from backlogguard.agents.loop import run_basic_agent
 from backlogguard.board import AgentRole, Board
 from backlogguard.llm.providers import LLMProvider
+from backlogguard.skills import skill_instructions
 from backlogguard.rag import SourceLibrary
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools import ExecutionContext, ToolPolicy, build_catalog_registry
@@ -40,7 +42,8 @@ def run_requerimientos(
         registry,
         context,
         policy,
-        instructions=INSTRUCTIONS_PATH.read_text(encoding="utf-8"),
+        instructions=skill_instructions("requerimientos", INSTRUCTIONS_PATH),
+        limits=load_limits("requerimientos"),
     )
     outcome = run_basic_agent(
         goal,

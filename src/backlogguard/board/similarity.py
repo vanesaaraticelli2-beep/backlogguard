@@ -26,7 +26,9 @@ def similar_titles(first: str, second: str) -> bool:
     return smaller >= MIN_TOKENS and len(mine & theirs) / smaller >= DUPLICATE_OVERLAP
 
 
-REQUIREMENT_OVERLAP = 0.6
+# Calibrado con dos corridas reales: las historias repetidas dieron 0,68 a 0,84 y una distinta que comparte fragmento, 0,65.
+# Son pocos datos: es una heurística a revisar con la evaluación.
+REQUIREMENT_OVERLAP = 0.7
 
 
 def repeat_requirement(title: str, description: str, fragments: set[str], other_title: str, other_description: str, other_fragments: set[str]) -> bool:

@@ -96,6 +96,7 @@ def run_basic_agent(
         result = registry.run(
             ToolCall(tool_name=name, arguments=arguments), allowed_kinds=allowed_kinds, context=context, policy=policy
         )
+        result = result.model_copy(update={"metadata": {**result.metadata, "tool": name, "precalculada": True}})
         observations.append(result)
         record({
             "run_id": getattr(context, "run_id", None),
@@ -125,6 +126,9 @@ def run_basic_agent(
             })
             return stop(f"Falló el modelo: {exc}", "unrecoverable_error")
 
+        if (report := getattr(decide_next, "context_report", None)) is not None:
+            record({"run_id": getattr(context, "run_id", None), "step": step, "event": "context", **report})
+
         record({
             "run_id": getattr(context, "run_id", None),
             "step": step,
@@ -152,6 +156,7 @@ def run_basic_agent(
         )
 
         tool_calls += 1
+        result = result.model_copy(update={"metadata": {**result.metadata, "tool": decision.tool_name}})
         observations.append(result)
 
         record({
