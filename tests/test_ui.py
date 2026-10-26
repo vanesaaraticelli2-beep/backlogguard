@@ -182,3 +182,16 @@ def test_la_solapa_de_tareas_muestra_el_backlog_entre_agentes(screen):
     assert {t["kind"] for t in tasks} >= {"planificar", "redactar", "revisar", "auditar"}
     assert "Pedidos de corrección" in " ".join(m.label for m in at.metric)
     assert any(len(df.value) == len(tasks) for df in at.dataframe)
+
+
+def test_la_solapa_de_tareas_filtra_por_agente_y_muestra_el_detalle(screen):
+    at, controller = screen
+    start_and_wait(at, controller)
+    tasks = controller.state()["tasks"]
+    critic = [t for t in tasks if t["target"] == "critico"]
+    assert critic
+    at.selectbox(key="filtro_agente_tareas").select("Crítico").run()
+    assert not at.exception and any(len(df.value) == len(critic) for df in at.dataframe)
+    options = at.selectbox(key="detalle_tarea").options
+    assert len(options) == len(critic) and all("Crítico" in option for option in options)
+    assert any(area.value == critic[0]["detail"] for area in at.text_area)

@@ -246,7 +246,14 @@ def tab_tasks(controller: RunController) -> None:
         st.markdown("**Quién le pasa tareas a quién**")
         st.dataframe(totals["by_pair"], width="stretch", hide_index=True)
     kinds = ["(todas)"] + sorted({KIND_TITLES.get(t["kind"], t["kind"]) for t in tasks})
-    only = st.selectbox("Mostrar", kinds, key="filtro_tareas")
+    agents = ["(todos)"] + sorted({PARTIES.get(t["target"], t["target"]) for t in tasks})
+    pick_kind, pick_agent = st.columns(2)
+    only = pick_kind.selectbox("Tipo de tarea", kinds, key="filtro_tareas")
+    agent = pick_agent.selectbox("Agente que la hizo", agents, key="filtro_agente_tareas")
+    shown = [
+        t for t in tasks
+        if only in ("(todas)", KIND_TITLES.get(t["kind"], t["kind"])) and agent in ("(todos)", PARTIES.get(t["target"], t["target"]))
+    ]
     rows = [
         {
             "tarea": t["id"],
@@ -266,10 +273,30 @@ def tab_tasks(controller: RunController) -> None:
             "frenadas": t["rejected"] or "",
             "detalle": t["detail"],
         }
-        for t in tasks
-        if only in ("(todas)", KIND_TITLES.get(t["kind"], t["kind"]))
+        for t in shown
     ]
     st.dataframe(rows, width="stretch", hide_index=True)
+    if not shown:
+        return
+    chosen = st.selectbox(
+        "Ver el detalle de una tarea", [t["id"] for t in shown], key="detalle_tarea",
+        format_func=lambda task_id: next(
+            f"{t['id']} · {PARTIES.get(t['origin'], t['origin'])} → {PARTIES.get(t['target'], t['target'])} · "
+            f"{KIND_TITLES.get(t['kind'], t['kind'])}" + (f" · {t['ref']}" if t["ref"] else "") for t in shown if t["id"] == task_id
+        ),
+    )
+    task = next(t for t in shown if t["id"] == chosen)
+    st.markdown(
+        f"**{KIND_TITLES.get(task['kind'], task['kind'])}** · de {PARTIES.get(task['origin'], task['origin'])} "
+        f"para {PARTIES.get(task['target'], task['target'])}" + (f" · ítem `{task['ref']}`" if task["ref"] else "")
+        + (f" · ronda {task['round']}" if task["round"] else "")
+    )
+    st.caption(
+        f"Estado: {TASK_STATUS.get(task['status'], task['status'])} · modelo: {task['model'] or '—'} · "
+        f"entrada {task.get('input_tokens', 0):,} · salida {task.get('output_tokens', 0):,} · llamadas {task.get('llm_calls', 0)}"
+        + (f" · pasos {task['steps']}" if task["steps"] else "") + (f" · cierre: {task['stop_reason']}" if task["stop_reason"] else "")
+    )
+    st.text_area("Detalle (objeciones, veredicto o resultado)", task["detail"] or "(sin detalle)", height=180, disabled=True, key=f"txt_{chosen}")
 
 
 def tab_decisions(controller: RunController, who) -> None:

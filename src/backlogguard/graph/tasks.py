@@ -64,7 +64,7 @@ class TaskLog:
             "kind": kind,
             "ref": ref,
             "round": round,
-            "detail": " ".join(detail.split())[:600],
+            "detail": " ".join(detail.split())[:4000],
             "status": status,
             "stop_reason": stop_reason,
             "tokens": usage.tokens,
