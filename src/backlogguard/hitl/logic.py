@@ -64,6 +64,7 @@ def request_for_item(item: BacklogItem, policy: PolicyConfig) -> DecisionRequest
             source_date=c.source_date.isoformat(),
             speaker=c.speaker,
             page=c.page,
+            source_type=c.source_type.value,
         )
         for c in item.citations
     ]

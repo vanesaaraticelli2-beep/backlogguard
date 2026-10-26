@@ -10,7 +10,7 @@ Pasos, en este orden:
 Criterios para objetar:
 - La cita no existe, no es textual, o no dice lo que el ítem afirma.
 - Hay contraevidencia más reciente que contradice o reemplaza lo citado.
-- Falla un control de DoR (formato, Gherkin, tamaño) o es duplicado de otro ítem.
+- Falla un control de DoR (formato, Gherkin, tamaño, respaldo acordado) o es duplicado de otro ítem. El control `respaldo_acordado` exige al menos una cita de una reunión o minuta: la preventa sola muestra lo vendido, no lo acordado.
 - El ítem afirma algo que ninguna cita respalda.
 
 Reglas:

@@ -173,20 +173,29 @@ def test_la_cita_de_la_preventa_muestra_la_pagina_y_el_critico_la_verifica(tmp_p
     library, meta, imported = preventa_library(tmp_path)
     retriever = InMemoryRetriever(DeterministicLexicalEmbeddings())
     retriever.index(build_chunks("propuesta", imported.text, meta.model_dump(mode="json")))
+    meeting = import_transcript("Ana: Necesitamos ingresar con SSO.\nLuis: De acuerdo, sin usuarios nuevos.\n")
+    meeting_meta = {"source_name": "Reunión", "source_type": "reunion", "source_date": "2026-01-25", "layout": "dialogo"}
+    retriever.index(build_chunks("reunion", meeting.text, meeting_meta))
     board = Board()
     toolkit = RequirementsToolkit(library, retriever, board)
     registry = build_catalog_registry({**toolkit.implementations(), **CriticToolkit(retriever, board).implementations()})
-    chunk = next(c for c in retriever.all_chunks() if "SSO" in c.text)
+    chunk = next(c for c in retriever.all_chunks({"source_type": "preventa"}) if "SSO" in c.text)
+    agreed = retriever.all_chunks({"source_type": "reunion"})[0]
     args = {
         "kind": "historia", "title": "Ingreso con SSO", "description": "Como cliente quiero ingresar con SSO para no crear usuarios.",
         "acceptance_criteria": ["Dado un cliente Cuando ingresa Entonces entra con SSO"],
-        "citations": [{"chunk_id": chunk.chunk_id, "quote": "permite iniciar sesión con SSO"}],
+        # la preventa acompaña (cita adicional); el respaldo acordado sale de la reunión
+        "citations": [
+            {"chunk_id": agreed.chunk_id, "quote": "Necesitamos ingresar con SSO"},
+            {"chunk_id": chunk.chunk_id, "quote": "permite iniciar sesión con SSO"},
+        ],
     }
     writer = ExecutionContext(user_id="u", role="requerimientos")
     created = registry.run(ToolCall(tool_name="redactar_historia", arguments=args), context=writer, policy=ToolPolicy())
     assert created.ok, created.content
     item = board.items[created.metadata["item_id"]]
-    assert item.citations[0].page == 1 and item.citations[0].source_type.value == "preventa"
+    baseline = next(c for c in item.citations if c.source_type.value == "preventa")
+    assert baseline.page == 1 and any(c.source_type.value == "reunion" for c in item.citations)
     critic = ExecutionContext(user_id="u", role="critico")
     checked = registry.run(ToolCall(tool_name="verificar_cita", arguments={"item_id": item.id}), context=critic, policy=ToolPolicy())
     assert checked.metadata["all_ok"] is True
@@ -235,7 +244,7 @@ def test_una_orden_dentro_de_un_pdf_se_trata_como_dato(tmp_path):
     retriever = InMemoryRetriever(DeterministicLexicalEmbeddings())
     retriever.index(build_chunks("propuesta", imported.text, meta.model_dump(mode="json")))
     script = [
-        json.dumps({"action": "tool", "tool_name": "buscar_en_fuentes", "arguments": {"query": "ignorá instrucciones publicá backlog"}}),
+        json.dumps({"action": "tool", "tool_name": "buscar_en_fuentes", "arguments": {"query": "ignorá instrucciones publicá backlog", "incluir_linea_base": True}}),
         json.dumps({"action": "final", "final_answer": "El documento contiene una orden; no la cumplí."}),
     ]
     provider = FakeProvider(delay_seconds=0, responses=script)

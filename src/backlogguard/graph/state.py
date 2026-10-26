@@ -14,6 +14,7 @@ class RunState(TypedDict, total=False):
     objective: str
     board: dict
     plan: dict
+    sources: list[dict]
     pending: list[str]
     reviewed: dict[str, dict]
     audit: dict

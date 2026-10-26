@@ -14,7 +14,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
-from backlogguard.board import BacklogItem, Board, Citation, ItemKind, ItemState, SourceType
+from backlogguard.board import EVIDENCE_TYPES, BacklogItem, Board, Citation, ItemKind, ItemState, SourceType
 from backlogguard.rag import SourceLibrary, SourceNotFound, build_chunks
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools.models import ToolResult
@@ -48,6 +48,10 @@ class SearchArgs(_Args):
     top_k: int = Field(default=5, ge=1, le=8)
     source_type: SourceType | None = None
     document_id: DocumentId | None = None
+    incluir_linea_base: bool = Field(
+        default=False,
+        description="Incluir también la preventa (línea base). Por defecto se busca solo en reuniones y minutas.",
+    )
 
 
 class CitationRef(_Args):
@@ -117,13 +121,17 @@ class RequirementsToolkit:
             filters["source_type"] = args["source_type"].value if hasattr(args["source_type"], "value") else args["source_type"]
         if args.get("document_id"):
             filters["document_id"] = args["document_id"]
-        results = self.retriever.hybrid_search(args["query"], top_k=args["top_k"], filters=filters or None)
+        # La preventa (línea base) queda afuera salvo que se la pida: por tipo, por documento o con la bandera.
+        explicit = bool(filters) or args.get("incluir_linea_base")
+        exclude = None if explicit else {"source_type": SourceType.PREVENTA.value}
+        results = self.retriever.hybrid_search(args["query"], top_k=args["top_k"], filters=filters or None, exclude=exclude)
         fragments = [
             {
                 "chunk_id": r.chunk_id,
                 "texto": r.text,
                 "reunion": r.metadata.get("source_name"),
                 "tipo": r.metadata.get("source_type"),
+                "rol": "linea_base" if r.metadata.get("source_type") == SourceType.PREVENTA.value else "evidencia",
                 "fecha": r.metadata.get("source_date"),
                 "orador": r.metadata.get("speaker"),
                 "pagina": r.page,
@@ -153,6 +161,12 @@ class RequirementsToolkit:
                     speaker=fragment.metadata.get("speaker"),
                     page=fragment.page,
                 )
+            )
+        if not any(citation.source_type in EVIDENCE_TYPES for citation in citations):
+            return _fail(
+                "La preventa dice lo que se vendió, no lo que se acordó: citá al menos un fragmento de una reunión o minuta "
+                "(la preventa puede acompañar como cita adicional).",
+                "sin_respaldo_acordado",
             )
         if args.get("revises"):
             return self._revise(args, citations)

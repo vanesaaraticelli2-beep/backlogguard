@@ -22,7 +22,7 @@ from backlogguard.board import SourceType
 from backlogguard.graph.setup import has_user_sources, user_sources_dir
 from backlogguard.rag import SourceLibrary, build_chunks
 from backlogguard.rag.importers import ImportedSource, SourceImportError, estimate, import_pdf, import_transcript
-from backlogguard.rag.sources import SourceMetadata, slugify
+from backlogguard.rag.sources import SourceChangeNeedsConfirmation, SourceMetadata, SourceUnchanged, slugify
 
 ROOT = Path(__file__).resolve().parents[1]
 LIBRARY = SourceLibrary(user_sources_dir(ROOT / "data"))
@@ -31,10 +31,11 @@ LIBRARY = SourceLibrary(user_sources_dir(ROOT / "data"))
 def save(imported: ImportedSource, name: str, kind: SourceType, when: date, *, overwrite: bool) -> str:
     metadata = SourceMetadata(source_name=name, source_type=kind, source_date=when, layout=imported.layout)
     document_id = slugify(name)
-    LIBRARY.write(document_id, metadata, imported.text, overwrite=overwrite)
+    status = LIBRARY.save(document_id, metadata, imported.text, replace=overwrite)
     chunks = build_chunks(document_id, imported.text, metadata.model_dump(mode="json"))
     size = estimate(imported.words)
-    print(f"\n✔ {document_id}: {kind.value}, {when.isoformat()}, {imported.words} palabras (~{size['tokens']} tokens), {len(chunks)} fragmentos")
+    verb = "reemplazada" if status.status == "cambio" else "importada"
+    print(f"\n✔ {document_id} ({verb}): {kind.value}, {when.isoformat()}, {imported.words} palabras (~{size['tokens']} tokens), {len(chunks)} fragmentos, huella {status.new_fingerprint}")
     if imported.pages:
         print(f"   {imported.pages} páginas")
     if imported.speakers:
@@ -52,6 +53,9 @@ def listing() -> None:
     print(f"Fuentes propias en {LIBRARY.root.relative_to(ROOT)}: {len(entries)}")
     for document_id, meta in entries:
         print(f"  {document_id:40} {meta.source_type.value:9} {meta.source_date} {meta.layout:8} {meta.source_name}")
+    for row in LIBRARY.inventory() if LIBRARY.root.is_dir() else []:
+        mark = {True: "verificada", False: "¡EDITADA A MANO!", None: "sin huella guardada"}[row["fingerprint_ok"]]
+        print(f"    huella {row['fingerprint']} · {row['words']} palabras · {mark} · {row['id']}")
     print("Las corridas usan: " + ("estas fuentes propias" if has_user_sources(LIBRARY.root) else "las fuentes de ejemplo (faltan una preventa y una reunión propias)"))
 
 
@@ -103,7 +107,13 @@ def main() -> int:
             return 1
         try:
             save(importer(path), name, kind, when, overwrite=options.sobrescribir)
-        except (SourceImportError, FileExistsError, OSError) as exc:
+        except SourceUnchanged as exc:
+            print(f"= {exc}")
+            continue
+        except SourceChangeNeedsConfirmation as exc:
+            print(f"✘ {exc} Agregá --sobrescribir para reemplazarla.")
+            return 1
+        except (SourceImportError, OSError) as exc:
             print(f"✘ {path.name}: {exc}")
             return 1
     print()

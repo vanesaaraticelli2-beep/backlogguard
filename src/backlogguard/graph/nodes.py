@@ -76,8 +76,10 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             "delegations": [d.model_dump() for d in result.delegations],
             "used_default": result.used_default,
         }
+        inventory = deps.library.inventory()
         return {
             "plan": plan_data,
+            "sources": inventory,
             "started_at": time.time(),
             "tokens": state.get("tokens", 0) + result.tokens,
             "trace": [{"node": "plan", "used_default": result.used_default, "sources": result.sources, "error": result.error}],

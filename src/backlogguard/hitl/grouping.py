@@ -65,6 +65,7 @@ class FindingGroup:
                         source_date=citation.source_date.isoformat(),
                         speaker=citation.speaker,
                         page=citation.page,
+                        source_type=citation.source_type.value,
                     )
                 )
         return result[:MAX_EVIDENCE]

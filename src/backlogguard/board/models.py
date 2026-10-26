@@ -32,6 +32,10 @@ class SourceType(StrEnum):
     PREVENTA = "preventa"
 
 
+# La preventa es la línea base (lo vendido); las reuniones y minutas son la evidencia (lo acordado).
+EVIDENCE_TYPES = frozenset({SourceType.REUNION, SourceType.MINUTA})
+
+
 class ItemKind(StrEnum):
     EPICA = "epica"
     HISTORIA = "historia"

@@ -94,13 +94,19 @@ class InMemoryRetriever:
         scored.sort(key=lambda pair: (-pair[0], pair[1]["chunk_id"]))
         return [_result(item, score) for score, item in scored[:top_k]]
 
-    def hybrid_search(self, query: str, top_k: int = 5, filters: dict | None = None) -> list[SearchResult]:
-        """Embeddings + BM25 fusionados con RRF (clase 8). `score` va de 0 a 1: 1 es el primero en ambos rankings."""
+    def hybrid_search(
+        self, query: str, top_k: int = 5, filters: dict | None = None, exclude: dict | None = None
+    ) -> list[SearchResult]:
+        """Embeddings + BM25 fusionados con RRF (clase 8). `score` va de 0 a 1: 1 es el primero en ambos rankings.
+
+        `filters` exige igualdad en la metadata y `exclude` descarta lo que coincida con alguno de sus pares.
+        """
         _check_query(query, top_k)
         items = sorted(self._items.values(), key=lambda item: item["chunk_id"])
         candidates = [
             item for item in items
-            if not filters or all(item.get("metadata", {}).get(key) == value for key, value in filters.items())
+            if (not filters or all(item.get("metadata", {}).get(key) == value for key, value in filters.items()))
+            and not (exclude and any(item.get("metadata", {}).get(key) == value for key, value in exclude.items()))
         ]
         if not candidates:
             return []
@@ -173,15 +179,14 @@ class QdrantRetriever:
                 f"Dimensión incompatible: collection={size}, provider={embedding_provider.dimension}"
             )
 
-    def _filter(self, filters: dict | None):
-        if not filters:
+    def _filter(self, filters: dict | None, exclude: dict | None = None):
+        if not filters and not exclude:
             return None
         models = self._models
+        condition = lambda key, value: models.FieldCondition(key=key, match=models.MatchValue(value=value))
         return models.Filter(
-            must=[
-                models.FieldCondition(key=key, match=models.MatchValue(value=value))
-                for key, value in filters.items()
-            ]
+            must=[condition(key, value) for key, value in (filters or {}).items()] or None,
+            must_not=[condition(key, value) for key, value in (exclude or {}).items()] or None,
         )
 
     def delete_document(self, document_id: str) -> None:
@@ -231,12 +236,13 @@ class QdrantRetriever:
         top_k: int = 5,
         filters: dict | None = None,
         min_score: float | None = None,
+        exclude: dict | None = None,
     ) -> list[SearchResult]:
         _check_query(query, top_k)
         response = self.client.query_points(
             collection_name=self.collection_name,
             query=self.embedding_provider.embed_query(query),
-            query_filter=self._filter(filters),
+            query_filter=self._filter(filters, exclude),
             limit=top_k,
             score_threshold=min_score,
             with_payload=True,
@@ -244,9 +250,11 @@ class QdrantRetriever:
         )
         return [self._from_payload(point.payload, float(point.score)) for point in response.points]
 
-    def hybrid_search(self, query: str, top_k: int = 5, filters: dict | None = None) -> list[SearchResult]:
+    def hybrid_search(
+        self, query: str, top_k: int = 5, filters: dict | None = None, exclude: dict | None = None
+    ) -> list[SearchResult]:
         """Qdrant local solo ordena por embeddings; la fusión con BM25 está en el retriever en memoria."""
-        return self.search(query, top_k=top_k, filters=filters)
+        return self.search(query, top_k=top_k, filters=filters, exclude=exclude)
 
     def get(self, chunk_id: str) -> SearchResult | None:
         points = self.client.retrieve(

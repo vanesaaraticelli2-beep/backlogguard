@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from backlogguard.board import BacklogItem, Board, ItemKind
+from backlogguard.board import EVIDENCE_TYPES, BacklogItem, Board, ItemKind
 from backlogguard.board.similarity import similar_titles
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools.models import ToolResult
@@ -135,6 +135,11 @@ class CriticToolkit:
         ]
         checks = [
             ("tiene_citas", bool(item.citations), f"{len(item.citations)} cita(s)"),
+            (
+                "respaldo_acordado",
+                any(c.source_type in EVIDENCE_TYPES for c in item.citations),
+                "al menos una cita de una reunión o minuta (lo acordado); la preventa sola solo muestra lo vendido",
+            ),
             (
                 "formato_como_quiero_para",
                 item.kind is not ItemKind.HISTORIA or bool(_STORY.search(item.description)),

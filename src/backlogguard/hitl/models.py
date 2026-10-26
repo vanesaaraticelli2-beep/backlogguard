@@ -37,6 +37,7 @@ class Evidence(BaseModel):
     source_date: str
     speaker: str | None = None
     page: int | None = None
+    source_type: str | None = None  # preventa = línea base; reunión y minuta = evidencia
 
 
 class DecisionRequest(BaseModel):

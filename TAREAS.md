@@ -185,6 +185,20 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Hallazgos de esa corrida a resolver: (1) el productor (Haiku) redactó solo 4 historias de al menos 8 requisitos distintos de la reunión; (2) los cambios de alcance que detecta el Auditor (domicilio comercial, roles y permisos, historial de reintentos, destinatarios parametrizables) se aprueban pero nadie los convierte en historias; (3) dos historias casi iguales no se fusionaron tras 2 rondas; (4) la cita de un diálogo lista a todos los oradores del fragmento en lugar de quien dijo la frase; (5) el productor reescribía una historia varias veces seguidas (acotado en `revise_item`).
 - [ ] Commit y push (cuando se pida).
 
+## Bloque 1A · Línea base de la preventa — [x] (falta commit)
+**Objetivo:** tratar la preventa como línea base (lo vendido) y no mezclarla con la evidencia de las reuniones (lo acordado).
+
+- [x] Huella de cada fuente — se guarda al importar y se verifica al cargar; una fuente editada a mano se señala. Reimportar lo mismo no escribe; reimportar algo distinto (contenido, nombre, fecha, tipo o formato) pide confirmación y muestra las huellas.
+- [x] Registro de fuentes por corrida — cada corrida guarda id, tipo, fecha, huella, palabras y rol (línea base o evidencia) de lo que usó; se ve en «Corrida» y en «Corridas guardadas».
+- [x] La búsqueda del productor deja la preventa afuera por defecto; entra si se la pide con `incluir_linea_base`, por tipo o por documento. Cada resultado indica su rol.
+- [x] Regla de citas — una historia (o su corrección) necesita al menos una cita de una reunión o minuta; la preventa puede acompañar pero no sustentar sola.
+- [x] El Crítico comprueba el respaldo acordado con un control más en DoR/INVEST.
+- [x] La pantalla etiqueta «Línea base (preventa)» y «Evidencia (reunión/minuta)» en los pedidos de decisión y en el tablero.
+- [x] Verificado con los archivos reales de Infobae, sin costo: reimportar da «sin cambios», una fecha distinta pide confirmación y la búsqueda por defecto ya no trae fragmentos de la preventa.
+- [x] 338 tests; la grabación de la demo sigue reproduciéndose; especificación `docs/specs/linea-base-y-contexto.md` al día.
+- [ ] Siguiente: Bloque A restante del punto 4 (medición, tope de reescrituras y expedientes del Crítico y del Auditor) y luego el Bloque B.
+- [ ] Commit y push (cuando se pida).
+
 ## Día 11 · Skills y contexto (esquema)
 **Objetivo:** darle a cada agente solo el conocimiento y el contexto que necesita, sin sobrecargarlo.
 

@@ -50,7 +50,7 @@ _SPECS: list[tuple[str, AgentRole, ToolKind, str]] = [
     ("ingestar_y_fragmentar", AgentRole.REQUERIMIENTOS, "local_write",
      "Fragmenta una fuente con metadata (reunión, fecha, orador, tipo) y la indexa."),
     ("buscar_en_fuentes", AgentRole.REQUERIMIENTOS, "read",
-     "Busca fragmentos relevantes en las fuentes indexadas."),
+     "Busca fragmentos relevantes en reuniones y minutas (evidencia). La preventa (línea base) solo se incluye si se la pide."),
     ("redactar_historia", AgentRole.REQUERIMIENTOS, "local_write",
      "Redacta una historia con criterios Gherkin y citas, y la deja en el tablero."),
     ("verificar_cita", AgentRole.CRITICO, "read",

@@ -16,10 +16,12 @@ from backlogguard.board import Board, SourceType
 from backlogguard.graph.setup import has_user_sources, user_sources_dir
 from backlogguard.rag import SourceLibrary, build_chunks
 from backlogguard.rag.importers import SourceImportError, estimate, import_pdf, import_transcript
-from backlogguard.rag.sources import SourceMetadata, slugify
+from backlogguard.rag.sources import SourceChangeNeedsConfirmation, SourceMetadata, SourceUnchanged, slugify
 from backlogguard.ui.controller import DEFAULT_MAX_STORIES, DEFAULT_OBJECTIVE, RunController
 from backlogguard.ui.runtime import make_controller
 
+SOURCE_LABELS = {"preventa": "Línea base (preventa)", "reunion": "Evidencia (reunión)", "minuta": "Evidencia (minuta)"}
+ROLE_LABELS = {"linea_base": "Línea base", "evidencia": "Evidencia"}
 STATE_LABELS = {
     "borrador": "borrador", "objetado": "objetado", "sustentado": "sustentado", "aprobado": "aprobado", "excluido": "excluido",
 }
@@ -72,7 +74,8 @@ def evidence_cards(evidence: list[dict]) -> None:
     for entry in evidence:
         st.markdown(f"> {entry['quote']}")
         where = f" · p. {entry['page']}" if entry.get("page") else ""
-        st.caption(f"{entry['source_name']} · {entry['source_date']}{where} · {entry.get('speaker') or 's/d'}")
+        label = SOURCE_LABELS.get(entry.get("source_type") or "", "")
+        st.caption(f"{label + ' · ' if label else ''}{entry['source_name']} · {entry['source_date']}{where} · {entry.get('speaker') or 's/d'}")
 
 
 def decision_payload(request: dict, who, action: str, comment: str, edited: dict | None) -> dict:
@@ -172,6 +175,17 @@ def tab_run(controller: RunController) -> None:
         st.caption(f"Tokens usados: {state.get('tokens', 0)}")
     for error in state.get("errors", []):
         st.error(f"{error['node']} ({error.get('ref')}): {error['error']}")
+    sources = state.get("sources")
+    if sources:
+        st.markdown("**Fuentes usadas en esta corrida**")
+        checks = {True: "sí", False: "NO", None: "—"}
+        st.dataframe(
+            [{"rol": ROLE_LABELS.get(s["role"], s["role"]), "fuente": s["name"], "tipo": s["type"], "fecha": s["date"],
+              "huella": s["fingerprint"], "verificada": checks[s["fingerprint_ok"]], "palabras": s["words"]} for s in sources],
+            width="stretch", hide_index=True,
+        )
+        if any(s["fingerprint_ok"] is False for s in sources):
+            st.warning("Alguna fuente se editó a mano después de importarla: su huella no coincide con la que se guardó.")
 
 
 def tab_runs(controller: RunController) -> None:
@@ -231,7 +245,8 @@ def tab_board(controller: RunController) -> None:
             for citation in item.citations:
                 st.markdown(f"> {citation.quote}")
                 where = f" · p. {citation.page}" if citation.page else ""
-                st.caption(f"{citation.source_name} · {citation.source_date.isoformat()}{where} · {citation.speaker or 's/d'}")
+                label = SOURCE_LABELS.get(citation.source_type.value, "")
+                st.caption(f"{label} · {citation.source_name} · {citation.source_date.isoformat()}{where} · {citation.speaker or 's/d'}")
             for objection in item.objections:
                 st.caption(f"Objeción de {objection.raised_by.value} (ronda {objection.round}, {'resuelta' if objection.resolved else 'vigente'}): {objection.text}")
     if board.findings:
@@ -302,12 +317,16 @@ def tab_sources(controller: RunController) -> None:
             source_type = SourceType.PREVENTA if is_pdf else (SourceType.MINUTA if kind.startswith("Minuta") else SourceType.REUNION)
             metadata = SourceMetadata(source_name=name.strip(), source_type=source_type, source_date=when, layout=imported.layout)
             document_id = slugify(name)
-            library.write(document_id, metadata, imported.text, overwrite=overwrite)
-        except (SourceImportError, FileExistsError) as exc:
+            saved = library.save(document_id, metadata, imported.text, replace=overwrite)
+        except SourceUnchanged as exc:
+            st.info(str(exc))
+        except SourceChangeNeedsConfirmation as exc:
+            st.warning(f"{exc} Marcá «Reemplazar si ya existe…» y volvé a importar.")
+        except SourceImportError as exc:
             st.error(str(exc))
         else:
             chunks = build_chunks(document_id, imported.text, metadata.model_dump(mode="json"))
-            st.success(f"Importado «{name.strip()}»: {imported.words:,} palabras (~{estimate(imported.words)['tokens']:,} tokens), {len(chunks)} fragmentos.")
+            st.success(f"{'Reemplazada' if saved.status == 'cambio' else 'Importada'} «{name.strip()}» (huella {saved.new_fingerprint}): {imported.words:,} palabras (~{estimate(imported.words)['tokens']:,} tokens), {len(chunks)} fragmentos.")
             if imported.speakers:
                 st.caption("Oradores: " + "; ".join(imported.speakers))
             for warning in imported.warnings:
@@ -320,7 +339,9 @@ def tab_sources(controller: RunController) -> None:
     st.markdown(f"**Fuentes propias: {len(entries)}**")
     if entries:
         st.dataframe(
-            [{"id": i, "tipo": m.source_type.value, "fecha": m.source_date.isoformat(), "formato": m.layout, "nombre": m.source_name} for i, m in entries],
+            [{"id": r["id"], "rol": ROLE_LABELS[r["role"]], "tipo": r["type"], "fecha": r["date"], "formato": r["layout"],
+              "huella": r["fingerprint"], "verificada": {True: "sí", False: "NO", None: "—"}[r["fingerprint_ok"]], "nombre": r["name"]}
+             for r in library.inventory()],
             width="stretch", hide_index=True,
         )
         victim = st.selectbox("Borrar una fuente", [""] + [i for i, _ in entries], key="borrar_fuente")
