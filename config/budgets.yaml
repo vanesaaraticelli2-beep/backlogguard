@@ -2,5 +2,5 @@
 # Validado con Pydantic en src/backlogguard/graph/budgets.py.
 run:
   max_tokens: 600000        # suma de todos los agentes (con documentos reales, el tope de gasto de una corrida)
-  max_items_to_review: 20   # ítems que el Crítico revisa por corrida
+  max_items_to_review: 60   # válvula de seguridad: el freno real de una corrida es max_tokens
   max_seconds: 3600         # tiempo total de la corrida

@@ -18,7 +18,7 @@ from pathlib import Path
 
 from backlogguard.board import Board
 from backlogguard.llm import Settings
-from backlogguard.ui.controller import DEFAULT_MAX_STORIES, DEFAULT_OBJECTIVE, RunController
+from backlogguard.ui.controller import DEFAULT_OBJECTIVE, RunController
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
@@ -41,7 +41,6 @@ def wait_printing(controller: RunController, shown: int) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--objetivo", default=DEFAULT_OBJECTIVE)
-    parser.add_argument("--max-historias", type=int, default=DEFAULT_MAX_STORIES)
     parser.add_argument("--auto", action="store_true", help="aprueba cada pedido con el rol que corresponde")
     options = parser.parse_args()
 
@@ -54,10 +53,10 @@ def main() -> int:
         print("Con fuentes propias hace falta LIVE_MODE=1.")
         return 1
     print(f"Fuentes: {[(i, m.source_type.value, m.source_date.isoformat()) for i, m in controller.deps.library.describe()]}")
-    print(f"Objetivo: {options.objetivo}\nMáximo de historias: {options.max_historias} · tope de tokens: {controller.deps.budget.max_tokens:,}\n")
+    print(f"Objetivo: {options.objetivo}\nTope de tokens: {controller.deps.budget.max_tokens:,}\n")
 
     started = time.time()
-    thread_id = controller.start(options.objetivo, max_stories=options.max_historias)
+    thread_id = controller.start(options.objetivo)
     print(f"corrida={thread_id}")
     shown = wait_printing(controller, 0)
     while (payload := controller.pending()) is not None:

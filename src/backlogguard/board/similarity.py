@@ -24,3 +24,29 @@ def similar_titles(first: str, second: str) -> bool:
         return True
     smaller = min(len(mine), len(theirs))
     return smaller >= MIN_TOKENS and len(mine & theirs) / smaller >= DUPLICATE_OVERLAP
+
+
+REQUIREMENT_OVERLAP = 0.6
+
+
+def repeat_requirement(title: str, description: str, fragments: set[str], other_title: str, other_description: str, other_fragments: set[str]) -> bool:
+    """¿Son dos redacciones del mismo requisito? Títulos parecidos, o la misma fuente citada y textos que dicen casi lo mismo.
+
+    Los títulos solos no alcanzan: cuatro historias sobre el mismo tema pueden titularse distinto. Por eso también cuenta
+    compartir al menos un fragmento citado junto con un solapamiento alto de título y descripción.
+    """
+    if similar_titles(title, other_title):
+        return True
+    if not fragments & other_fragments:
+        return False
+    mine, theirs = title_tokens(f"{title} {description}"), title_tokens(f"{other_title} {other_description}")
+    smaller = min(len(mine), len(theirs))
+    return smaller >= MIN_TOKENS and len(mine & theirs) / smaller >= REQUIREMENT_OVERLAP
+
+
+def repeats(item, other) -> bool:
+    """`repeat_requirement` entre dos ítems del tablero (mismo tipo)."""
+    return item.kind is other.kind and repeat_requirement(
+        item.title, item.description, {c.fragment_id for c in item.citations},
+        other.title, other.description, {c.fragment_id for c in other.citations},
+    )

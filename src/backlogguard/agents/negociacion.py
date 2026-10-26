@@ -11,6 +11,7 @@ from typing import Callable, Literal
 
 from backlogguard.agents.critico import CriticVerdict
 from backlogguard.board import MAX_ROUNDS, AgentRole, Board, ItemState, Objection
+from backlogguard.board.similarity import repeats
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools.critico import check_citations
 
@@ -21,9 +22,20 @@ Revise = Callable[[str, list[str]], None]
 @dataclass(frozen=True)
 class NegotiationResult:
     item_id: str
-    outcome: Literal["sustentado", "sin_consenso"]
+    outcome: Literal["sustentado", "sin_consenso", "excluido_duplicado"]
     rounds: int
     objections: list[str] = field(default_factory=list)
+
+
+def earlier_twin(board: Board, item_id: str):
+    """Ítem anterior y todavía vigente que repite lo mismo (mismo tipo, títulos parecidos), o `None`."""
+    item = board.items[item_id]
+    for other_id, other in board.items.items():
+        if other_id == item_id:
+            return None  # solo cuentan los anteriores: el más nuevo es el que sobra
+        if other.state is not ItemState.EXCLUIDO and repeats(item, other):
+            return other
+    return None
 
 
 def negotiate_item(
@@ -42,6 +54,13 @@ def negotiate_item(
 
     for round_number in range(1, max_rounds + 1):
         item = board.items[item_id]
+        if twin := earlier_twin(board, item_id):  # un duplicado no se corrige: se excluye, sin gastar rondas ni modelos
+            reason = f"Duplicado de {twin.id} «{twin.title}»: se excluye porque ya hay un ítem sobre lo mismo."
+            if item.state is ItemState.BORRADOR:
+                item.transition_to(ItemState.OBJETADO)
+            item.add_objection(Objection(id=f"{item_id}-O{len(item.objections) + 1}", raised_by=AgentRole.CRITICO, text=reason, round=round_number))
+            item.transition_to(ItemState.EXCLUIDO)
+            return NegotiationResult(item_id, "excluido_duplicado", round_number, [*all_objections, reason])
         verdict = review(item_id)
         failed = [c for c in check_citations(item, retriever) if not c.ok]
         objections = list(verdict.objections) + [

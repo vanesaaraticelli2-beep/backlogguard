@@ -19,7 +19,10 @@ from backlogguard.llm import Settings
 
 DEFAULT_OBJECTIVE = "Armá el backlog a partir de las reuniones y auditalo contra la preventa."
 MAX_EVENTS = 3000
-DEFAULT_MAX_STORIES = 12
+COVERAGE_GOAL = (
+    "Cubrí todos los requisitos distintos de las reuniones, sin un número fijo de historias: una historia por requisito, "
+    "con el detalle que pida la reunión."
+)
 
 
 class RunController:
@@ -30,7 +33,7 @@ class RunController:
 
     # ---- armado ----
 
-    def _build(self, max_stories: int | None = None) -> None:
+    def _build(self) -> None:
         self.events: list[dict] = []
         self.read_only = False  # True mientras se mira una corrida guardada
         self.thread: threading.Thread | None = None
@@ -41,7 +44,7 @@ class RunController:
         self.sources_dir: Path | None = own if has_user_sources(own) else None
         self.deps: RunDeps = build_run_deps(
             self.root, self.settings, data_dir=self.data_dir, replay=self.replay, sources_dir=self.sources_dir,
-            max_items=max_stories, on_event=self._on_event,
+            on_event=self._on_event,
         )
         self.graph = open_graph(self.deps, self.data_dir)
 
@@ -82,7 +85,7 @@ class RunController:
         self.thread = threading.Thread(target=target, daemon=True)
         self.thread.start()
 
-    def start(self, objective: str = DEFAULT_OBJECTIVE, *, seed: bool = True, max_stories: int | None = None) -> str:
+    def start(self, objective: str = DEFAULT_OBJECTIVE, *, seed: bool = True) -> str:
         if self.running:
             raise RuntimeError("Ya hay una corrida en curso.")
         own = has_user_sources(user_sources_dir(self.data_dir))
@@ -90,13 +93,10 @@ class RunController:
             raise RuntimeError(
                 "Con fuentes propias hace falta LIVE_MODE=1: la corrida grabada no sabe responder a documentos nuevos."
             )
-        if own:  # documentos reales: sin work items de ejemplo y con un tope de historias
+        if own:  # documentos reales: sin work items de ejemplo; el límite es el costo de la corrida, no un número de historias
             seed = False
-            max_stories = max_stories or DEFAULT_MAX_STORIES
-            objective = (
-                f"{objective}\nRedactá como máximo {max_stories} historias, priorizando las de mayor valor y riesgo para el negocio."
-            )
-        self.reset_demo(seed=seed, max_stories=max_stories)
+            objective = f"{objective}\n{COVERAGE_GOAL}"
+        self.reset_demo(seed=seed)
         self.thread_id = f"corrida-{uuid.uuid4().hex[:8]}"
         self.backlog_before = [w.model_dump() for w in self.deps.backlog.search()]
         self._spawn(run_pipeline, self.graph, objective, self.thread_id)
@@ -115,13 +115,13 @@ class RunController:
             self.thread.join(timeout)
         return not self.running
 
-    def reset_demo(self, *, seed: bool = True, max_stories: int | None = None) -> None:
+    def reset_demo(self, *, seed: bool = True) -> None:
         """Deja el backlog simulado, la memoria de decisiones y los registros como al comienzo."""
         if self.running:
             raise RuntimeError("No se puede reiniciar con una corrida en curso.")
         for name in ("publicaciones.sqlite", "memoria.sqlite", "backlog_simulado.json"):
             (self.data_dir / name).unlink(missing_ok=True)
-        self._build(max_stories)
+        self._build()
         if seed:
             self.deps.backlog.seed_demo()
 

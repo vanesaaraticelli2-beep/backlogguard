@@ -18,7 +18,7 @@ from backlogguard.graph.tasks import KIND_TITLES, PARTIES, summarize_tasks
 from backlogguard.rag import SourceLibrary, build_chunks
 from backlogguard.rag.importers import SourceImportError, estimate, import_pdf, import_transcript
 from backlogguard.rag.sources import SourceChangeNeedsConfirmation, SourceMetadata, SourceUnchanged, slugify
-from backlogguard.ui.controller import DEFAULT_MAX_STORIES, DEFAULT_OBJECTIVE, RunController
+from backlogguard.ui.controller import DEFAULT_OBJECTIVE, RunController
 from backlogguard.ui.runtime import make_controller
 
 SOURCE_LABELS = {"preventa": "Línea base (preventa)", "reunion": "Evidencia (reunión)", "minuta": "Evidencia (minuta)"}
@@ -154,7 +154,6 @@ def tab_run(controller: RunController) -> None:
     objective = st.text_area("Objetivo de la corrida", DEFAULT_OBJECTIVE, key="objetivo")
     if own:
         st.info("La corrida usa **tus fuentes** (pestaña «Fuentes»), sin work items de ejemplo.")
-        max_stories = st.number_input("Máximo de historias a redactar", 1, 30, DEFAULT_MAX_STORIES, key="maximo_historias")
         needs_models = controller.mode != "real"
         if needs_models:
             st.error("Con fuentes propias hace falta LIVE_MODE=1 (modelos reales): la corrida grabada no sabe responder a documentos nuevos.")
@@ -165,10 +164,10 @@ def tab_run(controller: RunController) -> None:
             )
         seed = False
     else:
-        needs_models, max_stories = False, None
+        needs_models = False
         seed = st.checkbox("Cargar work items de ejemplo cargados a mano (sirven para ver un posible duplicado)", value=True, key="semilla")
     if st.button("Iniciar corrida", type="primary", key="iniciar", disabled=controller.running or waiting or needs_models):
-        controller.start(objective, seed=seed, max_stories=int(max_stories) if max_stories else None)
+        controller.start(objective, seed=seed)
         st.rerun()
     if waiting:
         st.caption("Hay una corrida pausada esperando una decisión (pestaña «Mis decisiones»).")
@@ -178,6 +177,14 @@ def tab_run(controller: RunController) -> None:
         st.write(state["summary"])
     if state:
         st.caption(f"Tokens usados: {state.get('tokens', 0)}")
+    incomplete = [t for t in state.get("tasks", []) if t["kind"] == "redactar" and t["status"] == "incompleta"]
+    if incomplete:
+        st.warning(
+            "Redacción incompleta: el productor se quedó sin pasos o tokens antes de terminar "
+            f"({incomplete[0]['stop_reason']}). Puede haber requisitos sin cubrir."
+        )
+    if state.get("stop_reason"):
+        st.warning(f"La corrida se cortó por presupuesto agotado ({state['stop_reason']}): puede haber ítems sin revisar.")
     for error in state.get("errors", []):
         st.error(f"{error['node']} ({error.get('ref')}): {error['error']}")
     sources = state.get("sources")

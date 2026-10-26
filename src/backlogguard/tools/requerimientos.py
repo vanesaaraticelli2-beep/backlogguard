@@ -14,6 +14,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 
+from backlogguard.board.similarity import repeat_requirement
 from backlogguard.board import EVIDENCE_TYPES, BacklogItem, Board, Citation, ItemKind, ItemState, SourceType
 from backlogguard.rag import SourceLibrary, SourceNotFound, build_chunks
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
@@ -140,10 +141,11 @@ class RequirementsToolkit:
             }
             for r in results
         ]
+        drafted = [{"id": i.id, "titulo": i.title} for i in self.board.items.values() if i.state is not ItemState.EXCLUIDO]
         return ToolResult(
             ok=True,
             content=json.dumps(fragments, ensure_ascii=False),
-            metadata={"results": len(fragments)},
+            metadata={"results": len(fragments), "ya_redactadas": drafted},
         )
 
     def redactar_historia(self, args: dict) -> ToolResult:
@@ -182,6 +184,23 @@ class RequirementsToolkit:
         item_id = f"{_ID_PREFIX[kind]}-{digest}"
         if item_id in self.board.items:
             return _fail(f"Ya existe un ítem con ese tipo y título: {item_id}", "duplicate_item")
+        twin = next(
+            (
+                o for o in self.board.items.values()
+                if o.kind is kind and o.state is not ItemState.EXCLUIDO
+                and repeat_requirement(
+                    args["title"], args.get("description", ""), {c.fragment_id for c in citations},
+                    o.title, o.description, {c.fragment_id for c in o.citations},
+                )
+            ),
+            None,
+        )
+        if twin is not None:
+            return _fail(
+                f"Ya hay un ítem sobre lo mismo: {twin.id} «{twin.title}». Una historia por requisito: pasá a otro requisito de la reunión, "
+                "o, si falta algo, mencionalo en tu respuesta final.",
+                "posible_duplicado",
+            )
         if args.get("parent_id") and args["parent_id"] not in self.board.items:
             return _fail(f"No existe el ítem padre: {args['parent_id']}", "unknown_parent")
         self.board.add_item(

@@ -11,8 +11,8 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from backlogguard.board import EVIDENCE_TYPES, BacklogItem, Board, ItemKind
-from backlogguard.board.similarity import similar_titles
+from backlogguard.board import EVIDENCE_TYPES, BacklogItem, Board, ItemKind, ItemState
+from backlogguard.board.similarity import repeats
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools.models import ToolResult
 
@@ -131,7 +131,7 @@ class CriticToolkit:
         duplicates = [
             other.id
             for other in self.board.items.values()
-            if other.id != item.id and other.kind is item.kind and similar_titles(item.title, other.title)
+            if other.id != item.id and other.state is not ItemState.EXCLUIDO and repeats(item, other)
         ]
         checks = [
             ("tiene_citas", bool(item.citations), f"{len(item.citations)} cita(s)"),

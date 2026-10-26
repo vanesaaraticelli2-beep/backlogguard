@@ -44,7 +44,6 @@ def build_run_deps(
     providers: Providers | None = None,
     replay: Path | None = None,
     sources_dir: Path | None = None,
-    max_items: int | None = None,
     on_event: Callable[[dict], None] | None = None,
 ) -> RunDeps:
     data = data_dir or root / "data"
@@ -52,8 +51,6 @@ def build_run_deps(
     if providers is None and replay is not None:  # modo demo: se repiten las respuestas de una corrida grabada
         providers = replay_providers(Recording.load(replay))
     budget = load_budget(root / "config" / "budgets.yaml")
-    if max_items is not None:
-        budget = budget.model_copy(update={"max_items_to_review": max(budget.max_items_to_review, max_items)})
     return RunDeps(
         providers=providers or build_providers(load_models_config(root / "config" / "models.yaml"), settings),
         library=SourceLibrary(sources_dir or root / "evals" / "fixtures"),
