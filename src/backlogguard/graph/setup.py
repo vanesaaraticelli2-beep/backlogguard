@@ -28,6 +28,11 @@ def user_sources_dir(data_dir: Path) -> Path:
     return data_dir / USER_SOURCES
 
 
+def baseline_dir(data_dir: Path) -> Path:
+    """Compromisos extraídos de la preventa (línea base), uno por preventa y ligados a su huella."""
+    return data_dir / "linea_base"
+
+
 def has_user_sources(directory: Path) -> bool:
     """¿Hay fuentes propias utilizables? Hace falta al menos una preventa y una reunión o minuta."""
     if not directory.is_dir():

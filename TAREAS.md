@@ -209,6 +209,15 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] Medición con costo estimado — cada llamada a un modelo se mide (entrada/salida) y se reparte entre las tareas; precios en `config/pricing.yaml`; un modelo sin precio se avisa en lugar de inventar el costo. Se ve en la solapa «Tareas entre agentes».
 - [x] Prueba de calidad con Opus real (`scripts/comparar_expediente.py`, 5 ítems sembrados): mismo veredicto en 5 de 5; llamadas 17 → 5, tokens de entrada 41.369 → 17.948, costo ~US$ 0,28 → ~US$ 0,14.
 
+## Bloque 1B · Compromisos de la preventa (línea base extraída) — [x] (falta commit; falta correrla con la preventa real)
+**Objetivo:** resumir la preventa una sola vez en compromisos verificables, agrupados por épica, para compararlos después contra las reuniones.
+
+- [x] Extracción explícita — `scripts/extraer_linea_base.py` o el botón de «Fuentes». Muestra el gasto estimado antes, exige confirmarlo y necesita un modelo real; nunca corre sola. Usa el modelo del Auditor.
+- [x] Cada compromiso lleva épica, capacidad, alcance (incluido, excluido o condición), página y una cita literal verificada por código contra el texto de esa página. Los que no se verifican se descartan y se informan con el motivo.
+- [x] Se guardan en `data/linea_base/` ligados a la huella de la preventa: se reutilizan mientras no cambie y quedan «desactualizados» si cambia.
+- [x] La pantalla lista los compromisos por épica, con página y cita, y los descartados aparte. La épica es solo una agrupación, no un ítem del tablero.
+- [ ] Siguiente: el Bloque 2 (catálogo persistente y continuidad entre reuniones); el Auditor usará estos compromisos en el Bloque 3.
+
 ## Día 11 · Skills y contexto — [x] (falta commit; falta medir el ahorro con una corrida real)
 **Objetivo:** darle a cada agente solo el conocimiento y el contexto que necesita, sin sobrecargarlo.
 

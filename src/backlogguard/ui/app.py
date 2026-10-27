@@ -13,9 +13,11 @@ from datetime import date
 import streamlit as st
 
 from backlogguard.board import Board, SourceType
-from backlogguard.graph.setup import has_user_sources, user_sources_dir
+from backlogguard.graph.setup import baseline_dir, has_user_sources, user_sources_dir
 from backlogguard.graph.tasks import KIND_TITLES, PARTIES, summarize_tasks
+from backlogguard.llm.metering import load_pricing
 from backlogguard.rag import SourceLibrary, build_chunks
+from backlogguard.rag.compromisos import BaselineStore, estimate_extraction, extract_commitments
 from backlogguard.rag.importers import SourceImportError, estimate, import_pdf, import_transcript
 from backlogguard.rag.sources import SourceChangeNeedsConfirmation, SourceMetadata, SourceUnchanged, slugify
 from backlogguard.ui.controller import DEFAULT_OBJECTIVE, RunController
@@ -445,11 +447,68 @@ def tab_sources(controller: RunController) -> None:
             library.delete(victim)
             controller.refresh_sources()
             st.rerun()
+    baseline_section(controller, library)
     ready = has_user_sources(library.root)
     st.info(
         "Las corridas usan: **tus fuentes propias**." if ready
         else "Las corridas usan: **las fuentes de ejemplo** (faltan una preventa y una reunión propias)."
     )
+
+
+SCOPE_LABELS = {"incluido": "incluido", "excluido": "excluido (no se hace)", "condicion": "condición o supuesto"}
+
+
+def baseline_section(controller: RunController, library: SourceLibrary) -> None:
+    """Compromisos de la preventa: se extraen una sola vez, con el gasto confirmado, y quedan ligados a su huella."""
+    presales = [i for i, m in library.describe() if m.source_type is SourceType.PREVENTA] if library.root.is_dir() else []
+    if not presales:
+        return
+    st.markdown("**Línea base: compromisos de la preventa**")
+    st.caption(
+        "Se extraen una sola vez con el modelo del Auditor y se reutilizan mientras la preventa no cambie. "
+        "Cada compromiso lleva su página y una cita literal verificada por código; los que no se verifican se descartan y se informan."
+    )
+    store = BaselineStore(baseline_dir(controller.data_dir))
+    for presale in presales:
+        document = library.load(presale)
+        status = store.status(document)
+        label = {"sin_extraer": "sin extraer", "vigente": "vigente", "desactualizada": "desactualizada (la preventa cambió)"}[status]
+        st.markdown(f"«{document.metadata.source_name}» · huella `{document.fingerprint}` · compromisos: **{label}**")
+        if status != "vigente":
+            model = getattr(controller.deps.providers.auditor, "model", "?")
+            estimate = estimate_extraction(document.text, model, load_pricing())
+            cost = f"~US$ {estimate['cost_usd']:.2f}" if estimate["cost_usd"] is not None else "sin precio configurado"
+            st.caption(
+                f"Estimación con {model}: {estimate['calls']} llamada(s), ~{estimate['input_tokens']:,} tokens de entrada y "
+                f"~{estimate['output_tokens']:,} de salida, {cost}. Los textos se envían al proveedor del modelo."
+            )
+            if controller.mode != "real":
+                st.info("La extracción necesita modelos reales (LIVE_MODE=1).")
+            sure = st.checkbox("Confirmo el gasto", key=f"confirmar-linea-base-{presale}")
+            if st.button("Extraer compromisos", key=f"extraer-{presale}", disabled=controller.running or controller.mode != "real" or not sure):
+                with st.spinner("Extrayendo y verificando las citas…"):
+                    extract_commitments(document, controller.deps.providers.auditor, store, confirmed=True, pricing=load_pricing())
+                st.rerun()
+        baseline = store.current(document)
+        if baseline is None:
+            continue
+        real = f"~US$ {baseline.cost_usd:.3f}" if baseline.cost_usd is not None else "sin precio"
+        st.caption(
+            f"{len(baseline.commitments)} compromisos verificados, {len(baseline.discarded)} descartados · {baseline.model} · "
+            f"{baseline.input_tokens:,} tokens de entrada y {baseline.output_tokens:,} de salida ({real}) · {baseline.extracted_at}"
+        )
+        for epic, rows in baseline.by_epic().items():
+            with st.expander(f"{epic} · {len(rows)}"):
+                st.dataframe(
+                    [{"id": c.id, "alcance": SCOPE_LABELS[c.scope], "compromiso": c.capability, "página": c.page, "cita": c.quote} for c in rows],
+                    width="stretch", hide_index=True,
+                )
+        if baseline.discarded:
+            with st.expander(f"Descartados · {len(baseline.discarded)}"):
+                st.dataframe(
+                    [{"compromiso": d.capability, "página": d.page, "motivo": d.reason, "cita": d.quote} for d in baseline.discarded],
+                    width="stretch", hide_index=True,
+                )
 
 
 def main() -> None:

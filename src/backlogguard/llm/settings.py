@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     anthropic_api_key: SecretStr | None = None
     gemini_api_key: SecretStr | None = None
 
-    request_timeout_seconds: float = Field(default=60.0, gt=0)
+    request_timeout_seconds: float = Field(default=180.0, gt=0)
     max_retries: int = Field(default=2, ge=0, le=8)
     retry_base_delay_seconds: float = Field(default=0.25, ge=0)
 

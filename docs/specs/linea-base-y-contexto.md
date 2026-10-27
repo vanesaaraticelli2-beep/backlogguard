@@ -1,6 +1,6 @@
 # Especificación · Línea base de la preventa y presupuesto de contexto
 
-**Estado:** Bloque 1A implementado (huella, registro, separación y regla de citas); Bloque 1B y punto 4 propuestos, sin construir · **Código previsto:** `rag/sources.py`, `rag/importers.py`, `rag/compromisos.py` (nuevo), `tools/requerimientos.py`, `tools/critico.py`, `tools/auditor.py`, `agents/decider.py`, `agents/loop.py`, `graph/nodes.py`, `config/context_budget.yaml` y `config/pricing.yaml` (nuevos), `ui/app.py`
+**Estado:** Bloque 1A implementado (huella, registro, separación y regla de citas); Bloque 1B: extracción de compromisos implementada (LB-07 a LB-09 y la lista de LB-11; el uso por el Auditor, LB-10, queda para el Bloque 3); punto 4 propuesto en parte · **Código previsto:** `rag/sources.py`, `rag/importers.py`, `rag/compromisos.py` (nuevo), `tools/requerimientos.py`, `tools/critico.py`, `tools/auditor.py`, `agents/decider.py`, `agents/loop.py`, `graph/nodes.py`, `config/context_budget.yaml` y `config/pricing.yaml` (nuevos), `ui/app.py`
 
 ## Por qué (datos de la corrida real con Infobae)
 - 564 mil tokens en 12,7 minutos. El productor dio **48 pasos para 4 historias**: 32 llamadas a `redactar_historia` (mayormente reescrituras de la misma historia) y 10 búsquedas de unos 7.600 caracteres cada una.
@@ -35,11 +35,11 @@ La preventa se resume **una vez** en una lista de compromisos, cada uno con su p
 
 | ID | Requisito | Test previsto |
 |---|---|---|
-| LB-07 | La extracción es **explícita** (botón o comando), muestra una estimación del gasto antes de correr y necesita modelos reales. Nunca corre sola. | `test_la_extraccion_no_corre_sin_confirmacion_ni_sin_modelos` |
-| LB-08 | Cada compromiso lleva página y una **cita literal verificada** contra el texto de esa página; los que no se verifican se **descartan y se informan**. | `test_un_compromiso_con_cita_falsa_se_descarta_y_se_informa` |
-| LB-09 | El resultado queda guardado con la huella: se reutiliza mientras no cambie y **se invalida** cuando la preventa cambia. | `test_los_compromisos_se_reutilizan_con_la_misma_huella`, `test_cambiar_la_preventa_invalida_los_compromisos` |
+| LB-07 | La extracción es **explícita** (botón o comando), muestra una estimación del gasto antes de correr y necesita modelos reales. Nunca corre sola. | `test_la_extraccion_nunca_corre_sola_ni_con_un_modelo_simulado`, `test_la_estimacion_se_conoce_antes_de_correr_y_se_avisa_si_no_hay_precio` |
+| LB-08 | Cada compromiso lleva página y una **cita literal verificada** contra el texto de esa página; los que no se verifican se **descartan y se informan**. | `test_un_compromiso_con_cita_falsa_se_descarta_y_se_informa`, `test_la_cita_acepta_cambios_de_mayusculas_espacios_y_comillas_pero_no_de_palabras` |
+| LB-09 | El resultado queda guardado con la huella: se reutiliza mientras no cambie y **se invalida** cuando la preventa cambia. | `test_cambiar_la_preventa_invalida_los_compromisos` (la reutilización con la misma huella la cubre `test_la_extraccion_verifica_cada_cita_contra_su_pagina_y_guarda`) |
 | LB-10 | Si hay compromisos válidos, el Auditor los usa en lugar de la preventa completa (el texto de una página se pide solo si lo necesita); si no hay, usa el camino actual. La corrida registra cuál usó. | `test_el_auditor_usa_los_compromisos_si_existen`, `test_sin_compromisos_el_auditor_usa_la_preventa_completa` |
-| LB-11 | La pantalla muestra la lista de compromisos extraídos, con su página y su cita (solo lectura en esta versión). | `test_la_pantalla_lista_los_compromisos` |
+| LB-11 | La pantalla muestra la lista de compromisos extraídos, con su página y su cita (solo lectura en esta versión). | `test_la_pantalla_muestra_los_compromisos_por_epica_y_pide_confirmar_el_gasto` |
 
 **Riesgo principal:** que la extracción omita compromisos y el Auditor deje de detectar algo «vendido y no tratado». Mitigación: verificación determinística de las citas, lista visible para revisarla y el camino de la preventa completa como alternativa.
 
