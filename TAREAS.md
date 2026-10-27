@@ -209,7 +209,7 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] Medición con costo estimado — cada llamada a un modelo se mide (entrada/salida) y se reparte entre las tareas; precios en `config/pricing.yaml`; un modelo sin precio se avisa en lugar de inventar el costo. Se ve en la solapa «Tareas entre agentes».
 - [x] Prueba de calidad con Opus real (`scripts/comparar_expediente.py`, 5 ítems sembrados): mismo veredicto en 5 de 5; llamadas 17 → 5, tokens de entrada 41.369 → 17.948, costo ~US$ 0,28 → ~US$ 0,14.
 
-## Bloque 1B · Compromisos de la preventa (línea base extraída) — [x] (falta commit; falta correrla con la preventa real)
+## Bloque 1B · Compromisos de la preventa (línea base extraída) — [x] (subido; corrida real: 80 compromisos, 0 descartados, US$ 0,61)
 **Objetivo:** resumir la preventa una sola vez en compromisos verificables, agrupados por épica, para compararlos después contra las reuniones.
 
 - [x] Extracción explícita — `scripts/extraer_linea_base.py` o el botón de «Fuentes». Muestra el gasto estimado antes, exige confirmarlo y necesita un modelo real; nunca corre sola. Usa el modelo del Auditor.
@@ -217,6 +217,22 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] Se guardan en `data/linea_base/` ligados a la huella de la preventa: se reutilizan mientras no cambie y quedan «desactualizados» si cambia.
 - [x] La pantalla lista los compromisos por épica, con página y cita, y los descartados aparte. La épica es solo una agrupación, no un ítem del tablero.
 - [ ] Siguiente: el Bloque 2 (catálogo persistente y continuidad entre reuniones); el Auditor usará estos compromisos en el Bloque 3.
+
+## Bloque 2A · Catálogo persistente de requisitos — [x] (falta commit)
+- [x] `src/backlogguard/catalog/`: modelos (requisito `RQ-nnn` con id estable, versiones con relación nuevo/refina/reemplaza/divide/fusiona, evidencias, propuestas) y almacén SQLite `data/catalogo.sqlite`.
+- [x] Reglas en código: nada cambia sin propuesta aprobada con nombre; la preventa sola no alcanza como evidencia; reprocesar la misma fuente (id + huella) no duplica; «ya cubierto» solo suma evidencia; clave de publicación por requisito y versión.
+- [x] «Iniciar corrida» con fuentes propias ya no borra la memoria; botón «Empezar proyecto nuevo» con confirmación (conserva fuentes y línea base).
+- [x] `tests/test_catalogo.py` (21 tests). Suite completa: 405.
+- [ ] 2C redacción, revisión por lote y publicación · 2D solapa Catálogo y docs.
+
+## Bloque 2B · Lectura de una reunión contra el catálogo — [x] (corrida real repetida: 19 candidatos, US$ 0,19; falta revisar las propuestas con la persona usuaria)
+- [x] `catalog/ingest.py`: enumera los requisitos de la reunión (productor, cita verificada por código y deduplicada), busca parecidos del catálogo (búsqueda híbrida), el Auditor clasifica en lotes de 8 viendo el mapa completo de compromisos, el código baja a «incierto» lo que no se sostiene (destino inexistente, confianza < 0,7, forma inválida, sin clasificar).
+- [x] Idempotente por fuente + huella + candidato; si falla a la mitad no queda procesada y al reintentar solo clasifica lo que falta; «ya cubierto» suma evidencia sola; reunión anterior a otra ya leída: todo a revisión.
+- [x] `scripts/clasificar_reunion.py` (estima; `--confirmar` corre; `--ver`) y sección «Reuniones contra el catálogo» en Fuentes.
+- [x] `tests/test_continuidad.py` (21 tests). Suite completa: 426.
+- [x] Corrida real 1 (reunión de Infobae): 21 candidatos, 1 descartado, US$ 0,10. Ajustes después: mapa completo de compromisos al Auditor, confianza baja también para «nuevo», estimación recalibrada.
+- [x] Segundo intento para citas parafraseadas (una sola pasada extra). Corrida real 2: 19 candidatos, 1 descartado, US$ 0,187. Varía de una corrida a otra (21 vs 19): revisar determinismo en la evaluación.
+- Aún no conectado al grafo ni a la aprobación por lote (2C).
 
 ## Día 11 · Skills y contexto — [x] (falta commit; falta medir el ahorro con una corrida real)
 **Objetivo:** darle a cada agente solo el conocimiento y el contexto que necesita, sin sobrecargarlo.

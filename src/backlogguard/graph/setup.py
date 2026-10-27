@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Callable
 
 from backlogguard.board import SourceType
+from backlogguard.catalog import Catalog
 from backlogguard.graph.budgets import load_budget
 from backlogguard.graph.builder import build_graph, sqlite_checkpointer
 from backlogguard.graph.deps import Providers, RunDeps, build_providers
@@ -67,6 +68,7 @@ def build_run_deps(
         ledger=PublicationLedger(data / "publicaciones.sqlite"),
         project=settings.azdo_project,
         people=load_people(root / "config" / "people.yaml"),
+        catalog=Catalog(data / "catalogo.sqlite"),
         on_event=on_event,
     )
 

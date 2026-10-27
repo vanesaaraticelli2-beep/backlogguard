@@ -96,7 +96,10 @@ class RunController:
         if own:  # documentos reales: sin work items de ejemplo; el límite es el costo de la corrida, no un número de historias
             seed = False
             objective = f"{objective}\n{COVERAGE_GOAL}"
-        self.reset_demo(seed=seed)
+        if own:  # la memoria durable (catálogo, decisiones, publicaciones) sigue de una corrida a la siguiente
+            self._build()
+        else:
+            self.reset_demo(seed=seed)
         self.thread_id = f"corrida-{uuid.uuid4().hex[:8]}"
         self.backlog_before = [w.model_dump() for w in self.deps.backlog.search()]
         self._spawn(run_pipeline, self.graph, objective, self.thread_id)
@@ -115,15 +118,31 @@ class RunController:
             self.thread.join(timeout)
         return not self.running
 
+    DURABLE_FILES = ("publicaciones.sqlite", "memoria.sqlite", "backlog_simulado.json")
+
     def reset_demo(self, *, seed: bool = True) -> None:
-        """Deja el backlog simulado, la memoria de decisiones y los registros como al comienzo."""
+        """Deja el backlog simulado, la memoria de decisiones y los registros como al comienzo (con las fuentes de ejemplo)."""
         if self.running:
             raise RuntimeError("No se puede reiniciar con una corrida en curso.")
-        for name in ("publicaciones.sqlite", "memoria.sqlite", "backlog_simulado.json"):
+        for name in self.DURABLE_FILES:
             (self.data_dir / name).unlink(missing_ok=True)
         self._build()
+        if not self.using_own_sources:  # con documentos propios el catálogo solo se vacía con «Empezar proyecto nuevo»
+            self.deps.catalog.clear()
         if seed:
             self.deps.backlog.seed_demo()
+
+    def new_project(self) -> None:
+        """Empieza un proyecto nuevo: vacía el catálogo, la memoria de decisiones, las publicaciones y el backlog simulado.
+
+        Conserva las fuentes cargadas y la línea base de la preventa (cuesta dinero volver a extraerla)."""
+        if self.running:
+            raise RuntimeError("No se puede empezar un proyecto nuevo con una corrida en curso.")
+        for name in self.DURABLE_FILES:
+            (self.data_dir / name).unlink(missing_ok=True)
+        self._build()
+        self.deps.catalog.clear()
+        self.thread_id, self.read_only = None, False
 
     # ---- consulta ----
 

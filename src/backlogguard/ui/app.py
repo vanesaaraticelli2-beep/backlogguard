@@ -13,6 +13,7 @@ from datetime import date
 import streamlit as st
 
 from backlogguard.board import Board, SourceType
+from backlogguard.catalog.ingest import estimate_ingest, ingest_meeting
 from backlogguard.graph.setup import baseline_dir, has_user_sources, user_sources_dir
 from backlogguard.graph.tasks import KIND_TITLES, PARTIES, summarize_tasks
 from backlogguard.llm.metering import load_pricing
@@ -448,6 +449,7 @@ def tab_sources(controller: RunController) -> None:
             controller.refresh_sources()
             st.rerun()
     baseline_section(controller, library)
+    meetings_section(controller, library)
     ready = has_user_sources(library.root)
     st.info(
         "Las corridas usan: **tus fuentes propias**." if ready
@@ -511,6 +513,80 @@ def baseline_section(controller: RunController, library: SourceLibrary) -> None:
                 )
 
 
+KIND_LABELS = {
+    "nuevo": "nuevo", "refina": "refina uno existente", "cubierto": "ya cubierto", "contradice": "contradice uno existente",
+    "divide": "divide uno existente", "fusiona": "fusiona existentes", "incierto": "incierto (lo decide una persona)",
+}
+MEETING_TYPES = (SourceType.REUNION, SourceType.MINUTA)
+
+
+def meetings_section(controller: RunController, library: SourceLibrary) -> None:
+    """Continuidad entre reuniones: cada reunión nueva se lee contra el catálogo y genera propuestas, sin aplicar nada sola."""
+    meetings = [i for i, m in library.describe() if m.source_type in MEETING_TYPES] if library.root.is_dir() else []
+    catalog = controller.deps.catalog
+    if not meetings or catalog is None:
+        return
+    st.markdown("**Reuniones contra el catálogo**")
+    st.caption(
+        "Cada reunión se lee una sola vez: se listan sus requisitos con una cita verificada por código, se comparan con el catálogo "
+        "y con la línea base, y quedan como propuestas pendientes. Solo «ya cubierto» suma evidencia sin esperar a una persona."
+    )
+    presales = [i for i, m in library.describe() if m.source_type is SourceType.PREVENTA]
+    presale = library.load(presales[0]) if len(presales) == 1 else None
+    baseline = BaselineStore(baseline_dir(controller.data_dir)).current(presale) if presale else None
+    providers = controller.deps.providers
+    for meeting_id in meetings:
+        document = library.load(meeting_id)
+        status = catalog.source_status(meeting_id, document.fingerprint)
+        label = {"nueva": "sin leer", "procesada": "leída", "cambiada": "cambió desde que se leyó"}[status]
+        st.markdown(f"«{document.metadata.source_name}» · {document.metadata.source_date} · huella `{document.fingerprint}` · **{label}**")
+        if status != "procesada":
+            models = (getattr(providers.requerimientos, "model", "?"), getattr(providers.auditor, "model", "?"))
+            estimate_ = estimate_ingest(document, baseline, models[0], models[1], load_pricing())
+            cost = f"~US$ {estimate_['cost_usd']:.2f}" if estimate_["cost_usd"] is not None else "sin precio configurado"
+            st.caption(
+                f"Estimación (enumera {models[0]}, clasifica {models[1]}): ~{estimate_['candidates']} candidatos, ~{estimate_['calls']} llamadas, "
+                f"~{estimate_['input_tokens']:,} tokens de entrada y ~{estimate_['output_tokens']:,} de salida, {cost}. Los textos se envían al proveedor del modelo."
+            )
+            if baseline is None:
+                st.warning("Sin la línea base de la preventa, los candidatos no se enlazan a lo vendido. Extraela primero.")
+            if controller.mode != "real":
+                st.info("Leer la reunión necesita modelos reales (LIVE_MODE=1).")
+            sure = st.checkbox("Confirmo el gasto", key=f"confirmar-reunion-{meeting_id}")
+            if st.button("Leer reunión contra el catálogo", key=f"leer-{meeting_id}", disabled=controller.running or controller.mode != "real" or not sure):
+                with st.spinner("Enumerando, clasificando y verificando las citas…"):
+                    result = ingest_meeting(
+                        document, catalog=catalog, enumerator=providers.requerimientos, classifier=providers.auditor, confirmed=True,
+                        baseline=baseline, presale=presale, pricing=load_pricing(),
+                    )
+                st.session_state["ultima_lectura"] = {
+                    "reunion": meeting_id, "descartados": [(r.text, r.reason) for r in result.rejected], "fuera_de_orden": result.out_of_order,
+                }
+                st.rerun()
+        last = st.session_state.get("ultima_lectura")
+        if last and last["reunion"] == meeting_id:
+            if last["fuera_de_orden"]:
+                st.warning("Esta reunión es anterior a otra ya leída: todas sus propuestas quedan para revisión humana.")
+            if last["descartados"]:
+                with st.expander(f"Candidatos descartados · {len(last['descartados'])}"):
+                    st.dataframe([{"candidato": t, "motivo": m} for t, m in last["descartados"]], width="stretch", hide_index=True)
+        proposals = catalog.proposals(source_id=meeting_id)
+        if proposals:
+            with st.expander(f"Propuestas · {len(proposals)}"):
+                st.dataframe(
+                    [
+                        {
+                            "id": p.id, "tipo": KIND_LABELS[p.kind.value], "sobre": ", ".join(p.targets) or "—",
+                            "propuesta": p.drafts[0].title if p.drafts else "—", "estado": p.state.value,
+                            "confianza": f"{p.confidence:.2f}" if p.confidence is not None else "—",
+                            "cita": p.evidence[0].quote, "orador": p.evidence[0].speaker or "—", "motivo": p.rationale,
+                        }
+                        for p in proposals
+                    ],
+                    width="stretch", hide_index=True,
+                )
+
+
 def main() -> None:
     st.set_page_config(page_title="BacklogGuard", page_icon="🛡️", layout="wide")
     controller = make_controller()
@@ -522,7 +598,14 @@ def main() -> None:
     who = people.get(name)
     st.sidebar.caption(f"Rol: {who.role}")
     st.sidebar.caption(f"Modo: {controller.mode}")
-    if st.sidebar.button("Reiniciar demo", key="reiniciar", disabled=controller.running):
+    if controller.using_own_sources:
+        st.sidebar.divider()
+        st.sidebar.caption("El catálogo, las decisiones y lo publicado se conservan entre corridas.")
+        sure = st.sidebar.checkbox("Confirmo: se borra todo lo guardado del proyecto", key="confirmar-proyecto-nuevo")
+        if st.sidebar.button("Empezar proyecto nuevo", key="proyecto-nuevo", disabled=controller.running or not sure):
+            controller.new_project()
+            st.rerun()
+    elif st.sidebar.button("Reiniciar demo", key="reiniciar", disabled=controller.running):
         controller.reset_demo()
         st.rerun()
 

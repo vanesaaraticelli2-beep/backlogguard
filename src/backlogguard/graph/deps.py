@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from backlogguard.board import AgentRole
+from backlogguard.catalog import Catalog
 from backlogguard.graph.budgets import RunBudget
 from backlogguard.hitl import PeopleConfig
 from backlogguard.integrations import BacklogGateway, PublicationLedger
@@ -49,6 +50,7 @@ class RunDeps:
     ledger: PublicationLedger
     project: str = "ACME"
     people: PeopleConfig | None = None
+    catalog: Catalog | None = None
     on_event: Callable[[dict], None] | None = None
 
 
