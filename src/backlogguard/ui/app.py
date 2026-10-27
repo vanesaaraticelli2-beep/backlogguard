@@ -22,6 +22,7 @@ from backlogguard.rag.compromisos import BaselineStore, estimate_extraction, ext
 from backlogguard.rag.importers import SourceImportError, estimate, import_pdf, import_transcript
 from backlogguard.rag.sources import SourceChangeNeedsConfirmation, SourceMetadata, SourceUnchanged, slugify
 from backlogguard.ui.controller import DEFAULT_OBJECTIVE, RunController
+from backlogguard.ui.conversation_view import live_conversation, tab_conversation
 from backlogguard.ui.revision import KIND_LABELS, tab_catalog, tab_review
 from backlogguard.ui.runtime import make_controller
 from backlogguard.ui.theme import apply_theme, top_band
@@ -151,6 +152,7 @@ def decision_form(controller: RunController, who, payload: dict) -> None:
 
 
 def tab_run(controller: RunController) -> None:
+    live_conversation(controller)
     waiting = controller.pending() is not None
     st.write(f"Modo: **{controller.mode}**" + (" (reproduce una corrida grabada, sin costo)" if controller.mode == "demo" else ""))
     if controller.mode == "simulado":
@@ -610,11 +612,13 @@ def main() -> None:
     apply_theme()
     top_band("Del dicho al backlog")
     live_status(controller)
-    run, sources, review, catalog, saved, tasks, decisions, board, backlog, activity = st.tabs(
-        ["Corrida", "Fuentes", "Revisión", "Catálogo", "Corridas guardadas", "Tareas entre agentes", "Mis decisiones", "Tablero", "Backlog simulado", "Actividad"]
+    run, talk, sources, review, catalog, saved, tasks, decisions, board, backlog, activity = st.tabs(
+        ["Corrida", "Conversación", "Fuentes", "Revisión", "Catálogo", "Corridas guardadas", "Tareas entre agentes", "Mis decisiones", "Tablero", "Backlog simulado", "Actividad"]
     )
     with run:
         tab_run(controller)
+    with talk:
+        tab_conversation(controller)
     with sources:
         tab_sources(controller)
     with review:

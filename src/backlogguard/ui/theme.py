@@ -12,7 +12,9 @@ GREEN = "#59AE01"
 CSS = f"""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap');
-html, body, [class*="st-"], .stApp {{ font-family: 'Source Sans 3', 'Segoe UI', sans-serif; }}
+.stApp {{ font-family: 'Source Sans 3', 'Segoe UI', sans-serif; }}
+button, input, textarea, select {{ font-family: inherit; }}
+[data-testid="stIconMaterial"], [data-testid="stIconMaterial"] * {{ font-family: 'Material Symbols Rounded', 'Material Symbols Outlined' !important; }}
 h1, h2, h3, h4 {{ font-family: 'Outfit', 'Segoe UI', sans-serif; color: {INDIGO}; }}
 .bg-top {{ background: {INDIGO}; border-bottom: 5px solid {GREEN}; border-radius: 8px; padding: 14px 20px; margin-bottom: 8px;
           display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; color: #fff; }}
@@ -31,6 +33,16 @@ h1, h2, h3, h4 {{ font-family: 'Outfit', 'Segoe UI', sans-serif; color: {INDIGO}
 .bg-tag.nuevo, .bg-tag.refina, .bg-tag.cubierto {{ background: #e6f3d6; color: #3f7d12; }}
 .bg-tag.contradice {{ background: #fde7e5; color: #b3261e; }}
 .bg-tag.incierto, .bg-tag.divide, .bg-tag.fusiona {{ background: #fff0d9; color: #a35a00; }}
+.bg-chat {{ display: grid; gap: 10px; margin: 8px 0 16px; }}
+.bg-msg {{ background: #fff; border: 1px solid #dddcec; border-left: 6px solid var(--c); border-radius: 8px; padding: 10px 14px; max-width: 920px; }}
+.bg-msg.warn {{ background: #fffaf0; }}
+.bg-msg.wait {{ background: #eef0ff; border-style: dashed; border-left-style: solid; }}
+.bg-head {{ font-size: 13px; color: #5d5b7a; }}
+.bg-head b {{ color: var(--c); font-family: 'Outfit', sans-serif; font-size: 15px; }}
+.bg-text {{ margin-top: 2px; overflow-wrap: anywhere; }}
+.bg-msg ul {{ margin: 6px 0 0; padding-left: 20px; }}
+.bg-q {{ margin: 8px 0 0; padding: 6px 12px; background: #ebe9fb; border-left: 4px solid #13056D; border-radius: 0 6px 6px 0; font-size: 14px; }}
+.bg-q small {{ display: block; color: #5d5b7a; margin-top: 2px; }}
 .bg-tag.ok {{ background: {GREEN}; color: #10270a; }}
 .bg-tag.no {{ background: #fde7e5; color: #b3261e; }}
 </style>

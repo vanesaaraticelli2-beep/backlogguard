@@ -276,3 +276,9 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] **Productor con Sonnet (2026-10-25):** reemplaza a Haiku (que cubrió 4 de al menos 8 requisitos en la prueba real) y a Gemini (cuota gratuita). Productor y Crítico siguen siendo del mismo proveedor (distinto modelo): revisar la independencia y comparar modelos en la evaluación (Día 13).
 - [~] MCP para Azure DevOps: **diferido** (2026-10-25). Se avanza con el modo simulado, detrás de una interfaz (`BacklogGateway`) para enchufar MCP después de las clases de noviembre. El servidor oficial (`@azure-devops/mcp`) exige una cuenta con Entra ID.
 - [ ] Embeddings reales (`sentence-transformers`): decidir en la evaluación
+
+## Conversación entre agentes — [x] (sin commit)
+- [x] `graph/conversation.py`: la corrida contada como mensajes entre agentes, en lenguaje de usuario y por roles. Plantillas por código, sin modelos: cada mensaje sale de un hecho del estado guardado (tareas, tablero, hallazgos, decisiones). Las citas se atribuyen a la fuente, no a las personas; los pedidos de decisión y las decisiones idénticas se agrupan.
+- [x] `ui/conversation_view.py`: panel «Lo que se están diciendo los agentes» arriba de «Corrida» (últimos 8, en vivo) y pestaña «Conversación» completa con filtro por agente y «Detalle técnico» plegado. Funciona también con corridas guardadas.
+- [x] `tests/test_conversacion.py` (8 tests). Suite completa: 452.
+- Límites: se actualiza por etapa, no por cada llamada interna de un agente; el resumen del Supervisor lo redacta un modelo y puede nombrar ids o roles técnicos; los textos de hallazgos vienen del Auditor y pueden nombrar personas si la fuente las nombra. Pendiente: probarlo con una corrida real nueva (con el proyecto nuevo).
