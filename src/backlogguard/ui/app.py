@@ -22,7 +22,9 @@ from backlogguard.rag.compromisos import BaselineStore, estimate_extraction, ext
 from backlogguard.rag.importers import SourceImportError, estimate, import_pdf, import_transcript
 from backlogguard.rag.sources import SourceChangeNeedsConfirmation, SourceMetadata, SourceUnchanged, slugify
 from backlogguard.ui.controller import DEFAULT_OBJECTIVE, RunController
+from backlogguard.ui.revision import KIND_LABELS, tab_catalog, tab_review
 from backlogguard.ui.runtime import make_controller
+from backlogguard.ui.theme import apply_theme, top_band
 
 SOURCE_LABELS = {"preventa": "Línea base (preventa)", "reunion": "Evidencia (reunión)", "minuta": "Evidencia (minuta)"}
 ROLE_LABELS = {"linea_base": "Línea base", "evidencia": "Evidencia"}
@@ -513,10 +515,6 @@ def baseline_section(controller: RunController, library: SourceLibrary) -> None:
                 )
 
 
-KIND_LABELS = {
-    "nuevo": "nuevo", "refina": "refina uno existente", "cubierto": "ya cubierto", "contradice": "contradice uno existente",
-    "divide": "divide uno existente", "fusiona": "fusiona existentes", "incierto": "incierto (lo decide una persona)",
-}
 MEETING_TYPES = (SourceType.REUNION, SourceType.MINUTA)
 
 
@@ -609,15 +607,20 @@ def main() -> None:
         controller.reset_demo()
         st.rerun()
 
-    st.title("Del dicho al backlog")
+    apply_theme()
+    top_band("Del dicho al backlog")
     live_status(controller)
-    run, sources, saved, tasks, decisions, board, backlog, activity = st.tabs(
-        ["Corrida", "Fuentes", "Corridas guardadas", "Tareas entre agentes", "Mis decisiones", "Tablero", "Backlog simulado", "Actividad"]
+    run, sources, review, catalog, saved, tasks, decisions, board, backlog, activity = st.tabs(
+        ["Corrida", "Fuentes", "Revisión", "Catálogo", "Corridas guardadas", "Tareas entre agentes", "Mis decisiones", "Tablero", "Backlog simulado", "Actividad"]
     )
     with run:
         tab_run(controller)
     with sources:
         tab_sources(controller)
+    with review:
+        tab_review(controller, who)
+    with catalog:
+        tab_catalog(controller)
     with saved:
         tab_runs(controller)
     with tasks:

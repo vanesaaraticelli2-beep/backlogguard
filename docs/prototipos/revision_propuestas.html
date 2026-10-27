@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>:root{color-scheme:light}body{margin:0}[hidden]{display:none!important}</style>
+<title>Revisión de propuestas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Maestro-detalle: la lista a la izquierda se recorre de a una; el detalle muestra la evidencia y las acciones. */
+:root {
+  --indigo: #13056d;
+  --green: #59ae01;
+  --green-deep: #3f7d12;
+  --bg: #f5f5fa;
+  --surface: #ffffff;
+  --fg: #1d1b3a;
+  --muted: #5d5b7a;
+  --line: #dddcec;
+  --soft-indigo: #ebe9fb;
+  --soft-green: #e6f3d6;
+  --warn: #a35a00;
+  --warn-bg: #fff0d9;
+  --bad: #b3261e;
+  --bad-bg: #fde7e5;
+  --focus: #59ae01;
+  --font-display: "Outfit", "Segoe UI", sans-serif;
+  --font-body: "Source Sans 3", "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --indigo: #a99cff; --green: #7fd11f; --green-deep: #8fd94a; --bg: #12102b; --surface: #1b1941; --fg: #ecebfa; --muted: #a3a1c4;
+    --line: #34316a; --soft-indigo: #272363; --soft-green: #1f3410; --warn: #ffb454; --warn-bg: #3a2a0d; --bad: #ff8a80; --bad-bg: #3d1614;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --indigo: #a99cff; --green: #7fd11f; --green-deep: #8fd94a; --bg: #12102b; --surface: #1b1941; --fg: #ecebfa; --muted: #a3a1c4;
+  --line: #34316a; --soft-indigo: #272363; --soft-green: #1f3410; --warn: #ffb454; --warn-bg: #3a2a0d; --bad: #ff8a80; --bad-bg: #3d1614;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+.topbar { background: var(--indigo); color: #fff; border-bottom: 5px solid var(--green); }
+:root[data-theme="dark"] .topbar, :root:not([data-theme="light"]) .topbar { }
+.topbar-in { max-width: 1280px; margin: 0 auto; padding: 14px max(16px, env(safe-area-inset-right, 0px)) 14px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: .02em; }
+.brand b { color: #8fe03a; }
+.topbar h1 { font-family: var(--font-display); font-size: 17px; font-weight: 600; margin: 0; flex: 1 1 240px; }
+.rolebox { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.rolebox select { background: #fff; color: #13056d; border: 0; border-radius: 6px; padding: 6px 10px; font-weight: 600; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .topbar { background: #1b1941; } }
+:root[data-theme="dark"] .topbar { background: #1b1941; }
+
+.wrap { max-width: 1280px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px)); }
+.note { background: var(--soft-indigo); border-radius: 8px; padding: 10px 14px; color: var(--fg); font-size: 14px; margin-bottom: 16px; }
+
+.summary { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+.count { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; min-width: 110px; }
+.count span { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.count strong { font-family: var(--font-display); font-size: 24px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.count.pending strong { color: var(--indigo); }
+.count.ok strong { color: var(--green-deep); }
+.count.no strong { color: var(--bad); }
+.spacer { flex: 1; }
+
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 16px; font-weight: 600; cursor: pointer; }
+.btn:hover:not(:disabled) { border-color: var(--indigo); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--green); border-color: var(--green); color: #10270a; }
+.btn.primary:hover:not(:disabled) { background: #6cc310; border-color: #6cc310; }
+.btn.danger { color: var(--bad); }
+.btn.indigo { background: var(--indigo); border-color: var(--indigo); color: #fff; }
+:root[data-theme="dark"] .btn.indigo { color: #12102b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.indigo { color: #12102b; } }
+
+.batch { background: var(--surface); border: 1px solid var(--line); border-left: 5px solid var(--green); border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
+.batch[hidden] { display: none; }
+.batch h3 { margin: 0 0 6px; font-family: var(--font-display); font-size: 16px; }
+.batch .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.batch select { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 5px 8px; }
+
+.grid { display: grid; grid-template-columns: minmax(300px, 400px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 820px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.list { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; border-bottom: 1px solid var(--line); }
+.chip { border: 1px solid var(--line); background: var(--bg); border-radius: 99px; padding: 4px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--indigo); border-color: var(--indigo); color: #fff; }
+:root[data-theme="dark"] .chip[aria-pressed="true"] { color: #12102b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .chip[aria-pressed="true"] { color: #12102b; } }
+.items { list-style: none; margin: 0; padding: 0; max-height: 640px; overflow-y: auto; }
+.item { display: block; width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--line); background: transparent; padding: 12px 14px 12px 11px; border-left: 4px solid transparent; cursor: pointer; }
+.item:hover { background: var(--bg); }
+.item[aria-current="true"] { background: var(--soft-indigo); border-left-color: var(--indigo); }
+.item .top { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.item .title { display: block; font-weight: 600; margin-top: 3px; overflow-wrap: anywhere; }
+.item.done .title { color: var(--muted); font-weight: 400; }
+.tag { border-radius: 4px; padding: 1px 7px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.tag.nuevo, .tag.refina { background: var(--soft-green); color: var(--green-deep); }
+.tag.contradice { background: var(--bad-bg); color: var(--bad); }
+.tag.incierto { background: var(--warn-bg); color: var(--warn); }
+.tag.state-ok { background: var(--green); color: #10270a; }
+.tag.state-no { background: var(--bad-bg); color: var(--bad); }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--indigo); flex: none; }
+.item.done .dot { background: var(--line); }
+.fold { border: 0; background: var(--bg); width: 100%; padding: 10px 14px; text-align: left; font-weight: 600; color: var(--muted); cursor: pointer; border-top: 1px solid var(--line); }
+
+.detail { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 22px max(18px, 2vw); min-width: 0; }
+.detail header { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 4px; }
+.detail h2 { font-family: var(--font-display); font-size: 22px; margin: 0; flex: 1 1 100%; color: var(--indigo); text-wrap: balance; }
+.pid { font-family: var(--font-display); font-weight: 700; }
+.label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; margin: 20px 0 6px; }
+blockquote { margin: 0; padding: 12px 16px; background: var(--soft-indigo); border-left: 5px solid var(--indigo); border-radius: 0 8px 8px 0; font-size: 16px; overflow-wrap: anywhere; }
+.meta { color: var(--muted); font-size: 13px; margin-top: 6px; }
+.commit { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; background: var(--soft-green); border-radius: 8px; padding: 10px 14px; }
+.commit b { font-family: var(--font-display); color: var(--green-deep); }
+.conf { display: flex; align-items: center; gap: 12px; }
+.bar { flex: 1; max-width: 220px; height: 8px; background: var(--line); border-radius: 4px; position: relative; }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--green); border-radius: 4px; }
+.bar i.low { background: #e08a00; }
+.bar u { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--indigo); }
+.conf span { font-variant-numeric: tabular-nums; font-weight: 600; }
+.field { display: block; width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 9px 12px; }
+textarea.field { min-height: 92px; resize: vertical; }
+.why { color: var(--fg); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--line); }
+.block { background: var(--warn-bg); color: var(--warn); border-radius: 8px; padding: 8px 12px; font-size: 14px; font-weight: 600; flex: 1 1 100%; }
+.radios { display: flex; flex-wrap: wrap; gap: 8px; }
+.radios label { border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px; cursor: pointer; font-weight: 600; }
+.radios input { accent-color: var(--indigo); margin-right: 6px; }
+.radios label:has(input:checked) { border-color: var(--indigo); background: var(--soft-indigo); }
+.resolved { border-radius: 8px; padding: 12px 16px; font-weight: 600; }
+.resolved.ok { background: var(--soft-green); color: var(--green-deep); }
+.resolved.no { background: var(--bad-bg); color: var(--bad); }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--indigo); color: #fff; padding: 10px 18px; border-radius: 8px; font-weight: 600; z-index: 20; max-width: calc(100% - 32px); }
+:root[data-theme="dark"] .toast { color: #12102b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .toast { color: #12102b; } }
+.toast[hidden] { display: none; }
+@media (prefers-reduced-motion: no-preference) { .item, .btn { transition: background .15s, border-color .15s; } }
+
+/* Pestañas y vistas que no cambian respecto de la aplicación */
+.tabs { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
+.tabs-in { max-width: 1280px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); display: flex; gap: 2px; overflow-x: auto; }
+.tab-btn { border: 0; background: transparent; padding: 13px 14px 11px; font-weight: 600; color: var(--muted); border-bottom: 3px solid transparent; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 7px; }
+.tab-btn:hover { color: var(--fg); }
+.tab-btn[aria-selected="true"] { color: var(--indigo); border-bottom-color: var(--green); }
+.tab-btn.new::after { content: "nueva"; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; background: var(--soft-green); color: var(--green-deep); border-radius: 4px; padding: 1px 5px; }
+.badge { background: var(--indigo); color: #fff; border-radius: 99px; font-size: 12px; min-width: 20px; height: 20px; padding: 0 6px; display: inline-flex; align-items: center; justify-content: center; }
+:root[data-theme="dark"] .badge { color: #12102b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .badge { color: #12102b; } }
+.badge[hidden] { display: none; }
+.tab[hidden] { display: none; }
+.cap { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+.lab { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 4px; }
+.sec { font-family: var(--font-display); font-size: 17px; margin: 24px 0 8px; color: var(--indigo); }
+.mono { font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+.scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+table.t { border-collapse: collapse; width: 100%; font-size: 14px; }
+table.t th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); background: var(--bg); padding: 8px 12px; white-space: nowrap; }
+table.t td { padding: 9px 12px; border-top: 1px solid var(--line); vertical-align: top; }
+.box { border-radius: 8px; padding: 10px 14px; margin: 12px 0; font-size: 14px; }
+.box.info { background: var(--soft-indigo); }
+.box.warn { background: var(--warn-bg); color: var(--warn); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin-bottom: 12px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 9px; border-radius: 99px; background: var(--bg); border: 1px solid var(--line); color: var(--muted); }
+.pill.ok { background: var(--soft-green); border-color: transparent; color: var(--green-deep); }
+.metrics { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; margin-bottom: 14px; }
+@media (max-width: 720px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.row3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.exp { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; margin: 8px 0; padding: 0 16px; }
+.exp summary { cursor: pointer; padding: 11px 0; font-weight: 600; }
+.exp[open] { padding-bottom: 14px; }
+.exp[open] summary { border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+.timeline { display: grid; gap: 8px; margin: 4px 0 12px; }
+.timeline > div { border-left: 3px solid var(--green); padding-left: 12px; }
+.field.short { max-width: 320px; }
+.chk { display: flex; gap: 8px; align-items: center; font-weight: 600; margin: 8px 0; }
+.chk input { accent-color: var(--indigo); width: 16px; height: 16px; }
+.log { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font-size: 13px; margin: 0; }
+.card { max-width: 820px; }
+.d-title { font-family: var(--font-display); font-size: 20px; margin: 0 0 4px; color: var(--indigo); }
+.tab a { color: var(--indigo); font-weight: 600; }
+:root[data-theme="dark"] .tab a { color: var(--green); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tab a { color: var(--green); } }
+.btn.ghost { background: transparent; border-color: rgba(255,255,255,.55); color: #fff; padding: 6px 12px; font-size: 14px; }
+.reset-box { background: var(--bad-bg); color: var(--bad); }
+.reset-box .wrap2 { max-width: 1280px; margin: 0 auto; padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-weight: 600; }
+.reset-box[hidden] { display: none; }
+</style>
+
+<div class="topbar"><div class="topbar-in">
+  <div class="brand">CFO<b>TECH</b></div>
+  <h1>Del dicho al backlog</h1>
+  <label class="rolebox" for="role">Actúas como
+    <select id="role"><option value="product_owner">product owner</option><option value="service_manager">service manager</option><option value="engineer">ingeniero</option></select>
+  </label>
+  <button class="btn ghost" id="reset-open" type="button">Empezar proyecto nuevo</button>
+</div></div>
+<div class="reset-box" id="reset" hidden><div class="wrap2"><label class="chk"><input type="checkbox" id="ok-reset">Confirmo: se borra todo lo guardado del proyecto</label><button class="btn danger" id="reset-go" type="button" disabled>Borrar y empezar</button></div></div>
+<nav class="tabs" aria-label="Secciones"><div class="tabs-in" id="tabs" role="tablist"></div></nav>
+
+<main class="wrap">
+  <p class="note">Prototipo con datos de ejemplo inventados. Elige una propuesta de la lista, lee la cita y decide. Nada queda aprobado de antemano.</p>
+
+  <section class="tab" id="t-revision" hidden>
+  <p class="cap">Reunión de inicio (ejemplo) · 2026-01-25 · leída · propuestas para decidir. Lo ya decidido pasa a «Resueltas».</p>
+  <div class="summary" aria-live="polite">
+    <div class="count pending"><span>Pendientes</span><strong id="c-pend">0</strong></div>
+    <div class="count ok"><span>Aprobadas</span><strong id="c-ok">0</strong></div>
+    <div class="count no"><span>Rechazadas</span><strong id="c-no">0</strong></div>
+    <div class="spacer"></div>
+    <button class="btn indigo" id="open-batch" type="button">Aprobar varias a la vez…</button>
+  </div>
+
+  <section class="batch" id="batch" hidden aria-labelledby="batch-h">
+    <h3 id="batch-h">Aprobación por lote</h3>
+    <div class="row">
+      <label for="thr">Nuevos y refinamientos con confianza de al menos</label>
+      <select id="thr"><option value="0.9">0,90</option><option value="0.8" selected>0,80</option><option value="0.7">0,70</option></select>
+      <span id="batch-count"></span>
+      <span class="spacer"></span>
+      <button class="btn primary" id="batch-go" type="button">Aprobar ese lote</button>
+      <button class="btn" id="batch-x" type="button">Cancelar</button>
+    </div>
+    <div class="meta" id="batch-why"></div>
+  </section>
+
+  <div class="grid">
+    <section class="list" aria-label="Propuestas">
+      <div class="filters" id="filters" role="group" aria-label="Filtrar por tipo"></div>
+      <ul class="items" id="items"></ul>
+      <button class="fold" id="fold" type="button" aria-expanded="false"></button>
+      <ul class="items" id="done-items" hidden></ul>
+    </section>
+    <article class="detail" id="detail" aria-live="polite"></article>
+  </div>
+  </section>
+<section class="tab" id="t-corrida" hidden>
+  <p class="cap">Modo: <b>real</b></p>
+  <label class="lab" for="objetivo">Objetivo de la corrida</label>
+  <textarea class="field" id="objetivo" rows="3">Convertir lo conversado en las reuniones y lo vendido en la preventa en un backlog revisable: épica, historias, tareas y casos de prueba, cada uno con su cita.</textarea>
+  <div class="box info">La corrida usa <b>tus fuentes</b> (pestaña «Fuentes»), sin work items de ejemplo. Parte de lo que ya aprobaste en el catálogo.</div>
+  <div class="box warn">Esta corrida usa modelos reales y <b>gasta tokens</b>. Tope por corrida: 400.000 tokens. Los textos se envían a los proveedores de los modelos.</div>
+  <p><button class="btn primary" type="button" data-toast="Prototipo: acá empieza la corrida.">Iniciar corrida</button></p>
+  <h3 class="sec">Resumen del Supervisor</h3>
+  <p>Se redactaron 6 historias a partir de 6 requisitos aprobados. El Crítico pidió corregir 1 cita. El Auditor encontró 1 cambio de alcance, que quedó para el service manager. El plan de publicación espera aprobación.</p>
+  <p class="cap">Tokens usados: 182.440</p>
+  <h3 class="sec">Fuentes usadas en esta corrida</h3>
+  <div class="scroll"><table class="t"><thead><tr><th>rol</th><th>fuente</th><th>tipo</th><th>fecha</th><th>huella</th><th>verificada</th><th>palabras</th></tr></thead><tbody>
+    <tr><td>Lo vendido</td><td>Propuesta comercial (ejemplo)</td><td>preventa</td><td>2025-10-01</td><td class="mono">4b1a1b2a</td><td>sí</td><td>9.840</td></tr>
+    <tr><td>Lo conversado</td><td>Reunión de inicio (ejemplo)</td><td>reunión</td><td>2026-01-25</td><td class="mono">c07e91d3</td><td>sí</td><td>6.210</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="tab" id="t-fuentes" hidden>
+  <p class="cap">Cargá tu preventa (PDF) y la transcripción de una reunión (texto). Se guardan en <span class="mono">data/fuentes/</span> y no se suben a git. Mientras haya una preventa y una reunión, las corridas usan estas fuentes.</p>
+  <div class="panel">
+    <div class="lab">¿Qué vas a cargar?</div>
+    <div class="radios"><label><input type="radio" name="tipo" checked>Preventa (PDF)</label><label><input type="radio" name="tipo">Reunión (texto)</label><label><input type="radio" name="tipo">Minuta (texto)</label></div>
+    <div class="row3">
+      <div><label class="lab" for="f-nom">Nombre</label><input class="field" id="f-nom" value="Propuesta comercial (ejemplo)"></div>
+      <div><label class="lab" for="f-fec">Fecha</label><input class="field" id="f-fec" value="2025-10-01"></div>
+      <div><label class="lab" for="f-arch">Archivo</label><input class="field" id="f-arch" type="file"></div>
+    </div>
+    <p><button class="btn primary" type="button" data-toast="Prototipo: acá se importaría el archivo.">Importar y guardar</button></p>
+  </div>
+  <h3 class="sec">Fuentes guardadas</h3>
+  <div class="scroll"><table class="t"><thead><tr><th>id</th><th>rol</th><th>tipo</th><th>fecha</th><th>formato</th><th>huella</th><th>verificada</th><th>nombre</th></tr></thead><tbody>
+    <tr><td class="mono">propuesta</td><td>Lo vendido</td><td>preventa</td><td>2025-10-01</td><td>páginas</td><td class="mono">4b1a1b2a</td><td>sí</td><td>Propuesta comercial (ejemplo)</td></tr>
+    <tr><td class="mono">reunion_01</td><td>Lo conversado</td><td>reunión</td><td>2026-01-25</td><td>diálogo</td><td class="mono">c07e91d3</td><td>sí</td><td>Reunión de inicio (ejemplo)</td></tr>
+    <tr><td class="mono">reunion_02</td><td>Lo conversado</td><td>reunión</td><td>2026-02-08</td><td>diálogo</td><td class="mono">5d2a77f0</td><td>sí</td><td>Seguimiento de febrero (ejemplo)</td></tr>
+  </tbody></table></div>
+  <h3 class="sec">Línea base: compromisos de la preventa</h3>
+  <p class="cap">24 compromisos verificados, 3 descartados · modelo de ejemplo · 41.200 tokens de entrada y 6.800 de salida (~US$ 0,30) · 2026-10-20</p>
+  <details class="exp"><summary>Alta de clientes · 6</summary><div class="scroll"><table class="t"><thead><tr><th>id</th><th>alcance</th><th>compromiso</th><th>página</th><th>cita</th></tr></thead><tbody>
+    <tr><td class="mono">C-012</td><td>incluido</td><td>Registrar cliente validando el CUIT</td><td>6</td><td>«El alta valida el CUIT del cliente.»</td></tr>
+    <tr><td class="mono">C-014</td><td>incluido</td><td>Alta pendiente de revisión</td><td>6</td><td>«Las altas incompletas quedan en revisión.»</td></tr>
+  </tbody></table></div></details>
+  <details class="exp"><summary>Notificaciones por mail · 3</summary><div class="scroll"><table class="t"><thead><tr><th>id</th><th>alcance</th><th>compromiso</th><th>página</th><th>cita</th></tr></thead><tbody>
+    <tr><td class="mono">C-031</td><td>incluido</td><td>Envío de mail al administrativo</td><td>9</td><td>«Proceso automático: envío de mail.»</td></tr>
+  </tbody></table></div></details>
+  <details class="exp"><summary>Fuera de alcance · 3</summary><div class="scroll"><table class="t"><thead><tr><th>id</th><th>alcance</th><th>compromiso</th><th>página</th><th>cita</th></tr></thead><tbody>
+    <tr><td class="mono">C-071</td><td>excluido</td><td>Modificación de clientes ya dados de alta</td><td>14</td><td>«No incluye la modificación de clientes.»</td></tr>
+  </tbody></table></div></details>
+  <h3 class="sec">Reuniones contra el catálogo</h3>
+  <p class="cap">Cada reunión se lee una sola vez: se listan sus requisitos con una cita verificada por código, se comparan con el catálogo y con la línea base, y quedan como propuestas pendientes. Solo «ya cubierto» suma evidencia sin esperar a una persona.</p>
+  <div class="panel">
+    <b>Reunión de inicio (ejemplo)</b> · 2026-01-25 · huella <span class="mono">c07e91d3</span> · <span class="pill ok">leída</span>
+    <p class="cap">8 propuestas pendientes de revisión. <a href="#" data-go="revision">Ir a Revisión →</a></p>
+  </div>
+  <div class="panel">
+    <b>Seguimiento de febrero (ejemplo)</b> · 2026-02-08 · huella <span class="mono">5d2a77f0</span> · <span class="pill">sin leer</span>
+    <p class="cap">Estimación (enumera el modelo del productor, clasifica el del Auditor): ~14 candidatos, ~4 llamadas, ~31.000 tokens de entrada y ~9.500 de salida, ~US$ 0,19. Los textos se envían al proveedor del modelo.</p>
+    <label class="chk"><input type="checkbox" id="ok-gasto">Confirmo el gasto</label>
+    <p><button class="btn primary" id="leer" type="button" disabled>Leer reunión contra el catálogo</button></p>
+  </div>
+</section>
+
+<section class="tab" id="t-catalogo" hidden>
+  <p class="cap">La memoria del proyecto: cada requisito tiene un identificador que no cambia, sus versiones y las citas que lo sostienen. Se conserva entre corridas.</p>
+  <div class="metrics">
+    <div class="count"><span>Requisitos activos</span><strong>3</strong></div>
+    <div class="count"><span>Versiones</span><strong>5</strong></div>
+    <div class="count"><span>Evidencias</span><strong>7</strong></div>
+    <div class="count pending"><span>Propuestas pendientes</span><strong id="cat-pend">8</strong></div>
+  </div>
+  <div class="scroll"><table class="t"><thead><tr><th>id</th><th>estado</th><th>versión</th><th>requisito</th><th>compromisos</th><th>evidencias</th></tr></thead><tbody>
+    <tr><td class="mono">RQ-001</td><td><span class="pill ok">activo</span></td><td>v1</td><td>Validar el CUIT antes de crear la cuenta</td><td class="mono">C-012</td><td>2</td></tr>
+    <tr><td class="mono">RQ-002</td><td><span class="pill ok">activo</span></td><td>v2</td><td>Alta de clientes con formulario web</td><td class="mono">C-005, C-014</td><td>3</td></tr>
+    <tr><td class="mono">RQ-004</td><td><span class="pill ok">activo</span></td><td>v2</td><td>Consulta de score crediticio</td><td class="mono">C-022</td><td>2</td></tr>
+    <tr><td class="mono">RQ-003</td><td><span class="pill">reemplazado</span></td><td>v1</td><td>Alta por planilla (reemplazado por RQ-002)</td><td class="mono">C-005</td><td>1</td></tr>
+  </tbody></table></div>
+  <details class="exp"><summary>RQ-002 · historial y evidencia</summary>
+    <div class="timeline">
+      <div><b>v2</b> · refina · aprobada por el product owner · reunión del 2026-02-08<br><span class="cap">Se agrega el formulario responsivo.</span></div>
+      <div><b>v1</b> · nuevo · aprobada por el product owner · reunión del 2026-01-25<br><span class="cap">Alta de clientes con formulario web.</span></div>
+    </div>
+    <blockquote>«Que la persona se registre sola desde la web, sin pasar por el comercial.»</blockquote>
+    <div class="meta">Analista de requerimientos · Reunión de inicio, 2026-01-25 · origen</div>
+  </details>
+  <details class="exp"><summary>RQ-004 · historial y evidencia</summary>
+    <div class="timeline"><div><b>v2</b> · refina · vigencia configurable del score<br></div><div><b>v1</b> · nuevo · consulta de score</div></div>
+    <blockquote>«La vigencia del score la queremos poder cambiar nosotros.»</blockquote>
+    <div class="meta">PO del cliente · Seguimiento, 2026-02-08 · refuerzo</div>
+  </details>
+</section>
+
+<section class="tab" id="t-guardadas" hidden>
+  <p class="cap">Corridas guardadas, de esta pantalla o de un script. Al abrir una se muestra su tablero, sus hallazgos, las decisiones y el backlog resultante. Es de solo lectura.</p>
+  <div class="scroll"><table class="t"><thead><tr><th>corrida</th><th>momento</th><th>estado</th><th>ítems</th><th>tareas</th><th>correcciones</th><th>tokens</th><th>espera una decisión</th></tr></thead><tbody>
+    <tr><td class="mono">run-20261026-1</td><td>2026-10-26 18:40</td><td>Terminada</td><td>14</td><td>31</td><td>3</td><td>182.440</td><td></td></tr>
+    <tr><td class="mono">run-20261022-1</td><td>2026-10-22 11:05</td><td>Pausada</td><td>9</td><td>18</td><td>1</td><td>96.310</td><td>sí</td></tr>
+  </tbody></table></div>
+  <label class="lab" for="sel-corrida">Corrida a abrir</label>
+  <select class="field short" id="sel-corrida"><option>run-20261026-1</option><option>run-20261022-1</option></select>
+  <p><button class="btn" type="button" data-toast="Prototipo: abriría la corrida en solo lectura.">Abrir (solo lectura)</button></p>
+</section>
+
+<section class="tab" id="t-tareas" hidden>
+  <p class="cap">El backlog de la corrida: cada tarea que un agente le pasa a otro (o a una persona), en orden, con lo que costó en tokens.</p>
+  <div class="metrics">
+    <div class="count"><span>Tareas</span><strong>31</strong></div>
+    <div class="count"><span>Pedidos de corrección</span><strong>3</strong></div>
+    <div class="count"><span>Correcciones logradas</span><strong>2</strong></div>
+    <div class="count"><span>Reintentos frenados</span><strong>1</strong></div>
+    <div class="count"><span>Tokens</span><strong>182.440</strong></div>
+    <div class="count"><span>Costo estimado</span><strong>US$ 0,74</strong></div>
+  </div>
+  <div class="two">
+    <div><h3 class="sec">Gasto por agente que hizo la tarea</h3><div class="scroll"><table class="t"><thead><tr><th>agente</th><th>tareas</th><th>tokens</th><th>% del gasto</th><th>US$</th></tr></thead><tbody>
+      <tr><td>Requerimientos</td><td>9</td><td>74.200</td><td>41%</td><td>0,31</td></tr>
+      <tr><td>Crítico</td><td>12</td><td>58.900</td><td>32%</td><td>0,26</td></tr>
+      <tr><td>Auditor</td><td>4</td><td>38.100</td><td>21%</td><td>0,15</td></tr>
+      <tr><td>Integración</td><td>6</td><td>11.240</td><td>6%</td><td>0,02</td></tr>
+    </tbody></table></div></div>
+    <div><h3 class="sec">Quién le pasa tareas a quién</h3><div class="scroll"><table class="t"><thead><tr><th>de</th><th>para</th><th>tareas</th></tr></thead><tbody>
+      <tr><td>Supervisor</td><td>Requerimientos</td><td>9</td></tr>
+      <tr><td>Requerimientos</td><td>Crítico</td><td>12</td></tr>
+      <tr><td>Crítico</td><td>Requerimientos</td><td>3</td></tr>
+      <tr><td>Supervisor</td><td>Auditor</td><td>4</td></tr>
+      <tr><td>Supervisor</td><td>Integración</td><td>3</td></tr>
+    </tbody></table></div></div>
+  </div>
+  <div class="two">
+    <div><label class="lab" for="ft">Tipo de tarea</label><select class="field" id="ft"><option>(todas)</option><option>Redactar</option><option>Revisar</option><option>Auditar</option></select></div>
+    <div><label class="lab" for="fa">Agente que la hizo</label><select class="field" id="fa"><option>(todos)</option><option>Requerimientos</option><option>Crítico</option><option>Auditor</option></select></div>
+  </div>
+  <div class="scroll"><table class="t"><thead><tr><th>tarea</th><th>de</th><th>para</th><th>qué</th><th>ítem</th><th>ronda</th><th>estado</th><th>tokens</th><th>modelo</th></tr></thead><tbody>
+    <tr><td class="mono">T-001</td><td>Supervisor</td><td>Requerimientos</td><td>Redactar</td><td class="mono">RQ-001</td><td></td><td>Hecha</td><td>8.120</td><td>sonnet</td></tr>
+    <tr><td class="mono">T-002</td><td>Requerimientos</td><td>Crítico</td><td>Revisar</td><td class="mono">US-001</td><td>1</td><td>Hecha</td><td>5.400</td><td>opus</td></tr>
+    <tr><td class="mono">T-003</td><td>Crítico</td><td>Requerimientos</td><td>Corregir</td><td class="mono">US-001</td><td>1</td><td>Hecha</td><td>3.250</td><td>sonnet</td></tr>
+    <tr><td class="mono">T-004</td><td>Supervisor</td><td>Auditor</td><td>Auditar</td><td></td><td></td><td>Hecha</td><td>38.100</td><td>opus</td></tr>
+  </tbody></table></div>
+  <p class="cap">Elegí una fila para ver el detalle (objeciones, veredicto o resultado). En la aplicación se hace con un selector bajo la tabla.</p>
+</section>
+
+<section class="tab" id="t-decisiones" hidden>
+  <div id="dec-none" class="box info" hidden>No tenés pedidos pendientes. El pedido actual lo decide el rol <b>service manager</b>.</div>
+  <div id="dec-card" class="detail card">
+    <h2 class="d-title">Cambio de alcance: permitir modificar clientes ya dados de alta</h2>
+    <p class="cap">Pedido R-G03 · versión 1 · lo decide: service manager</p>
+    <p>El Auditor detectó que una propuesta de la reunión contradice una exclusión vendida: la preventa dice que no incluye modificar clientes, y la reunión pide editar el domicilio después del alta.</p>
+    <div class="label">Evidencia</div>
+    <blockquote>«Después del alta, el usuario tiene que poder modificar sus datos de domicilio.»</blockquote>
+    <div class="meta">Reunión · Reunión de inicio · 2026-01-25 · PO del cliente</div>
+    <blockquote style="margin-top:10px">«No incluye la modificación de clientes ya dados de alta.»</blockquote>
+    <div class="meta">Preventa · Propuesta comercial · 2025-10-01 · p. 14</div>
+    <label class="lab" for="dec-com">Comentario</label>
+    <input class="field" id="dec-com" placeholder="Opcional">
+    <div class="actions"><button class="btn primary" type="button" data-toast="Prototipo: aprobado.">Aprobar</button><button class="btn" type="button" data-toast="Prototipo: editar.">Editar</button><button class="btn danger" type="button" data-toast="Prototipo: rechazado.">Rechazar</button></div>
+  </div>
+</section>
+
+<section class="tab" id="t-tablero" hidden>
+  <div class="scroll"><table class="t"><thead><tr><th>id</th><th>tipo</th><th>estado</th><th>título</th><th>citas</th><th>aprobó</th></tr></thead><tbody>
+    <tr><td class="mono">EP-001</td><td>épica</td><td>aprobado</td><td>Alta de clientes</td><td>2</td><td>product owner</td></tr>
+    <tr><td class="mono">US-001</td><td>historia</td><td>aprobado</td><td>Validar el CUIT antes de crear la cuenta</td><td>2</td><td>product owner</td></tr>
+    <tr><td class="mono">US-002</td><td>historia</td><td>en revisión</td><td>Alta pendiente de revisión</td><td>1</td><td></td></tr>
+    <tr><td class="mono">TK-001</td><td>tarea</td><td>borrador</td><td>Implementar el dígito verificador del CUIT</td><td>1</td><td></td></tr>
+  </tbody></table></div>
+  <details class="exp"><summary>US-001 · aprobado · Validar el CUIT antes de crear la cuenta</summary>
+    <p>Como persona que se registra, quiero que el sistema valide mi CUIT, para evitar altas con datos inválidos.</p>
+    <ul><li>Dado un CUIT con formato inválido, el alta se rechaza con un mensaje claro.</li><li>Dado un CUIT válido, el alta continúa.</li></ul>
+    <blockquote>«Sin CUIT válido no se puede dar de alta a nadie.»</blockquote>
+    <div class="meta">Reunión · Reunión de inicio · 2026-01-25 · PO del cliente</div>
+    <div class="meta">Objeción del Crítico (ronda 1, resuelta): el segundo criterio no era verificable.</div>
+  </details>
+  <details class="exp"><summary>US-002 · en revisión · Alta pendiente de revisión</summary><p>Como administrativo, quiero ver las altas incompletas, para completarlas o rechazarlas.</p></details>
+  <h3 class="sec">Hallazgos del Auditor</h3>
+  <div class="scroll"><table class="t"><thead><tr><th>tipo</th><th>para</th><th>descripción</th></tr></thead><tbody>
+    <tr><td>cambio de alcance</td><td>service manager</td><td>Modificar clientes ya dados de alta está excluido en la preventa.</td></tr>
+    <tr><td>vendido y no tratado</td><td>product owner</td><td>Ninguna reunión trató el compromiso C-040 (validación de documentos).</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="tab" id="t-backlog" hidden>
+  <div class="two">
+    <div><h3 class="sec">Antes de la corrida</h3><div class="scroll"><table class="t"><thead><tr><th>#</th><th>tipo</th><th>título</th><th>origen</th></tr></thead><tbody>
+      <tr><td>101</td><td>Epic</td><td>Portal de clientes</td><td>manual</td></tr>
+      <tr><td>102</td><td>User Story</td><td>Login de usuarios</td><td>manual</td></tr>
+    </tbody></table></div></div>
+    <div><h3 class="sec">Ahora</h3><div class="scroll"><table class="t"><thead><tr><th>#</th><th>tipo</th><th>título</th><th>origen</th></tr></thead><tbody>
+      <tr><td>101</td><td>Epic</td><td>Portal de clientes</td><td>manual</td></tr>
+      <tr><td>102</td><td>User Story</td><td>Login de usuarios</td><td>manual</td></tr>
+      <tr><td>103</td><td>Epic</td><td>Alta de clientes</td><td>BacklogGuard</td></tr>
+      <tr><td>104</td><td>User Story</td><td>Validar el CUIT antes de crear la cuenta</td><td>BacklogGuard</td></tr>
+    </tbody></table></div></div>
+  </div>
+  <h3 class="sec">Resultado de la publicación</h3>
+  <div class="scroll"><table class="t"><thead><tr><th>ítem</th><th>resultado</th><th>work item</th><th>detalle</th></tr></thead><tbody>
+    <tr><td class="mono">EP-001</td><td>creado</td><td>103</td><td></td></tr>
+    <tr><td class="mono">US-001</td><td>creado</td><td>104</td><td></td></tr>
+    <tr><td class="mono">US-002</td><td>sin cambios</td><td>—</td><td>La versión publicada coincide con la del catálogo.</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="tab" id="t-actividad" hidden>
+  <pre class="log">09:12:03 Supervisor    plan: 3 tareas
+09:12:41 Requerimientos redacta US-001 desde RQ-001
+09:13:20 Crítico       aprueba US-001 (ronda 1)
+09:14:02 Auditor       1 cambio de alcance → service manager
+09:14:05 Supervisor    pausa: espera decisión R-G03</pre>
+  <h3 class="sec">Registro de decisiones</h3>
+  <div class="scroll"><table class="t"><thead><tr><th>momento</th><th>pedido</th><th>versión</th><th>acción</th><th>rol</th><th>aceptada</th><th>comentario</th></tr></thead><tbody>
+    <tr><td>2026-10-26 18:31:07</td><td class="mono">R-G01</td><td>1</td><td>aprobar</td><td>product owner</td><td>sí</td><td></td></tr>
+    <tr><td>2026-10-26 18:36:52</td><td class="mono">R-G02</td><td>1</td><td>editar</td><td>product owner</td><td>sí</td><td>Ajusté el criterio 2.</td></tr>
+  </tbody></table></div>
+</section>
+
+</main>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+// Datos de ejemplo inventados: no son los de ningún cliente.
+var DATA = [
+  { id: "P-001", kind: "nuevo", conf: 0.93, title: "Validar el CUIT antes de crear la cuenta", desc: "Al registrar un cliente, el sistema valida el formato y el dígito verificador del CUIT y rechaza el alta si no es válido.", quote: "Sin CUIT válido no se puede dar de alta a nadie, eso tiene que frenar el formulario.", who: "PO del cliente", commit: ["C-012", "p. 6", "Registrar cliente"], why: "Ningún requisito del catálogo cubre la validación del CUIT. Está sostenido por el compromiso de alta de clientes." },
+  { id: "P-002", kind: "nuevo", conf: 0.88, title: "Alta pendiente de revisión si faltan datos", desc: "Si el cliente no completa todos los datos, el alta queda en estado pendiente de revisión administrativa.", quote: "Si le falta información, queda pendiente para que el administrativo lo revise.", who: "Analista de requerimientos", commit: ["C-014", "p. 6", "Registrar cliente"], why: "Define un estado intermedio del alta que no existe en el catálogo." },
+  { id: "P-003", kind: "nuevo", conf: 0.81, title: "Aviso por mail al administrativo", desc: "El sistema envía un mail al administrativo cuando hay una solicitud pendiente de revisión.", quote: "Que le llegue un mail al administrativo cada vez que hay algo para revisar.", who: "PO del cliente", commit: ["C-031", "p. 9", "Envío de mail"], why: "Cubre el compromiso de notificaciones por mail, sin requisito equivalente todavía." },
+  { id: "P-004", kind: "nuevo", conf: 0.74, title: "Una empresa, varios usuarios y contactos", desc: "Una cuenta se identifica por CUIT y admite varios usuarios y contactos asociados.", quote: "Una misma empresa puede tener varios usuarios, pero una sola cuenta por CUIT.", who: "PO del cliente", commit: ["C-015", "p. 6", "Registrar cliente"], why: "Confianza media: podría solaparse con el requisito de administración de usuarios." },
+  { id: "P-005", kind: "refina", conf: 0.86, title: "Reconsulta del score al vencer su vigencia", desc: "El score crediticio tiene una vigencia configurable. Al vencer, se vuelve a consultar antes de aprobar un alta.", quote: "La vigencia del score la queremos poder cambiar nosotros, y si venció se consulta de nuevo.", who: "Analista de requerimientos", target: "RQ-004", commit: ["C-022", "p. 7", "Consulta de score"], why: "Agrega parámetros a un requisito existente, sin contradecirlo." },
+  { id: "P-006", kind: "contradice", conf: 0.78, title: "Permitir modificar clientes ya dados de alta", desc: "", quote: "Después del alta, el usuario tiene que poder modificar sus datos de domicilio.", who: "PO del cliente", target: "RQ-002", commit: ["C-071", "p. 14", "Exclusión: no modifica clientes"], why: "La preventa excluye la modificación de clientes. Es un cambio de alcance y lo decide el service manager." },
+  { id: "P-007", kind: "incierto", conf: 0.65, title: "Edición del domicilio comercial", desc: "El usuario modifica el domicilio comercial.", quote: "¿El usuario podrá modificar el domicilio comercial? Sí.", who: "Analista de requerimientos", commit: ["C-005", "p. 6", "Registrar cliente"], why: "Confianza 0,65, por debajo del mínimo de 0,70. Si la edición ocurre en el alta, encaja en C-005. Si es posterior, choca con la exclusión C-071." },
+  { id: "P-008", kind: "incierto", conf: 0.52, title: "Formato de los documentos adjuntos", desc: "Los documentos adjuntos se aceptan en formatos estándar.", quote: "Los archivos, mientras sean los típicos, no hay problema.", who: "PO del cliente", commit: ["C-040", "p. 10", "Validación de documentos"], why: "La cita no define qué formatos. Falta precisión para decidir si es un requisito." }
+];
+var ACTIVE = ["RQ-001 · Validar el CUIT", "RQ-002 · Alta de clientes", "RQ-004 · Consulta de score"];
+var LABEL = { nuevo: "Nuevo", refina: "Refina", contradice: "Contradice", incierto: "Incierto" };
+var state = { role: "product_owner", sel: "P-001", filter: "todas", foldOpen: false, batch: false, dirty: {} };
+DATA.forEach(function (p) { p.state = "pendiente"; p.by = ""; });
+
+function $(id) { return document.getElementById(id); }
+function decider(p) { return p.kind === "contradice" ? "service_manager" : "product_owner"; }
+function roleName(r) { return { product_owner: "product owner", service_manager: "service manager", engineer: "ingeniero" }[r]; }
+function fmt(n) { return n.toFixed(2).replace(".", ","); }
+function pending() { return DATA.filter(function (p) { return p.state === "pendiente"; }); }
+function esc(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+function toast(msg) { var t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(function () { t.hidden = true; }, 2600); }
+function batchable(p) { return p.state === "pendiente" && (p.kind === "nuevo" || p.kind === "refina"); }
+
+function renderCounts() {
+  $("c-pend").textContent = pending().length;
+  $("c-ok").textContent = DATA.filter(function (p) { return p.state === "aprobada"; }).length;
+  $("c-no").textContent = DATA.filter(function (p) { return p.state === "rechazada"; }).length;
+}
+function renderFilters() {
+  var kinds = ["todas", "nuevo", "refina", "contradice", "incierto"];
+  $("filters").innerHTML = kinds.map(function (k) {
+    var n = pending().filter(function (p) { return k === "todas" || p.kind === k; }).length;
+    return '<button type="button" class="chip" data-k="' + k + '" aria-pressed="' + (state.filter === k) + '">' + (k === "todas" ? "Todas" : LABEL[k]) + " · " + n + "</button>";
+  }).join("");
+}
+function itemHtml(p) {
+  var s = p.state === "pendiente" ? "" : (p.state === "aprobada" ? '<span class="tag state-ok">Aprobada</span>' : '<span class="tag state-no">Rechazada</span>');
+  return '<li><button type="button" class="item' + (p.state === "pendiente" ? "" : " done") + '" data-id="' + p.id + '" aria-current="' + (state.sel === p.id) + '">' +
+    '<span class="top"><span class="dot"></span><span class="pid">' + p.id + '</span><span class="tag ' + p.kind + '">' + LABEL[p.kind] + "</span>" + s +
+    '<span style="margin-left:auto">' + fmt(p.conf) + '</span></span><span class="title">' + esc(p.title) + "</span></button></li>";
+}
+function renderList() {
+  var open = DATA.filter(function (p) { return p.state === "pendiente" && (state.filter === "todas" || p.kind === state.filter); });
+  var done = DATA.filter(function (p) { return p.state !== "pendiente"; });
+  $("items").innerHTML = open.length ? open.map(itemHtml).join("") : '<li class="note" style="margin:10px">No quedan propuestas pendientes con este filtro.</li>';
+  $("fold").textContent = (state.foldOpen ? "▾ " : "▸ ") + "Resueltas · " + done.length;
+  $("fold").setAttribute("aria-expanded", state.foldOpen);
+  $("done-items").hidden = !state.foldOpen;
+  $("done-items").innerHTML = done.map(itemHtml).join("");
+}
+function renderDetail() {
+  var p = DATA.filter(function (x) { return x.id === state.sel; })[0];
+  var el = $("detail");
+  if (!p) { el.innerHTML = '<p class="meta">Elige una propuesta de la lista.</p>'; return; }
+  var need = decider(p), can = state.role === need, cm = p.commit;
+  var h = '<header><h2>' + esc(p.title) + '</h2><span class="pid">' + p.id + '</span><span class="tag ' + p.kind + '">' + LABEL[p.kind] + "</span>" +
+    (p.target ? '<span class="meta">sobre ' + p.target + "</span>" : "") + "</header>";
+  h += '<div class="label">Qué se dijo</div><blockquote>«' + esc(p.quote) + '»</blockquote><div class="meta">' + esc(p.who) + " · Reunión de ejemplo, 25 de enero</div>";
+  h += '<div class="label">Compromiso vendido al que se liga</div><div class="commit"><b>' + cm[0] + "</b><span>" + esc(cm[2]) + '</span><span class="meta">preventa, ' + cm[1] + "</span></div>";
+  h += '<div class="label">Confianza del clasificador</div><div class="conf"><div class="bar"><i class="' + (p.conf < 0.7 ? "low" : "") + '" style="width:' + p.conf * 100 + '%"></i><u style="left:70%" title="Mínimo 0,70"></u></div><span>' + fmt(p.conf) + '</span><span class="meta">la marca es el mínimo, 0,70</span></div>';
+  h += '<div class="label">Por qué</div><div class="why">' + esc(p.why) + "</div>";
+  if (p.state !== "pendiente") {
+    h += '<div class="actions"><div class="resolved ' + (p.state === "aprobada" ? "ok" : "no") + '" style="flex:1 1 100%">' + (p.state === "aprobada" ? "Aprobada" : "Rechazada") + " por el " + roleName(p.by) + (p.state === "aprobada" ? ". Ya forma parte del catálogo." : ".") + "</div></div>";
+    el.innerHTML = h; return;
+  }
+  if (p.kind === "incierto") {
+    h += '<div class="label">Resolver</div><div class="radios" role="radiogroup" aria-label="Resolver como">' +
+      ["nuevo", "refina", "cubierto"].map(function (k, i) { return '<label><input type="radio" name="como" value="' + k + '"' + (i === 0 ? " checked" : "") + ">Es " + (k === "refina" ? "un refinamiento" : k === "cubierto" ? "algo ya cubierto" : "un requisito nuevo") + "</label>"; }).join("") + "</div>" +
+      '<div id="dest-box" hidden><div class="label">Requisito destino</div><select class="field" id="dest">' + ACTIVE.map(function (a) { return "<option>" + a + "</option>"; }).join("") + "</select></div>";
+    h += '<div class="actions">' + (can ? "" : '<div class="block">Lo decide el ' + roleName(need) + ". Estás como " + roleName(state.role) + ".</div>") +
+      '<button class="btn primary" id="reclass" type="button"' + (can ? "" : " disabled") + '>Reclasificar</button><button class="btn danger" id="reject" type="button"' + (can ? "" : " disabled") + ">Descartar</button></div>";
+    el.innerHTML = h;
+    var upd = function () { $("dest-box").hidden = document.querySelector('input[name="como"]:checked').value === "nuevo"; };
+    Array.prototype.forEach.call(document.querySelectorAll('input[name="como"]'), function (r) { r.addEventListener("change", upd); });
+    return;
+  }
+  if (p.kind !== "contradice") {
+    h += '<div class="label">Requisito que se guardaría</div><label class="meta" for="f-title">Título</label><input class="field" id="f-title" value="' + esc(p.title).replace(/"/g, "&quot;") + '">' +
+      '<label class="meta" for="f-desc" style="display:block;margin-top:10px">Descripción</label><textarea class="field" id="f-desc">' + esc(p.desc) + "</textarea>";
+  }
+  h += '<div class="actions">' + (can ? "" : '<div class="block">Lo decide el ' + roleName(need) + ". Estás como " + roleName(state.role) + ".</div>") +
+    '<button class="btn primary" id="approve" type="button"' + (can ? "" : " disabled") + ">Aprobar" + (p.kind === "contradice" ? " el cambio de alcance" : "") + '</button><button class="btn danger" id="reject" type="button"' + (can ? "" : " disabled") + ">Rechazar</button>" +
+    '<input class="field" id="note" placeholder="Nota de la decisión (opcional)" style="flex:1 1 220px;width:auto"></div>';
+  el.innerHTML = h;
+}
+function renderBatch() {
+  var thr = parseFloat($("thr").value);
+  var els = pending().filter(function (p) { return batchable(p) && p.conf >= thr; });
+  var left = pending().filter(function (p) { return !batchable(p) || p.conf < thr; }).length;
+  $("batch-count").textContent = els.length + " de " + pending().length + " pendientes entran en este lote.";
+  $("batch-why").textContent = "Quedan fuera y se deciden una por una: " + left + " (contradicciones, inciertos y confianza menor). Se guarda el rol que decide, no el nombre.";
+  $("batch-go").disabled = !els.length || state.role !== "product_owner";
+  $("batch-go").title = state.role !== "product_owner" ? "El lote lo decide el product owner" : "";
+  $("batch").hidden = !state.batch;
+}
+function renderAll() { renderCounts(); renderFilters(); renderList(); renderDetail(); renderBatch(); }
+function decide(p, ok) {
+  p.state = ok ? "aprobada" : "rechazada"; p.by = state.role;
+  var next = pending().filter(function (x) { return state.filter === "todas" || x.kind === state.filter; })[0];
+  state.sel = next ? next.id : p.id;
+  renderAll(); toast(p.id + (ok ? " aprobada y aplicada al catálogo." : " rechazada."));
+}
+document.addEventListener("click", function (e) {
+  var t = e.target.closest("button"); if (!t) return;
+  var p = DATA.filter(function (x) { return x.id === state.sel; })[0];
+  if (t.dataset.id) { state.sel = t.dataset.id; renderList(); renderDetail(); }
+  else if (t.dataset.k) { state.filter = t.dataset.k; var f = pending().filter(function (x) { return state.filter === "todas" || x.kind === state.filter; })[0]; if (f) state.sel = f.id; renderAll(); }
+  else if (t.id === "fold") { state.foldOpen = !state.foldOpen; renderList(); }
+  else if (t.id === "approve") { var ti = $("f-title"); if (ti) { p.title = ti.value; p.desc = $("f-desc").value; } decide(p, true); }
+  else if (t.id === "reject") { decide(p, false); }
+  else if (t.id === "reclass") {
+    var k = document.querySelector('input[name="como"]:checked').value;
+    p.kind = k === "cubierto" ? "nuevo" : k; if (k !== "nuevo") p.target = $("dest").value.split(" ")[0];
+    p.why = "Reclasificada por una persona como «" + k + "». Queda pendiente para decidirla."; p.conf = Math.max(p.conf, 0.7);
+    renderAll(); toast(p.id + " reclasificada. Ahora puedes aprobarla.");
+  }
+  else if (t.id === "open-batch") { state.batch = !state.batch; renderBatch(); }
+  else if (t.id === "batch-x") { state.batch = false; renderBatch(); }
+  else if (t.id === "batch-go") {
+    var thr = parseFloat($("thr").value), n = 0;
+    pending().filter(function (x) { return batchable(x) && x.conf >= thr; }).forEach(function (x) { x.state = "aprobada"; x.by = state.role; n++; });
+    state.batch = false; renderAll(); toast(n + " propuestas aprobadas en lote.");
+  }
+});
+$("thr").addEventListener("change", renderBatch);
+$("role").addEventListener("change", function (e) { state.role = e.target.value; renderDetail(); renderBatch(); });
+
+// Navegación entre pestañas y pequeñas interacciones de las vistas que no cambian.
+var TABS = [
+  ["corrida", "Corrida"], ["fuentes", "Fuentes"], ["revision", "Revisión", "new"], ["catalogo", "Catálogo", "new"],
+  ["guardadas", "Corridas guardadas"], ["tareas", "Tareas entre agentes"], ["decisiones", "Mis decisiones"],
+  ["tablero", "Tablero"], ["backlog", "Backlog simulado"], ["actividad", "Actividad"]
+];
+function showTab(id) {
+  TABS.forEach(function (t) {
+    var sec = document.getElementById("t-" + t[0]); if (sec) sec.hidden = t[0] !== id;
+    var btn = document.getElementById("tab-" + t[0]); if (btn) btn.setAttribute("aria-selected", t[0] === id);
+  });
+  window.scrollTo(0, 0);
+}
+function renderTabs() {
+  $("tabs").innerHTML = TABS.map(function (t) {
+    var badge = t[0] === "revision" ? '<span class="badge" id="b-revision"></span>' : t[0] === "decisiones" ? '<span class="badge" id="b-decisiones"></span>' : "";
+    return '<button type="button" role="tab" class="tab-btn' + (t[2] ? " " + t[2] : "") + '" id="tab-' + t[0] + '" data-tab="' + t[0] + '" aria-selected="false">' + t[1] + badge + "</button>";
+  }).join("");
+}
+function renderBadges() {
+  var n = pending().length;
+  $("b-revision").textContent = n; $("b-revision").hidden = !n;
+  $("cat-pend").textContent = n;
+  var mine = state.role === "service_manager";
+  $("b-decisiones").textContent = "1"; $("b-decisiones").hidden = !mine;
+  $("dec-card").hidden = !mine; $("dec-none").hidden = mine;
+}
+document.addEventListener("click", function (e) {
+  var go = e.target.closest("[data-go]");
+  if (go) { e.preventDefault(); showTab(go.dataset.go); return; }
+  var tb = e.target.closest(".tab-btn"); if (tb) { showTab(tb.dataset.tab); return; }
+  var ts = e.target.closest("[data-toast]"); if (ts) toast(ts.dataset.toast);
+  if (e.target.id === "leer") toast("Prototipo: acá se leería la reunión y aparecerían sus propuestas.");
+  if (e.target.id === "reset-open") $("reset").hidden = !$("reset").hidden;
+  if (e.target.id === "reset-go") { $("reset").hidden = true; toast("Prototipo: acá se borraría todo lo guardado del proyecto."); }
+});
+document.addEventListener("change", function (e) {
+  if (e.target.id === "ok-gasto") $("leer").disabled = !e.target.checked;
+  if (e.target.id === "ok-reset") $("reset-go").disabled = !e.target.checked;
+});
+$("role").addEventListener("change", renderBadges);
+var _renderAll = renderAll;
+renderAll = function () { _renderAll(); renderBadges(); };
+renderTabs(); renderAll(); showTab("revision");
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Paleta de CFOTech, tomada de la propuesta comercial: índigo de los títulos y verde de la franja.
+[theme]
+base = "light"
+primaryColor = "#3F7D12"
+backgroundColor = "#F5F5FA"
+secondaryBackgroundColor = "#EBE9FB"
+textColor = "#1D1B3A"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false

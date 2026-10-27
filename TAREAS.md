@@ -232,7 +232,16 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] `tests/test_continuidad.py` (21 tests). Suite completa: 426.
 - [x] Corrida real 1 (reunión de Infobae): 21 candidatos, 1 descartado, US$ 0,10. Ajustes después: mapa completo de compromisos al Auditor, confianza baja también para «nuevo», estimación recalibrada.
 - [x] Segundo intento para citas parafraseadas (una sola pasada extra). Corrida real 2: 19 candidatos, 1 descartado, US$ 0,187. Varía de una corrida a otra (21 vs 19): revisar determinismo en la evaluación.
-- Aún no conectado al grafo ni a la aprobación por lote (2C).
+- Aún no conectado al grafo (2C, paso siguiente).
+
+## Bloque 2C · Revisión por lote — [~] paso 1 hecho (revisar y aprobar en el catálogo); falta redacción, grafo y publicación
+- [x] `catalog/review.py`: lote solo para «nuevo» y «refina» pendientes de una reunión en orden; contradice/divide/fusiona/incierto/fuera de orden, una por una; cambio de alcance (contradice) lo decide el service manager, el resto el product owner. Se registra el **rol**, no el nombre (decisión de la persona usuaria). Un lote con una propuesta que no corresponde falla entero sin cambiar nada.
+- [x] `Catalog.edit` (corregir el borrador antes de decidir) y `Catalog.reclassify` (un «incierto» se resuelve como nuevo, refina o cubierto; no se aprueba tal cual, o se descarta). Fuera del curso.
+- [x] Interfaz rediseñada a partir del prototipo aprobado (`docs/prototipos/revision_propuestas.html`): pestañas nuevas **Revisión** (lista a la izquierda, detalle con cita, compromiso vendido, confianza y motivo a la derecha; lote opcional por umbral de confianza, sin nada preseleccionado; botones deshabilitados con el motivo si el rol no decide; «Resueltas» plegadas) y **Catálogo** (requisitos, versiones, evidencia). La revisión salió de «Fuentes».
+- [x] Identidad de CFOTech (colores sacados de la preventa): `.streamlit/config.toml` + `ui/theme.py` (franja superior, títulos en índigo, subrayado verde).
+- [x] `tests/test_revision.py` (12 tests) y `tests/test_ui_revision.py` (6, con el probador de Streamlit y un catálogo temporal).
+- Limitaciones de Streamlit frente al prototipo: sin globo de pendientes en la pestaña (cambiar el rótulo reinicia la pestaña activa), solo tema claro.
+- [ ] Redacción de historias solo para las aprobadas, Crítico, conexión con el grafo, «crear o actualizar» con clave por requisito.
 
 ## Día 11 · Skills y contexto — [x] (falta commit; falta medir el ahorro con una corrida real)
 **Objetivo:** darle a cada agente solo el conocimiento y el contexto que necesita, sin sobrecargarlo.

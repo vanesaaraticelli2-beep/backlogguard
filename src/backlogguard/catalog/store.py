@@ -140,7 +140,7 @@ class Catalog:
     def decide(self, proposal_id: str, *, approve: bool, by: str, note: str = "") -> Proposal:
         """Una persona aprueba o rechaza una propuesta pendiente. Aprobar no la aplica: eso lo hace `apply`."""
         if not by.strip():
-            raise CatalogError("Una decisión necesita el nombre de quien la toma.")
+            raise CatalogError("Una decisión necesita el rol de quien la toma.")
         proposal = self.proposal(proposal_id)
         if proposal.state is not ProposalState.PENDIENTE:
             raise CatalogError(f"{proposal_id} ya está {proposal.state}.")
@@ -148,6 +148,35 @@ class Catalog:
         with closing(self._connect()) as conn, conn:
             self._save_proposal(conn, decided)
         return decided
+
+    def edit(self, proposal_id: str, draft: Draft) -> Proposal:
+        """Una persona corrige el borrador de una propuesta pendiente antes de decidirla."""
+        proposal = self.proposal(proposal_id)
+        if proposal.state is not ProposalState.PENDIENTE or not proposal.drafts:
+            raise CatalogError(f"{proposal_id} no tiene un borrador pendiente que editar.")
+        edited = proposal.model_copy(update={"drafts": [draft, *proposal.drafts[1:]]})
+        with closing(self._connect()) as conn, conn:
+            self._save_proposal(conn, edited)
+        return edited
+
+    def reclassify(self, proposal_id: str, kind: ProposalKind, *, target: str | None = None) -> Proposal:
+        """Una persona resuelve un «incierto»: lo convierte en nuevo, refina o cubierto. Queda pendiente y se decide aparte."""
+        proposal = self.proposal(proposal_id)
+        if proposal.kind is not ProposalKind.INCIERTO or proposal.state is not ProposalState.PENDIENTE:
+            raise CatalogError("Solo se reclasifica una propuesta «incierto» pendiente.")
+        if kind not in (ProposalKind.NUEVO, ProposalKind.REFINA, ProposalKind.CUBIERTO):
+            raise CatalogError("Un incierto solo se resuelve como nuevo, refina o cubierto.")
+        if kind is not ProposalKind.NUEVO:
+            if not target or self.requirement(target).status is not RequirementStatus.ACTIVO:
+                raise CatalogError("Indicá un requisito activo como destino.")
+        data = proposal.model_dump()
+        data.update(
+            kind=kind, targets=[target] if kind is not ProposalKind.NUEVO else [], drafts=[] if kind is ProposalKind.CUBIERTO else data["drafts"][:1],
+        )
+        resolved = Proposal.model_validate(data)
+        with closing(self._connect()) as conn, conn:
+            self._save_proposal(conn, resolved)
+        return resolved
 
     def apply_covered(self, proposal_id: str) -> Proposal:
         """«Ya cubierto» solo suma evidencia: no cambia el requisito, por eso no espera una aprobación."""

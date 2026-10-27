@@ -65,9 +65,9 @@ def test_el_id_no_depende_del_titulo_ni_se_reutiliza(catalog):
     assert catalog.requirement("RQ-001").current.draft.title == catalog.requirement("RQ-002").current.draft.title
 
 
-def test_decidir_exige_un_nombre_y_una_propuesta_decidida_no_se_decide_dos_veces(catalog):
+def test_decidir_exige_un_rol_y_una_propuesta_decidida_no_se_decide_dos_veces(catalog):
     saved = catalog.propose(proposal())
-    with pytest.raises(CatalogError, match="nombre"):
+    with pytest.raises(CatalogError, match="rol"):
         catalog.decide(saved.id, approve=True, by="  ")
     catalog.decide(saved.id, approve=False, by="PO", note="no aplica")
     with pytest.raises(CatalogError, match="ya está rechazada"):
