@@ -285,18 +285,28 @@ class Catalog:
 
     # ---- publicación ----
 
-    def publication_key(self, rid: str) -> str:
+    def publication_key(self, rid: str, version: int | None = None) -> str:
         """Clave de idempotencia por requisito y versión: la misma versión no se publica dos veces."""
-        number = self.requirement(rid).current.number
+        number = version or self.requirement(rid).current.number
         return hashlib.sha256(f"{rid}:v{number}".encode()).hexdigest()[:16]
 
-    def mark_published(self, rid: str, remote_id: int) -> None:
-        number = self.requirement(rid).current.number
+    def to_publish(self) -> list[Requirement]:
+        """Requisitos activos que nunca se publicaron o cuya versión vigente es más nueva que la publicada."""
+        found = []
+        for requirement in self.requirements(RequirementStatus.ACTIVO):
+            published = self.publication(requirement.id)
+            if published is None or published["needs_update"]:
+                found.append(requirement)
+        return found
+
+    def mark_published(self, rid: str, remote_id: int, version: int | None = None) -> None:
+        """Anota lo publicado. `version` es la que se publicó: puede ser anterior a la vigente si se aprobó otra mientras tanto."""
+        number = version or self.requirement(rid).current.number
         with closing(self._connect()) as conn, conn:
             conn.execute(
                 "INSERT INTO publications VALUES (?, ?, ?, ?, ?) ON CONFLICT(requirement_id) DO UPDATE SET version = excluded.version, "
                 "remote_id = excluded.remote_id, key = excluded.key, updated_at = excluded.updated_at",
-                (rid, number, remote_id, self.publication_key(rid), _now()),
+                (rid, number, remote_id, self.publication_key(rid, number), _now()),
             )
 
     def publication(self, rid: str) -> dict | None:

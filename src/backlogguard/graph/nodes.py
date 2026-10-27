@@ -17,8 +17,10 @@ from backlogguard.agents.negociacion import negotiate_item
 from backlogguard.agents.requerimientos import revise_item, run_requerimientos
 from backlogguard.agents.supervisor import plan_run, summarize_run
 from backlogguard.board import AgentRole, Board, ItemState
+from backlogguard.catalog import RequirementStatus
 from backlogguard.graph.budgets import over_budget
 from backlogguard.graph.deps import Providers, RunDeps
+from backlogguard.graph.drafting import goal_for, pick
 from backlogguard.graph.state import RunState
 from backlogguard.graph.tasks import TaskLog, describe_outcome, model_of
 from backlogguard.hitl import (
@@ -51,6 +53,16 @@ def _board(state: RunState) -> Board:
 
 def _dump(board: Board) -> dict:
     return board.model_dump(mode="json")
+
+
+def _mark_published(catalog, board: Board, report) -> None:
+    """Anota en el catálogo qué versión de cada requisito quedó publicada y en qué work item (así la próxima corrida no la repite)."""
+    if catalog is None:
+        return
+    for result in report.results:
+        item = board.items.get(result.item_id)
+        if item is not None and item.requirement_id and result.remote_id and result.outcome in ("publicado", "actualizado", "recuperado", "ya_publicado"):
+            catalog.mark_published(item.requirement_id, result.remote_id, item.requirement_version)
 
 
 def _error(node: str, exc: Exception, ref: str | None = None) -> dict:
@@ -104,17 +116,28 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
         board = _board(state)
         plan_data = state["plan"]
         mark = meter.mark()
-        goal = (
-            f"{plan_data['instruction']}\n"
-            f"Redactá solo a partir de estas fuentes: {', '.join(plan_data['sources'])}. "
-            "No redactes a partir de la preventa."
-        )
+        from_catalog = deps.catalog is not None and bool(deps.catalog.requirements(RequirementStatus.ACTIVO))
+        if from_catalog:  # parte de lo que una persona aprobó en «Revisión», no de las fuentes
+            todo, later = pick(deps.catalog.to_publish())
+            if not todo:
+                log = TaskLog(len(state.get("tasks", [])))
+                log.add("supervisor", "requerimientos", "redactar", detail="Requisitos aprobados por redactar: 0. Ítems redactados: 0.")
+                return {"tasks": log.tasks, "pending": [], "audit_passes": 1, "trace": [{"node": "produce", "items": 0, "requisitos": 0}]}
+            goal, scope = goal_for(todo), f"Requisitos aprobados por redactar: {len(todo)}" + (f" (quedan {later} para la próxima corrida)" if later else "")
+        else:
+            todo, scope = [], f"Fuentes: {', '.join(plan_data['sources'])}"
+            goal = (
+                f"{plan_data['instruction']}\n"
+                f"Redactá solo a partir de estas fuentes: {', '.join(plan_data['sources'])}. "
+                "No redactes a partir de la preventa."
+            )
         outcome = run_requerimientos(
             goal,
             provider=providers.requerimientos,
             library=deps.library,
             retriever=deps.retriever,
             board=board,
+            catalog=deps.catalog if from_catalog else None,
             run_id=state.get("run_id", "run-local"),
             on_event=sink("requerimientos"),
         )
@@ -122,7 +145,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
         log = TaskLog(len(state.get("tasks", [])))
         log.add(
             "supervisor", "requerimientos", "redactar",
-            detail=f"Fuentes: {', '.join(plan_data['sources'])}. Ítems redactados: {len(pending)}.",
+            detail=f"{scope}. Ítems redactados: {len(pending)}.",
             status="hecha" if outcome["stop_reason"] == "final_answer" else "incompleta", stop_reason=outcome["stop_reason"],
             usage=meter.since(mark), model=model_of(providers.requerimientos), steps=describe_outcome(outcome)["steps"],
         )
@@ -471,6 +494,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             if planned.action != "omitir" and item is not None and item.state is ItemState.SUSTENTADO:
                 item.transition_to(ItemState.APROBADO, actor=decision.actor)
         report = execute_approved_plan(request.ref, service=service, approved_by=decision.actor, run_id=state.get("run_id", "run-local"))
+        _mark_published(deps.catalog, board, report)
         return {
             "board": _dump(board),
             "plan_request": None,

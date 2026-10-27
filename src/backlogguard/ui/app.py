@@ -160,11 +160,21 @@ def tab_run(controller: RunController) -> None:
     own = controller.using_own_sources
     objective = st.text_area("Objetivo de la corrida", DEFAULT_OBJECTIVE, key="objetivo")
     if own:
-        st.info("La corrida usa **tus fuentes** (pestaña «Fuentes»), sin work items de ejemplo.")
-        needs_models = controller.mode != "real"
-        if needs_models:
-            st.error("Con fuentes propias hace falta LIVE_MODE=1 (modelos reales): la corrida grabada no sabe responder a documentos nuevos.")
+        summary = controller.catalog_summary()
+        if summary["active"]:
+            st.info(
+                f"La corrida parte de los **{summary['active']} requisitos aprobados** del catálogo: {summary['to_publish']} por redactar y publicar "
+                f"(nuevos o con versión nueva), {summary['published']} ya publicados. Las fuentes (pestaña «Fuentes») sirven de respaldo."
+            )
         else:
+            st.warning(
+                "Todavía no hay requisitos aprobados, y la corrida parte de ellos. Leé una reunión contra el catálogo en «Fuentes» "
+                "y aprobá sus propuestas en «Revisión»."
+            )
+        needs_models = controller.mode != "real" or not summary["active"]
+        if controller.mode != "real":
+            st.error("Con fuentes propias hace falta LIVE_MODE=1 (modelos reales): la corrida grabada no sabe responder a documentos nuevos.")
+        elif summary["active"]:
             st.warning(
                 "Esta corrida usa modelos reales y **gasta tokens**. "
                 f"Tope por corrida: {controller.deps.budget.max_tokens:,} tokens. Los textos se envían a los proveedores de los modelos."

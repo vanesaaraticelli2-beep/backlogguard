@@ -12,6 +12,7 @@ import uuid
 from contextlib import closing
 from pathlib import Path
 
+from backlogguard.catalog import RequirementStatus
 from backlogguard.graph import RunDeps, load_state, pending_request, resume_pipeline, run_pipeline
 from backlogguard.graph.live import format_event, format_trace
 from backlogguard.graph.setup import build_run_deps, has_user_sources, open_graph, user_sources_dir
@@ -93,6 +94,11 @@ class RunController:
             raise RuntimeError(
                 "Con fuentes propias hace falta LIVE_MODE=1: la corrida grabada no sabe responder a documentos nuevos."
             )
+        if own and not self.catalog_summary()["active"]:
+            raise RuntimeError(
+                "No hay requisitos aprobados: la corrida parte del catálogo. Leé una reunión contra el catálogo (pestaña «Fuentes») "
+                "y aprobá sus propuestas en «Revisión»."
+            )
         if own:  # documentos reales: sin work items de ejemplo; el límite es el costo de la corrida, no un número de historias
             seed = False
             objective = f"{objective}\n{COVERAGE_GOAL}"
@@ -104,6 +110,15 @@ class RunController:
         self.backlog_before = [w.model_dump() for w in self.deps.backlog.search()]
         self._spawn(run_pipeline, self.graph, objective, self.thread_id)
         return self.thread_id
+
+    def catalog_summary(self) -> dict:
+        """Cuántos requisitos aprobados hay, cuántos esperan redacción y publicación y cuántos ya están publicados."""
+        catalog = self.deps.catalog
+        if catalog is None:
+            return {"active": 0, "to_publish": 0, "published": 0}
+        active = catalog.requirements(RequirementStatus.ACTIVO)
+        waiting = catalog.to_publish()
+        return {"active": len(active), "to_publish": len(waiting), "published": len(active) - len(waiting)}
 
     def decide(self, decision: dict) -> None:
         if self.read_only:

@@ -7,6 +7,7 @@ from backlogguard.agents.context import load_limits
 from backlogguard.agents.decider import LLMDecider
 from backlogguard.agents.loop import run_basic_agent
 from backlogguard.board import AgentRole, Board
+from backlogguard.catalog import Catalog
 from backlogguard.llm.providers import LLMProvider
 from backlogguard.skills import skill_instructions
 from backlogguard.rag import SourceLibrary
@@ -24,6 +25,7 @@ def run_requerimientos(
     library: SourceLibrary,
     retriever: InMemoryRetriever | QdrantRetriever,
     board: Board,
+    catalog: Catalog | None = None,
     run_id: str = "run-local",
     max_steps: int = 40,
     max_seconds: float = 900.0,
@@ -32,7 +34,7 @@ def run_requerimientos(
     on_event: Callable[[dict], None] | None = None,
 ) -> dict:
     """Corre al agente sobre un tablero y devuelve respuesta, traza, stop reason y tokens."""
-    toolkit = RequirementsToolkit(library, retriever, board)
+    toolkit = RequirementsToolkit(library, retriever, board, catalog)
     registry = build_catalog_registry(toolkit.implementations())
     context = ExecutionContext(user_id="factory", role=AgentRole.REQUERIMIENTOS, run_id=run_id)
     policy = ToolPolicy()

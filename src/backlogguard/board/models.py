@@ -123,6 +123,8 @@ class BacklogItem(_Strict):
     state: ItemState = ItemState.BORRADOR
     approved_by: str | None = None
     parent_id: str | None = Field(default=None, description="Ítem padre (por ejemplo, la épica de una historia)")
+    requirement_id: str | None = Field(default=None, description="Requisito aprobado del catálogo del que sale la historia (RQ-nnn)")
+    requirement_version: int | None = Field(default=None, ge=1, description="Versión del requisito con la que se redactó")
 
     @model_validator(mode="after")
     def _traceability(self) -> BacklogItem:

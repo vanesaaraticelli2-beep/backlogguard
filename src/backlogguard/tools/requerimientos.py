@@ -12,10 +12,11 @@ import json
 import re
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 
 from backlogguard.board.similarity import repeat_requirement
 from backlogguard.board import EVIDENCE_TYPES, BacklogItem, Board, Citation, ItemKind, ItemState, SourceType
+from backlogguard.catalog import Catalog, RequirementStatus
 from backlogguard.rag import SourceLibrary, SourceNotFound, build_chunks
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools.models import ToolResult
@@ -71,7 +72,17 @@ class DraftArgs(_Args):
     acceptance_criteria: list[str] = Field(
         default_factory=list, description="Escenarios Gherkin: Dado ... Cuando ... Entonces ..."
     )
-    citations: list[CitationRef] = Field(min_length=1)
+    requirement_id: str | None = Field(
+        default=None, pattern=r"^RQ-\d+$",
+        description="Requisito aprobado del catálogo (RQ-nnn): la historia lleva su identidad y hereda sus citas verificadas",
+    )
+    citations: list[CitationRef] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _cited(self) -> "DraftArgs":
+        if not self.citations and not self.requirement_id:
+            raise ValueError("hace falta al menos una cita (o un requisito aprobado que ya trae las suyas)")
+        return self
 
     @field_validator("acceptance_criteria")
     @classmethod
@@ -87,6 +98,11 @@ class DraftArgs(_Args):
         return " ".join(value.split())
 
 
+def _as_citations(evidence) -> list[Citation]:
+    """Las evidencias del catálogo ya se verificaron contra su fragmento: pasan al ítem como citas del tablero."""
+    return [Citation(**{name: getattr(e, name) for name in Citation.model_fields}) for e in evidence]
+
+
 def _fail(content: str, error_type: str) -> ToolResult:
     return ToolResult(ok=False, content=content, metadata={"error_type": error_type})
 
@@ -97,10 +113,12 @@ class RequirementsToolkit:
         library: SourceLibrary,
         retriever: InMemoryRetriever | QdrantRetriever,
         board: Board,
+        catalog: Catalog | None = None,
     ):
         self.library = library
         self.retriever = retriever
         self.board = board
+        self.catalog = catalog
         self.corrected: set[str] = set()  # ítems ya corregidos con éxito en esta ejecución (tope de una corrección por tarea)
 
     def ingestar_y_fragmentar(self, args: dict) -> ToolResult:
@@ -171,6 +189,13 @@ class RequirementsToolkit:
                     page=fragment.page,
                 )
             )
+        requirement = None
+        if args.get("requirement_id") and not args.get("revises"):
+            requirement, problem = self._requirement(args["requirement_id"])
+            if problem:
+                return problem
+            known = {(c.fragment_id, c.quote) for c in citations}
+            citations += [c for c in _as_citations(requirement.current.evidence) if (c.fragment_id, c.quote) not in known]
         if not any(citation.source_type in EVIDENCE_TYPES for citation in citations):
             return _fail(
                 "La preventa dice lo que se vendió, no lo que se acordó: citá al menos un fragmento de una reunión o minuta "
@@ -180,11 +205,14 @@ class RequirementsToolkit:
         if args.get("revises"):
             return self._revise(args, citations)
         kind = ItemKind(args["kind"])
-        digest = hashlib.sha1(f"{kind.value}|{' '.join(args['title'].lower().split())}".encode()).hexdigest()[:8]
-        item_id = f"{_ID_PREFIX[kind]}-{digest}"
+        if requirement:  # la identidad es la del requisito: no cambia si se reescribe el título
+            item_id = f"{_ID_PREFIX[kind]}-{requirement.id}"
+        else:
+            digest = hashlib.sha1(f"{kind.value}|{' '.join(args['title'].lower().split())}".encode()).hexdigest()[:8]
+            item_id = f"{_ID_PREFIX[kind]}-{digest}"
         if item_id in self.board.items:
             return _fail(f"Ya existe un ítem con ese tipo y título: {item_id}", "duplicate_item")
-        twin = next(
+        twin = None if requirement else next(
             (
                 o for o in self.board.items.values()
                 if o.kind is kind and o.state is not ItemState.EXCLUIDO
@@ -212,9 +240,23 @@ class RequirementsToolkit:
                 description=args.get("description", ""),
                 acceptance_criteria=args.get("acceptance_criteria", []),
                 citations=citations,
+                requirement_id=requirement.id if requirement else None,
+                requirement_version=requirement.current.number if requirement else None,
             )
         )
         return ToolResult(ok=True, content=f"Ítem {item_id} creado en borrador.", metadata={"item_id": item_id})
+
+    def _requirement(self, rid: str):
+        """El requisito aprobado del que sale la historia, o el error para devolverle al modelo."""
+        if self.catalog is None:
+            return None, _fail("Esta corrida no tiene un catálogo de requisitos aprobados.", "sin_catalogo")
+        try:
+            requirement = self.catalog.requirement(rid)
+        except KeyError:
+            return None, _fail(f"No existe el requisito {rid} en el catálogo.", "unknown_requirement")
+        if requirement.status is not RequirementStatus.ACTIVO:
+            return None, _fail(f"El requisito {rid} no está activo ({requirement.status.value}).", "requirement_inactive")
+        return requirement, None
 
     def _revise(self, args: dict, citations: list[Citation]) -> ToolResult:
         """Corrige un ítem objetado conservando su id, sus objeciones y su estado."""

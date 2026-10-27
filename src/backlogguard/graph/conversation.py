@@ -147,9 +147,16 @@ def _task_messages(task: dict, kind: str, ref: str | None, facts: _Facts, state:
         return [Message("persona", "supervisor", f"Objetivo de la corrida: «{_clip(detail, 300)}»", task=tid), Message("supervisor", "equipo", plan_text, task=tid)]
     if kind == "redactar":
         sources = (state.get("plan") or {}).get("sources", [])
-        ask = Message("supervisor", "requerimientos", "Redactá las historias solo a partir de lo que se dijo en "
-                      + (", ".join(sources) if sources else "las reuniones")
-                      + ". La preventa sirve para saber qué se vendió, pero no cuenta como evidencia.", task=tid)
+        approved = re.search(r"Requisitos aprobados por redactar: (\d+)(?: \(quedan (\d+) para la próxima corrida\))?", detail)
+        if approved:
+            rest = f" Quedan {approved.group(2)} para la próxima corrida." if approved.group(2) else ""
+            ask = Message("supervisor", "requerimientos", f"Redactá una historia por cada requisito aprobado: son {approved.group(1)}. Cada una lleva las citas que ya se verificaron.{rest}", task=tid)
+            if approved.group(1) == "0":
+                return [ask, Message("requerimientos", "supervisor", "No hay nada nuevo para redactar: todo lo aprobado ya está publicado.", tone="ok", task=tid)]
+        else:
+            ask = Message("supervisor", "requerimientos", "Redactá las historias solo a partir de lo que se dijo en "
+                          + (", ".join(sources) if sources else "las reuniones")
+                          + ". La preventa sirve para saber qué se vendió, pero no cuenta como evidencia.", task=tid)
         found = re.search(r"Ítems redactados: (\d+)", detail)
         count = int(found.group(1)) if found else len(facts.items)
         if status == "incompleta":

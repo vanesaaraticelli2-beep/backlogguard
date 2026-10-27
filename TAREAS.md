@@ -282,3 +282,12 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] `ui/conversation_view.py`: panel «Lo que se están diciendo los agentes» arriba de «Corrida» (últimos 8, en vivo) y pestaña «Conversación» completa con filtro por agente y «Detalle técnico» plegado. Funciona también con corridas guardadas.
 - [x] `tests/test_conversacion.py` (8 tests). Suite completa: 452.
 - Límites: se actualiza por etapa, no por cada llamada interna de un agente; el resumen del Supervisor lo redacta un modelo y puede nombrar ids o roles técnicos; los textos de hallazgos vienen del Auditor y pueden nombrar personas si la fuente las nombra. Pendiente: probarlo con una corrida real nueva (con el proyecto nuevo).
+
+## Bloque 2C · paso 2 — la corrida parte del catálogo — [x] (sin commit; falta una corrida real con requisitos aprobados)
+- [x] `BacklogItem` suma `requirement_id` y `requirement_version`. `redactar_historia` acepta `requirement_id` (RQ-nnn): el ítem toma la identidad del requisito (`HU-RQ-001`, no cambia si se reescribe el título) y hereda sus citas verificadas; sin requisito sigue exigiendo una cita.
+- [x] `graph/drafting.py` + nodo `produce`: con requisitos activos en el catálogo, el productor redacta una historia por cada requisito que nunca se publicó o cambió de versión (tope 12 por corrida; el resto va a la siguiente). Si no hay nada por redactar no llama a ningún modelo y salta la auditoría. Sin catálogo con requisitos, el flujo anterior (demo) no cambia.
+- [x] Publicación «crear o actualizar» por requisito: la clave de idempotencia es requisito + versión (`integrations/plan.py`); al aprobar el plan, `Catalog.mark_published` anota qué versión quedó en qué work item. Una versión nueva actualiza el mismo work item; una segunda corrida no repite nada.
+- [x] `Catalog.to_publish()`, `publication_key(rid, version)`, `RunController.catalog_summary()`. Con fuentes propias, «Iniciar corrida» exige requisitos aprobados (mensaje con los pasos).
+- [x] La conversación dice «Redactá una historia por cada requisito aprobado: son N» y «No hay nada nuevo para redactar».
+- [x] `tests/test_corrida_catalogo.py` (9). Suite completa: 461.
+- Límites conocidos: el Auditor sigue comparando solo lo que hay en el tablero de esa corrida; en corridas con pocos requisitos nuevos puede marcar de más «vendido y no tratado». Lo resuelve el Bloque 3 (matriz de cobertura). Una historia corregida por el Crítico reemplaza sus citas por las que el productor cite.

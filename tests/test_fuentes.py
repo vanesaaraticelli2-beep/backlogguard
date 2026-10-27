@@ -230,6 +230,12 @@ def test_con_fuentes_propias_no_se_siembran_ejemplos_y_exige_modelos_reales(tmp_
     real = RunController(ROOT, Settings(live_mode=True, anthropic_api_key="x", gemini_api_key="x"), data)
     launched = []
     monkeypatch.setattr(RunController, "_spawn", lambda self, work, *args: launched.append(args))
+    with pytest.raises(RuntimeError, match="No hay requisitos aprobados"):  # la corrida parte del catálogo
+        real.start("Armá el backlog")
+    assert launched == []
+    from test_catalogo import approve_and_apply, proposal
+
+    approve_and_apply(real.deps.catalog, real.deps.catalog.propose(proposal()))
     real.start("Armá el backlog")
     assert real.backlog_before == [] and real.deps.backlog.search() == []  # sin work items de ejemplo
     assert "Cubrí todos los requisitos distintos" in launched[0][1] and "como máximo" not in launched[0][1] and real.deps.library.root == library.root

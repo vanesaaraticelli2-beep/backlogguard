@@ -103,6 +103,8 @@ def content_hash(item: BacklogItem) -> str:
 
 
 def idempotency_key(project: str, item: BacklogItem) -> str:
+    if item.requirement_id:  # una historia de un requisito se publica una vez por versión del requisito, sin importar cómo quedó redactada
+        return hashlib.sha1(f"{project}|{item.requirement_id}|v{item.requirement_version}".encode("utf-8")).hexdigest()[:16]
     return hashlib.sha1(f"{project}|{item.id}|{content_hash(item)}".encode("utf-8")).hexdigest()[:16]
 
 
