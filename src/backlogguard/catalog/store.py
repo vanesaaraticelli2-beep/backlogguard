@@ -99,6 +99,20 @@ class Catalog:
             ).fetchone()
         return date.fromisoformat(row["latest"]) if row and row["latest"] else None
 
+    def forget_source(self, source_id: str) -> int:
+        """Se borró la fuente: se olvida que fue leída y se descartan sus propuestas sin decidir. Lo ya aprobado se conserva.
+
+        Sin esto, la fecha de una reunión borrada seguiría marcando como «fuera de orden» a las que se lean después."""
+        dropped = 0
+        with closing(self._connect()) as conn, conn:
+            conn.execute("DELETE FROM sources WHERE source_id = ?", (source_id,))
+            for row in conn.execute("SELECT seq, json FROM proposals").fetchall():
+                proposal = Proposal.model_validate_json(row["json"])
+                if proposal.source_id == source_id and proposal.state is ProposalState.PENDIENTE:
+                    conn.execute("DELETE FROM proposals WHERE seq = ?", (row["seq"],))
+                    dropped += 1
+        return dropped
+
     def processed_sources(self) -> list[dict]:
         with closing(self._connect()) as conn:
             return [dict(r) for r in conn.execute("SELECT * FROM sources ORDER BY processed_at, source_id")]

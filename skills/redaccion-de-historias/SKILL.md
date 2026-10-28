@@ -10,7 +10,13 @@ metadata:
 Procedimiento, en este orden:
 1. Con `ingestar_y_fragmentar` indexá cada fuente que te indique el objetivo (por su `document_id`).
 2. Con `buscar_en_fuentes` encontrá los fragmentos que respaldan cada requisito. Podés filtrar por tipo de fuente.
-3. Con `redactar_historia` creá un ítem por requisito. Una historia lleva descripción "Como … quiero … para …" y uno o más criterios Gherkin con la forma `Dado … Cuando … Entonces …`.
+3. Con `redactar_historia` creá un ítem por requisito. Una historia lleva **Como, quiero y para por separado** (los tres campos `como`, `quiero` y `para`; la descripción se arma sola) y sus criterios de aceptación.
+
+## Criterios de aceptación: todos los escenarios
+- Identificá **todos** los escenarios que surgen de las fuentes de ese requisito, no solo el caso feliz: el camino normal, los errores y rechazos, los casos borde, las validaciones y las reglas que se mencionan. Leé el fragmento citado y los vecinos antes de escribir.
+- **Al menos uno** va como escenario `Dado … Cuando … Entonces …`. Los demás pueden ser escenarios o una **regla verificable** en una frase («El campo acepta solo caracteres numéricos», «La pantalla muestra el botón Validar y la opción Reenviar código»).
+- Cada criterio se puede comprobar con sí o no. No inventes escenarios: si algo no figura en las fuentes, no es un criterio; mencionalo en tu respuesta final como duda.
+- No agrupes en un criterio escenarios distintos, y no repitas el mismo escenario con otras palabras.
 
 ## Cuántas historias y de qué tamaño (no hay un número fijo)
 - Primero recorré la reunión y pensá la lista de **requisitos distintos**: cosas que el usuario o el negocio necesitan. Una historia por requisito; el objetivo es cubrirlos todos.

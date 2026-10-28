@@ -112,7 +112,7 @@ EXCEL_SOURCE = ("reunion_02_seguimiento", "lo queremos en Excel")
 def test_sin_requisito_ni_cita_la_tool_sigue_exigiendo_una_cita():
     with pytest.raises(ValueError, match="al menos una cita"):
         DraftArgs(kind="historia", title=TITLE, description=STORY, acceptance_criteria=[GHERKIN])
-    assert DraftArgs(kind="historia", title=TITLE, requirement_id=RID).citations == []
+    assert DraftArgs(kind="historia", title=TITLE, requirement_id=RID, acceptance_criteria=[GHERKIN]).citations == []
 
 
 def test_aprobar_el_plan_publica_y_anota_en_el_catalogo_que_version_quedo_publicada(world):
@@ -157,6 +157,25 @@ def test_una_version_nueva_del_requisito_actualiza_el_mismo_work_item_y_no_crea_
     assert [w.id for w in world.backlog.search(tag=f"bg-item:{ITEM}")] == [first_remote]  # el mismo work item, no un duplicado
     published = world.catalog.publication(rid)
     assert (published["version"], published["remote_id"], published["needs_update"]) == (2, first_remote, False)
+
+
+PREVENTA = ("preventa_acme", "Se entrega un reporte mensual de pedidos exportable en PDF.")
+
+
+def test_la_evidencia_de_la_preventa_guardada_con_el_id_del_compromiso_se_resuelve_a_un_fragmento_real_al_redactar(world):
+    """Antes se heredaba «C-067» como fragmento: el Crítico no podía verificarla y objetaba la historia."""
+    legacy = evidence_of(world, PREVENTA).model_copy(update={"fragment_id": "C-067", "page": None})
+    unresolvable = legacy.model_copy(update={"fragment_id": "C-068", "quote": "Una frase que no figura en la preventa."})
+    meeting = evidence_of(world, EMAIL)
+    proposal = Proposal(source_id="reunion_01_kickoff", fingerprint="fp", candidate_key="k", kind=ProposalKind.NUEVO, drafts=[Draft(title=TITLE)], evidence=[meeting, legacy, unresolvable])
+    rid = approve_and_apply(world.catalog, world.catalog.propose(proposal)).affected[0]
+    board = Board()
+    toolkit = RequirementsToolkit(world.deps.library, world.retriever, board, world.catalog)
+    args = {"kind": "historia", "title": TITLE, "description": STORY, "acceptance_criteria": [GHERKIN], "citations": [], "requirement_id": rid}
+    assert toolkit.redactar_historia(args).ok
+    citations = board.items[ITEM].citations
+    assert sorted(c.quote for c in citations) == sorted([EMAIL[1], PREVENTA[1]])  # la que no se puede ubicar no se hereda
+    assert all(world.retriever.get(c.fragment_id) is not None for c in citations) and "C-067" not in {c.fragment_id for c in citations}
 
 
 def test_la_clave_de_publicacion_es_del_requisito_y_su_version_no_de_como_quedo_redactada():

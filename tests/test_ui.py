@@ -55,7 +55,7 @@ def test_cada_persona_ve_solo_sus_pedidos(screen):
     at, controller = screen
     start_and_wait(at, controller)
     pick(at, "service_manager")  # el primer pedido lo decide el product owner
-    assert "No tenés pedidos pendientes" in texts(at) and not at.get("form_submit_button") and not [b for b in at.button if b.key == "aprobar"]
+    assert "Este pedido lo decide el rol" in texts(at) and not at.get("form_submit_button") and not [b for b in at.button if b.key == "aprobar"]
     pick(at, "product_owner")
     assert [b for b in at.button if b.key == "aprobar"] and "Desacuerdo sin consenso" in texts(at)
 

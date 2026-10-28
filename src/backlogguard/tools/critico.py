@@ -16,7 +16,7 @@ from backlogguard.board.similarity import repeats
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools.models import ToolResult
 
-MAX_CRITERIA = 5
+MAX_CRITERIA = 12
 _STORY = re.compile(r"\bcomo\b.*\bquiero\b.*\bpara\b", re.IGNORECASE | re.DOTALL)
 _GHERKIN = re.compile(r"\b(dado|given)\b.*\b(cuando|when)\b.*\b(entonces|then)\b", re.IGNORECASE | re.DOTALL)
 _QUOTES = str.maketrans({"“": '"', "”": '"', "«": '"', "»": '"', "‘": "'", "’": "'"})
@@ -147,9 +147,8 @@ class CriticToolkit:
             ),
             (
                 "criterios_gherkin",
-                not needs_gherkin
-                or (bool(item.acceptance_criteria) and all(_GHERKIN.search(c) for c in item.acceptance_criteria)),
-                "se esperan escenarios Dado/Cuando/Entonces",
+                not needs_gherkin or any(_GHERKIN.search(c) for c in item.acceptance_criteria),
+                "al menos un escenario Dado/Cuando/Entonces (el resto de los criterios puede ser una regla verificable)",
             ),
             (
                 "tamano_acotado",

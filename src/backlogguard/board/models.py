@@ -125,6 +125,9 @@ class BacklogItem(_Strict):
     parent_id: str | None = Field(default=None, description="Ítem padre (por ejemplo, la épica de una historia)")
     requirement_id: str | None = Field(default=None, description="Requisito aprobado del catálogo del que sale la historia (RQ-nnn)")
     requirement_version: int | None = Field(default=None, ge=1, description="Versión del requisito con la que se redactó")
+    como: str | None = Field(default=None, description="Quién necesita la historia («Como …»)")
+    quiero: str | None = Field(default=None, description="Qué quiere lograr («quiero …»)")
+    para: str | None = Field(default=None, description="Para qué lo quiere («para …»)")
 
     @model_validator(mode="after")
     def _traceability(self) -> BacklogItem:

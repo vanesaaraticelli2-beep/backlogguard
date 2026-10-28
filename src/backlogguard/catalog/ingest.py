@@ -156,6 +156,7 @@ class IngestResult:
     rejected: list[RejectedCandidate] = field(default_factory=list)
     proposals: list[Proposal] = field(default_factory=list)
     auto_applied: list[str] = field(default_factory=list)
+    nothing_found: bool = False  # ningún requisito verificado: la fuente no se marca como leída
     models: dict[str, str] = field(default_factory=dict)
     input_tokens: int = 0
     output_tokens: int = 0
@@ -321,17 +322,30 @@ def _meeting_evidence(document: SourceDocument, candidate: Candidate) -> Evidenc
     )
 
 
+_PRESALE_CHUNKS: dict[tuple[str, str], list[dict]] = {}  # fragmentos de la preventa, por documento y huella (no cambian)
+
+
 def _presale_evidence(presale: SourceDocument | None, baseline: Baseline | None, ids: list[str]) -> list[Evidence]:
     if presale is None or baseline is None:
         return []
+    from backlogguard.tools.critico import quote_matches  # mismo criterio que `verificar_cita`
+
     by_id = {c.id: c for c in baseline.commitments}
-    return [
-        Evidence(
-            fragment_id=c.id, quote=c.quote, source_name=presale.metadata.source_name, source_type=SourceType.PREVENTA,
-            source_date=presale.metadata.source_date, page=c.page, source_id=presale.document_id, source_fingerprint=baseline.fingerprint,
-        )
-        for i in ids if (c := by_id.get(i))
-    ]
+    key = (presale.document_id, presale.fingerprint)
+    if key not in _PRESALE_CHUNKS:
+        _PRESALE_CHUNKS[key] = build_chunks(presale.document_id, presale.text, presale.metadata.model_dump(mode="json"))
+    evidence = []
+    for i in ids:
+        commitment = by_id.get(i)
+        found = [chunk for chunk in _PRESALE_CHUNKS[key] if commitment and quote_matches(commitment.quote, chunk["text"])]
+        chunk = next((c for c in found if c.get("page") == commitment.page), found[0] if found else None)
+        if chunk is None:  # un id de compromiso (C-nnn) no es un fragmento: sin un fragmento real que contenga la cita, no se guarda
+            continue
+        evidence.append(Evidence(
+            fragment_id=chunk["chunk_id"], quote=commitment.quote, source_name=presale.metadata.source_name, source_type=SourceType.PREVENTA,
+            source_date=presale.metadata.source_date, page=commitment.page, source_id=presale.document_id, source_fingerprint=baseline.fingerprint,
+        ))
+    return evidence
 
 
 def build_proposal(
@@ -487,7 +501,10 @@ def ingest_meeting(
                 saved = catalog.apply_covered(saved.id)
                 result.auto_applied.append(saved.id)
             result.proposals.append(saved)
-    catalog.mark_source_processed(document.document_id, document.fingerprint, document.metadata.source_date)
+    if candidates:
+        catalog.mark_source_processed(document.document_id, document.fingerprint, document.metadata.source_date)
+    else:  # no se marca como leída: así se puede volver a leer (o corregir la fuente) sin que quede como hecho
+        result.nothing_found = True
 
     enum_model, class_model = str(getattr(enumerator, "model", "?")), str(getattr(classifier, "model", "?"))
     result.models = {"enumerador": enum_model, "clasificador": class_model}

@@ -123,7 +123,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
                 log = TaskLog(len(state.get("tasks", [])))
                 log.add("supervisor", "requerimientos", "redactar", detail="Requisitos aprobados por redactar: 0. Ítems redactados: 0.")
                 return {"tasks": log.tasks, "pending": [], "audit_passes": 1, "trace": [{"node": "produce", "items": 0, "requisitos": 0}]}
-            goal, scope = goal_for(todo), f"Requisitos aprobados por redactar: {len(todo)}" + (f" (quedan {later} para la próxima corrida)" if later else "")
+            goal, scope = goal_for(todo, deps.retriever), f"Requisitos aprobados por redactar: {len(todo)}" + (f" (quedan {later} para la próxima corrida)" if later else "")
         else:
             todo, scope = [], f"Fuentes: {', '.join(plan_data['sources'])}"
             goal = (

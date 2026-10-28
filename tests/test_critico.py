@@ -146,11 +146,21 @@ def test_dor_invest_marca_formato_gherkin_tamano_y_duplicados(world):
         item_id="HU-2",
         title="Autenticación en el portal mediante SSO corporativo",
         description="Quiero entrar.",
-        acceptance_criteria=["debería andar bien"] + [GHERKIN] * 5,
+        acceptance_criteria=["debería andar bien"] * 13,
     )
     report = json.loads(run_tool(critic_registry(retriever, board), "evaluar_dor_invest", item_id="HU-2").content)
     failed = {c["nombre"] for c in report["controles"] if not c["ok"]}
     assert failed == {"formato_como_quiero_para", "criterios_gherkin", "tamano_acotado", "sin_duplicados"}
+
+
+def test_dor_invest_acepta_reglas_simples_si_hay_al_menos_un_escenario(world):
+    retriever, board = world
+    add_item(
+        board, citation_for(retriever, "reunion_01_kickoff", "listado pedidos filtros"), title="Listado de pedidos con filtros",
+        acceptance_criteria=[GHERKIN, "El campo de búsqueda acepta solo caracteres numéricos."] + [GHERKIN] * 8,
+    )
+    report = json.loads(run_tool(critic_registry(retriever, board), "evaluar_dor_invest", item_id="HU-1").content)
+    assert {c["nombre"] for c in report["controles"] if not c["ok"]} == set()  # varias reglas y diez criterios entran
 
 
 def test_las_tools_del_critico_son_solo_del_critico_y_no_escriben(world):

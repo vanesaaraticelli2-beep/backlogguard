@@ -212,6 +212,16 @@ class RunController:
         self.events, self.backlog_before, self.error = [], [], None
         self.deps.backlog.reload()
 
+    def resume_run(self, thread_id: str) -> None:
+        """Retoma una corrida guardada que quedó esperando una decisión (por ejemplo, si se reinició la aplicación)."""
+        if self.running:
+            raise RuntimeError("No se puede retomar otra corrida mientras hay una en curso.")
+        if not any(run["thread_id"] == thread_id and run["waiting"] for run in self.list_runs()):
+            raise KeyError(f"La corrida {thread_id} no existe o no está esperando una decisión.")
+        self.thread_id, self.read_only = thread_id, False
+        self.events, self.backlog_before, self.error = [], [], None
+        self.deps.backlog.reload()
+
     def activity(self, limit: int = 400) -> list[str]:
         if self.read_only:
             return format_trace(self.state().get("trace", []))

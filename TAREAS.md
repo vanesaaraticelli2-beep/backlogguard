@@ -291,3 +291,18 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] La conversación dice «Redactá una historia por cada requisito aprobado: son N» y «No hay nada nuevo para redactar».
 - [x] `tests/test_corrida_catalogo.py` (9). Suite completa: 461.
 - Límites conocidos: el Auditor sigue comparando solo lo que hay en el tablero de esa corrida; en corridas con pocos requisitos nuevos puede marcar de más «vendido y no tratado». Lo resuelve el Bloque 3 (matriz de cobertura). Una historia corregida por el Crítico reemplaza sus citas por las que el productor cite.
+
+## Carga de transcripciones VTT y lectura vacía — [x] (sin commit)
+- [x] `rag/importers.py`: `vtt_to_dialogue` convierte un WebVTT (Teams/Zoom/Meet) en «Orador: texto»: quita encabezado, notas, estilos y tiempos; toma el orador de `<v Nombre>` o del prefijo; limpia etiquetas y entidades (`&#209;`); une los fragmentos de una misma intervención por el número del id (`guid/12-3`) aunque otro orador la interrumpa, y ordena por inicio. Sin oradores se importa como nota con aviso. Se pierden las marcas de tiempo.
+- [x] Cargador de «Reunión/Minuta» acepta `.vtt`. La fecha del documento ya no parte de hoy: se propone la del nombre del archivo (`2026-08-21 …`) y hay que confirmarla (el botón queda deshabilitado sin fecha), porque ordena las reuniones.
+- [x] Una lectura sin requisitos verificados avisa y **no** marca la reunión como leída (`IngestResult.nothing_found`); también en `scripts/clasificar_reunion.py`.
+- [x] Borrar una fuente ahora llama a `Catalog.forget_source`: olvida que fue leída (su fecha ya no marca a otras como «fuera de orden») y descarta sus propuestas sin decidir; lo aprobado se conserva.
+- [x] `tests/test_vtt.py` (9). Suite completa: 470.
+
+## Historia de usuario completa y Word por historia — [x] (sin commit; falta regenerar las historias con una corrida real)
+- [x] `BacklogItem` suma `como`, `quiero`, `para`; `redactar_historia` los recibe por separado y arma la descripción «Como … quiero … para …». Los criterios admiten escenarios y reglas simples: una historia necesita **al menos un** escenario Dado/Cuando/Entonces (tool, control DoR del Crítico y edición de pedidos); el máximo de criterios sube de 5 a 12 para cubrir todos los escenarios.
+- [x] Instrucciones: la skill del productor pide identificar **todos** los escenarios de las fuentes (caso feliz, errores, bordes, validaciones, reglas) sin inventar; la del Crítico objeta si falta un escenario que las fuentes mencionan. `graph/drafting.py` le pasa al productor el contexto de la reunión (fragmentos vecinos de cada cita).
+- [x] `export/story.py` + `export/word.py` (python-docx, extra opcional `export`): id `US-003` (del requisito), Feature (área de la línea base con más compromisos del requisito, con su número), Como/Quiero/Para y criterios con tilde. **El Word no lleva citas ni datos de la reunión**; sin campos de contexto (Canal/Ramos).
+- [x] «Tablero»: cada historia se despliega con el formato completo y un botón «Descargar Word» (uno por historia); la trazabilidad (citas, objeciones, requisito y versión) queda solo en pantalla.
+- [x] `tests/test_historia_us.py` (7) y ajustes en `test_critico.py`. Suite completa: 481.
+- No se pudo ver el Word renderizado (no hay LibreOffice en la máquina): se verificó su estructura leyéndolo de vuelta.

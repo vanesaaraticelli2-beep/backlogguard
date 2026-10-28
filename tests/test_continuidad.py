@@ -34,7 +34,7 @@ PRICING = {"claude-sonnet-5-5": (2.0, 10.0), "claude-opus-5-5": (4.0, 20.0)}
 @pytest.fixture
 def world(tmp_path):
     library = SourceLibrary(tmp_path / "fuentes")
-    library.write("propuesta", SourceMetadata(source_name="Propuesta", source_type=SourceType.PREVENTA, source_date=date(2025, 10, 1), layout="paginas"), "[[página 7]]\nTexto de la propuesta.\n")
+    library.write("propuesta", SourceMetadata(source_name="Propuesta", source_type=SourceType.PREVENTA, source_date=date(2025, 10, 1), layout="paginas"), "[[página 7]]\nConsulta de la Constancia de ARCA con el CUIT del cliente.\n[[página 18]]\nLa integración con el servicio de NOSIS mediante API.\n")
     library.write("reunion_01", SourceMetadata(source_name="Reunión 1", source_type=SourceType.REUNION, source_date=date(2026, 1, 25), layout="turnos"), MEETING)
     presale, meeting = library.load("propuesta"), library.load("reunion_01")
     baseline = Baseline(
@@ -81,7 +81,7 @@ def test_la_primera_reunion_genera_propuestas_nuevas_ligadas_a_la_preventa(world
     first = result.proposals[0]
     assert first.drafts[0].title == "Validar el CUIT en ARCA" and first.drafts[0].commitment_ids == ["C-001"]
     assert [e.source_type for e in first.evidence] == [SourceType.REUNION, SourceType.PREVENTA] and first.evidence[0].speaker == "Ana"
-    assert first.evidence[1].page == 7 and first.evidence[1].fragment_id == "C-001"
+    assert first.evidence[1].page == 7 and first.evidence[1].fragment_id.startswith("propuesta:") and first.evidence[1].fragment_id != "C-001"  # un fragmento real, no el id del compromiso
     assert result.proposals[1].drafts[0].commitment_ids == ["C-002"]  # el id inventado se descarta
     assert world["catalog"].requirements() == []  # nada se aplica sin una persona
     assert all(p.state is ProposalState.PENDIENTE for p in world["catalog"].proposals())

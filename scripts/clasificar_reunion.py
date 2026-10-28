@@ -84,6 +84,8 @@ def main() -> int:
     if result.skipped:
         print("Esta reunión ya se procesó con esta huella: no se gastó nada.")
         return 0
+    if result.nothing_found:
+        print("\nNo se encontró ningún requisito con cita verificada: la reunión NO se marcó como leída.")
     print(f"\n{len(result.candidates)} candidatos verificados, {len(result.rejected)} descartados, {len(result.proposals)} propuestas, {len(result.auto_applied)} «ya cubierto» aplicados{' · REUNIÓN FUERA DE ORDEN' if result.out_of_order else ''}.")
     for r in result.rejected:
         print(f"   ✘ descartado: {r.text} — {r.reason}")

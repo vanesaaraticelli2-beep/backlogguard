@@ -139,9 +139,9 @@ def _invalid_edit(request: DecisionRequest, edited: dict) -> str | None:
             return "La descripción debe ser texto."
         criteria = edited.get("acceptance_criteria")
         if criteria is not None and (
-            not isinstance(criteria, list) or not all(isinstance(c, str) and is_gherkin(c) for c in criteria)
+            not isinstance(criteria, list) or not all(isinstance(c, str) and c.strip() for c in criteria) or not any(is_gherkin(c) for c in criteria)
         ):
-            return "Los criterios deben ser Gherkin (Dado/Cuando/Entonces)."
+            return "Los criterios deben ser texto y al menos uno un escenario Dado/Cuando/Entonces."
     elif request.kind == "plan":
         known = {i["item_id"] for i in request.payload["items"] if i["action"] != "omitir"}
         excluded = edited.get("exclude")

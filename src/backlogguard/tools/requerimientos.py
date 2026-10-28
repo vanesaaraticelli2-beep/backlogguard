@@ -19,6 +19,7 @@ from backlogguard.board import EVIDENCE_TYPES, BacklogItem, Board, Citation, Ite
 from backlogguard.catalog import Catalog, RequirementStatus
 from backlogguard.rag import SourceLibrary, SourceNotFound, build_chunks
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
+from backlogguard.tools.critico import quote_matches
 from backlogguard.tools.models import ToolResult
 
 _GHERKIN = re.compile(r"\b(dado|given)\b.*\b(cuando|when)\b.*\b(entonces|then)\b", re.IGNORECASE | re.DOTALL)
@@ -69,8 +70,12 @@ class DraftArgs(_Args):
     kind: ItemKind
     title: str = Field(min_length=3, max_length=140)
     description: str = Field(default="", max_length=1200)
+    como: str | None = Field(default=None, max_length=200, description="Quién lo necesita: «cliente», «administrador del portal»…")
+    quiero: str | None = Field(default=None, max_length=400, description="Qué quiere lograr, sin repetir «quiero»")
+    para: str | None = Field(default=None, max_length=400, description="Para qué lo quiere, sin repetir «para»")
     acceptance_criteria: list[str] = Field(
-        default_factory=list, description="Escenarios Gherkin: Dado ... Cuando ... Entonces ..."
+        default_factory=list,
+        description="Todos los escenarios que surgen de las fuentes. Al menos uno Dado ... Cuando ... Entonces ...; el resto puede ser una regla verificable",
     )
     requirement_id: str | None = Field(
         default=None, pattern=r"^RQ-\d+$",
@@ -84,13 +89,23 @@ class DraftArgs(_Args):
             raise ValueError("hace falta al menos una cita (o un requisito aprobado que ya trae las suyas)")
         return self
 
+    @model_validator(mode="after")
+    def _story(self) -> "DraftArgs":
+        parts = [self.como, self.quiero, self.para]
+        if any(parts) and not all(p and p.strip() for p in parts):
+            raise ValueError("Como, quiero y para van juntos: completá los tres")
+        if self.kind in (ItemKind.HISTORIA, ItemKind.CASO_DE_PRUEBA) and not any(is_gherkin(c) for c in self.acceptance_criteria):
+            raise ValueError("hace falta al menos un escenario Dado/Cuando/Entonces entre los criterios")
+        return self
+
     @field_validator("acceptance_criteria")
     @classmethod
-    def _gherkin(cls, criteria: list[str]) -> list[str]:
-        for criterion in criteria:
-            if not _GHERKIN.search(criterion):
-                raise ValueError(f"el criterio no es Gherkin (Dado/Cuando/Entonces): {criterion[:60]!r}")
-        return criteria
+    def _criteria(cls, criteria: list[str]) -> list[str]:
+        cleaned = [" ".join(c.split()) for c in criteria]
+        for criterion in cleaned:
+            if not 8 <= len(criterion) <= 500:
+                raise ValueError(f"cada criterio tiene entre 8 y 500 caracteres: {criterion[:60]!r}")
+        return cleaned
 
     @field_validator("title")
     @classmethod
@@ -98,9 +113,11 @@ class DraftArgs(_Args):
         return " ".join(value.split())
 
 
-def _as_citations(evidence) -> list[Citation]:
-    """Las evidencias del catálogo ya se verificaron contra su fragmento: pasan al ítem como citas del tablero."""
-    return [Citation(**{name: getattr(e, name) for name in Citation.model_fields}) for e in evidence]
+def _description(args: dict) -> str:
+    """Con Como/Quiero/Para la descripción se arma sola («Como … quiero … para …»); si no, es el texto que mandó el modelo."""
+    if args.get("como") and args.get("quiero") and args.get("para"):
+        return f"Como {args['como'].strip()} quiero {args['quiero'].strip()} para {args['para'].strip()}."
+    return args.get("description", "")
 
 
 def _fail(content: str, error_type: str) -> ToolResult:
@@ -195,7 +212,7 @@ class RequirementsToolkit:
             if problem:
                 return problem
             known = {(c.fragment_id, c.quote) for c in citations}
-            citations += [c for c in _as_citations(requirement.current.evidence) if (c.fragment_id, c.quote) not in known]
+            citations += [c for c in self._inherited(requirement.current.evidence) if (c.fragment_id, c.quote) not in known]
         if not any(citation.source_type in EVIDENCE_TYPES for citation in citations):
             return _fail(
                 "La preventa dice lo que se vendió, no lo que se acordó: citá al menos un fragmento de una reunión o minuta "
@@ -237,14 +254,31 @@ class RequirementsToolkit:
                 parent_id=args.get("parent_id"),
                 kind=kind,
                 title=args["title"],
-                description=args.get("description", ""),
+                description=_description(args),
                 acceptance_criteria=args.get("acceptance_criteria", []),
                 citations=citations,
+                como=args.get("como"), quiero=args.get("quiero"), para=args.get("para"),
                 requirement_id=requirement.id if requirement else None,
                 requirement_version=requirement.current.number if requirement else None,
             )
         )
         return ToolResult(ok=True, content=f"Ítem {item_id} creado en borrador.", metadata={"item_id": item_id})
+
+    def _inherited(self, evidence) -> list[Citation]:
+        """Las evidencias del catálogo pasan al ítem como citas del tablero, apuntando a un fragmento que existe.
+
+        Una evidencia de la preventa guardada con el id del compromiso (C-nnn) no es verificable: se busca el fragmento
+        que contiene la cita, y si no aparece no se hereda, en vez de dejar una cita que el Crítico va a objetar."""
+        citations = []
+        for e in evidence:
+            fragment = self.retriever.get(e.fragment_id) or self._fragment_with(e)
+            if fragment is not None:
+                citations.append(Citation(**{**{name: getattr(e, name) for name in Citation.model_fields}, "fragment_id": fragment.chunk_id}))
+        return citations
+
+    def _fragment_with(self, e):
+        matching = [c for c in self.retriever.all_chunks({"document_id": e.source_id}) if quote_matches(e.quote, c.text)]
+        return next((c for c in matching if e.page and c.page == e.page), matching[0] if matching else None)
 
     def _requirement(self, rid: str):
         """El requisito aprobado del que sale la historia, o el error para devolverle al modelo."""
@@ -269,9 +303,10 @@ class RequirementsToolkit:
             update={
                 "kind": ItemKind(args["kind"]),
                 "title": args["title"],
-                "description": args.get("description", ""),
+                "description": _description(args),
                 "acceptance_criteria": args.get("acceptance_criteria", []),
                 "citations": citations,
+                "como": args.get("como") or current.como, "quiero": args.get("quiero") or current.quiero, "para": args.get("para") or current.para,
             }
         )
         self.corrected.add(current.id)  # solo cuenta una corrección que salió bien

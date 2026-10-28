@@ -52,7 +52,7 @@ _SPECS: list[tuple[str, AgentRole, ToolKind, str]] = [
     ("buscar_en_fuentes", AgentRole.REQUERIMIENTOS, "read",
      "Busca fragmentos relevantes en reuniones y minutas (evidencia). La preventa (línea base) solo se incluye si se la pide."),
     ("redactar_historia", AgentRole.REQUERIMIENTOS, "local_write",
-     "Redacta una historia con criterios Gherkin y citas, y la deja en el tablero."),
+     "Redacta una historia (como, quiero, para), con sus escenarios y reglas de aceptación y sus citas, y la deja en el tablero."),
     ("verificar_cita", AgentRole.CRITICO, "read",
      "Verifica que una cita exista textualmente en la fuente."),
     ("buscar_contraevidencia", AgentRole.CRITICO, "read",

@@ -11,6 +11,7 @@ lo que podría degradar las citas. No hay OCR: un PDF que es una imagen escanead
 from __future__ import annotations
 
 import re
+from html import unescape
 import unicodedata
 from dataclasses import dataclass, field
 from io import BytesIO
@@ -32,6 +33,12 @@ _HEADER = re.compile(r"^\s*(?P<key>Proyecto|Fecha|Reuni[oó]n|Tema|Asunto)\s*:\s
 # Estilo de Zoom/Teams: «Nombre Apellido 00:12» en una línea y lo que dijo en las siguientes.
 _STAMPED_SPEAKER = re.compile(r"^\s*(?P<speaker>[^\W\d][^:\n\d]{1,40}?)\s+[\[(]?\d{1,2}:\d{2}(?::\d{2})?[\])]?\s*$")
 _PARTICIPANTS_TITLE = re.compile(r"^\s*Participantes\s*:?\s*$", re.IGNORECASE)
+# WebVTT (Teams, Zoom, Meet): el orador viene en <v Nombre>…</v> o como «Nombre: texto»; el id del fragmento puede ser «guid/12-3»,
+# donde 12 es la intervención y 3 la parte (las partes de una frase larga se intercalan con las de otros oradores).
+_VTT_TIME = re.compile(r"^(?:(\d{1,2}):)?(\d{2}):(\d{2})[.,](\d{3})\s*-->")
+_VTT_VOICE = re.compile(r"<v(?:\.[^\s>]*)?\s+([^>]+)>(.*?)(?:</v>|$)", re.DOTALL)
+_VTT_PREFIX = re.compile(r"^\s*([^\W\d][^:\n]{0,60}?)\s*:\s*(\S.*)$", re.DOTALL)
+_VTT_UTTERANCE = re.compile(r"^(?:.*/)?(\d+)-(\d+)$")
 
 
 class SourceImportError(ValueError):
@@ -136,6 +143,8 @@ def import_transcript(source: bytes | str | Path) -> ImportedSource:
         text = decode_text(source)
     else:
         text = source
+    if is_vtt(text):
+        text = vtt_to_dialogue(text)
     lines = _join_stamped_speakers([line.rstrip() for line in text.replace("\r\n", "\n").replace("\r", "\n").split("\n")])
     if _words(text) > MAX_WORDS:
         raise SourceImportError(f"La transcripción tiene {_words(text)} palabras; el máximo es {MAX_WORDS}.")
@@ -191,6 +200,68 @@ def import_transcript(source: bytes | str | Path) -> ImportedSource:
     return ImportedSource(
         text=rendered, layout="dialogo", words=_words(rendered), speakers=speakers, detected=header, warnings=warnings
     )
+
+
+def is_vtt(text: str) -> bool:
+    return text.lstrip("\ufeff \t\r\n").startswith("WEBVTT")
+
+
+def vtt_to_dialogue(text: str) -> str:
+    """Convierte un WebVTT en «Orador: texto», una línea por intervención y en el orden en que empezaron a hablar.
+
+    Se descartan el encabezado, las notas, los estilos y las líneas de tiempo. Los fragmentos de una misma intervención
+    (mismo número en el id) se unen aunque otro orador los interrumpa; sin ese id se unen los seguidos del mismo orador.
+    """
+    blocks = re.split(r"\n\s*\n", text.lstrip("\ufeff").replace("\r\n", "\n").replace("\r", "\n"))
+    cues: list[tuple[float, str | None, str, str | None, int]] = []  # (inicio, orador, texto, intervención, parte)
+    for block in blocks[1:]:
+        lines = block.strip("\n").split("\n")
+        at = next((i for i, line in enumerate(lines) if _VTT_TIME.match(line.strip())), None)
+        if at is None or lines[0].startswith(("NOTE", "STYLE", "REGION")):
+            continue
+        hours, minutes, seconds, millis = _VTT_TIME.match(lines[at].strip()).groups()
+        start = int(hours or 0) * 3600 + int(minutes) * 60 + int(seconds) + int(millis) / 1000
+        payload = "\n".join(lines[at + 1 :])
+        speaker: str | None = None
+        voice = _VTT_VOICE.search(payload)
+        if voice:
+            speaker, payload = unescape(voice.group(1)).strip(), voice.group(2)
+        else:
+            plain = _VTT_PREFIX.match(re.sub(r"<[^>]+>", "", payload))
+            if plain and len(plain.group(1).split()) <= 5:
+                speaker, payload = plain.group(1).strip(), plain.group(2)
+        said = " ".join(unescape(re.sub(r"<[^>]+>", "", payload)).split())
+        if not said:
+            continue
+        ident = _VTT_UTTERANCE.match(lines[at - 1].strip()) if at > 0 else None
+        cues.append((start, speaker, said, ident.group(1) if ident else None, int(ident.group(2)) if ident else len(cues)))
+
+    turns: dict[str, dict] = {}
+    ordered: list[dict] = []
+    for start, speaker, said, utterance, part in cues:
+        if utterance is not None and utterance in turns:
+            turn = turns[utterance]
+            turn["start"] = min(turn["start"], start)
+        elif utterance is None and ordered and ordered[-1].get("loose") and ordered[-1]["speaker"] == speaker:
+            turn = ordered[-1]
+        else:
+            turn = {"start": start, "speaker": speaker, "parts": [], "loose": utterance is None}
+            ordered.append(turn)
+            if utterance is not None:
+                turns[utterance] = turn
+        turn["parts"].append((part, said))
+    ordered.sort(key=lambda t: t["start"])
+    merged: list[dict] = []
+    for turn in ordered:  # intervenciones seguidas del mismo orador forman una sola
+        if merged and merged[-1]["speaker"] == turn["speaker"]:
+            merged[-1]["parts"] += turn["parts"]
+        else:
+            merged.append({**turn, "parts": list(turn["parts"])})
+    rendered = []
+    for turn in merged:
+        body = " ".join(said for _, said in sorted(turn["parts"], key=lambda p: p[0]))
+        rendered.append(f"{turn['speaker']}: {body}" if turn["speaker"] else body)
+    return "\n".join(rendered) + "\n"
 
 
 def _join_stamped_speakers(lines: list[str]) -> list[str]:

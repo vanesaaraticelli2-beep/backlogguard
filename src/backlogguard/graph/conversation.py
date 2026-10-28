@@ -261,7 +261,7 @@ def _waiting(state: dict, facts: _Facts) -> list[Message]:
     requests = state.get("requests") or []
     if status == "esperando_decision" and requests:
         first = requests[0]
-        return [Message("supervisor", "persona", f"Pausé la corrida: espero la decisión del {_human(first['decides']).lower()} sobre «{_clip(first['title'], 140)}».", tone="wait")]
+        return [Message("supervisor", "persona", f"Falta la decisión del {_human(first['decides']).lower()} sobre «{_clip(first['title'], 140)}». La corrida sigue apenas se decida (pestaña «Mis decisiones»).", tone="wait")]
     return []
 
 

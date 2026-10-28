@@ -24,6 +24,13 @@ h1, h2, h3, h4 {{ font-family: 'Outfit', 'Segoe UI', sans-serif; color: {INDIGO}
 .stTabs [data-baseweb="tab-list"] {{ gap: 2px; overflow-x: auto; }}
 .stTabs [data-baseweb="tab"] {{ font-weight: 600; padding: 10px 14px; }}
 .stTabs [aria-selected="true"] {{ color: {INDIGO}; }}
+.bg-steps {{ display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }}
+.bg-step {{ flex: 1 1 130px; display: flex; flex-direction: column; padding: 6px 12px; border-radius: 8px; background: #f1f0f8; color: #5d5b7a; border-bottom: 4px solid #d9d7ee; }}
+.bg-step small {{ font-size: 12px; }}
+.bg-step.done {{ background: #e6f3d6; color: #3f7d12; border-bottom-color: {GREEN}; }}
+.bg-step.now {{ background: {INDIGO}; color: #fff; border-bottom-color: {GREEN}; }}
+.bg-next {{ background: #eef0ff; border-left: 6px solid {INDIGO}; border-radius: 0 8px 8px 0; padding: 10px 16px; font-size: 16px; }}
+.bg-next span {{ font-family: 'Outfit', sans-serif; font-weight: 700; color: {INDIGO}; text-transform: uppercase; font-size: 12px; letter-spacing: .08em; margin-right: 8px; }}
 .bg-label {{ font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: #5d5b7a; font-weight: 700; margin: 18px 0 6px; }}
 .bg-quote {{ margin: 0; padding: 12px 16px; background: #ebe9fb; border-left: 5px solid {INDIGO}; border-radius: 0 8px 8px 0; font-size: 16px; }}
 .bg-commit {{ background: #e6f3d6; border-radius: 8px; padding: 10px 14px; }}
@@ -33,6 +40,17 @@ h1, h2, h3, h4 {{ font-family: 'Outfit', 'Segoe UI', sans-serif; color: {INDIGO}
 .bg-tag.nuevo, .bg-tag.refina, .bg-tag.cubierto {{ background: #e6f3d6; color: #3f7d12; }}
 .bg-tag.contradice {{ background: #fde7e5; color: #b3261e; }}
 .bg-tag.incierto, .bg-tag.divide, .bg-tag.fusiona {{ background: #fff0d9; color: #a35a00; }}
+.us {{ max-width: 920px; border: 1px solid #9fa8c4; margin: 4px 0 10px; font-family: Arial, 'Segoe UI', sans-serif; }}
+.us-banner {{ background: #4b4ba0; color: #fff; font-weight: 700; font-size: 20px; text-align: center; padding: 12px; }}
+.us-head {{ display: grid; grid-template-columns: 110px 1fr; border-top: 1px solid #9fa8c4; }}
+.us-id {{ background: #5b6b7b; color: #fff; font-weight: 700; font-size: 18px; text-align: center; padding: 10px 6px; }}
+.us-title {{ background: #4b4ba0; color: #fff; font-weight: 700; font-size: 16px; padding: 10px 14px; overflow-wrap: anywhere; }}
+.us-row {{ display: grid; grid-template-columns: 110px 1fr; background: #dde6f5; border-top: 1px solid #9fa8c4; color: #000; }}
+.us-feature {{ display: block; padding: 8px 14px; color: #1f2a6b; }}
+.us-label {{ background: #b4b7dc; color: #fff; font-weight: 700; padding: 8px 10px; }}
+.us-text {{ padding: 8px 14px; overflow-wrap: anywhere; }}
+.us-criteria {{ background: #7db383; color: #fff; font-weight: 700; padding: 8px 14px; border-top: 1px solid #9fa8c4; }}
+.us-check {{ color: #2e9e5b; font-weight: 700; font-size: 20px; text-align: center; padding: 6px 4px; }}
 .bg-chat {{ display: grid; gap: 10px; margin: 8px 0 16px; }}
 .bg-msg {{ background: #fff; border: 1px solid #dddcec; border-left: 6px solid var(--c); border-radius: 8px; padding: 10px 14px; max-width: 920px; }}
 .bg-msg.warn {{ background: #fffaf0; }}

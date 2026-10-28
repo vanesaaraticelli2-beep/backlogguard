@@ -68,8 +68,8 @@ def revise_item(item_id: str, objections: list[str], **kwargs) -> dict:
     listed = "\n".join(f"- {text}" for text in objections)
     goal = (
         f"El Crítico objetó el ítem {item_id}. Objeciones:\n{listed}\n"
-        f'Corregilo con redactar_historia usando revises="{item_id}" (mismo tipo, con título, descripción, '
-        "criterios Gherkin y citas corregidos). Podés buscar en las fuentes antes. Si la objeción no tiene "
+        f'Corregilo con redactar_historia usando revises="{item_id}" (mismo tipo, con título, como/quiero/para, '
+        "todos los criterios de aceptación —escenarios y reglas— y citas corregidos). Podés buscar en las fuentes antes. Si la objeción no tiene "
         "solución con las fuentes, explicalo en tu respuesta final sin inventar nada. Corregilo UNA sola vez y terminá."
     )
     # Corregir un ítem es una tarea corta: sin tope, el modelo puede reescribirlo una y otra vez.

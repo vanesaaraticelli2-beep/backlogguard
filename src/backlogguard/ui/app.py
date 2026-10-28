@@ -8,6 +8,7 @@ barra lateral y solo ve los pedidos que le corresponden por su rol.
 """
 from __future__ import annotations
 
+import re
 from datetime import date
 
 import streamlit as st
@@ -23,8 +24,10 @@ from backlogguard.rag.importers import SourceImportError, estimate, import_pdf, 
 from backlogguard.rag.sources import SourceChangeNeedsConfirmation, SourceMetadata, SourceUnchanged, slugify
 from backlogguard.ui.controller import DEFAULT_OBJECTIVE, RunController
 from backlogguard.ui.conversation_view import live_conversation, tab_conversation
+from backlogguard.ui.guide import ADVANCED_TABS, AVANZADO, CORRIDA, DECISIONES, FUENTES, HELP, HISTORIAS, REVISION, TABS, render_guide
 from backlogguard.ui.revision import KIND_LABELS, tab_catalog, tab_review
 from backlogguard.ui.runtime import make_controller
+from backlogguard.ui.story_view import current_baseline, is_story, render_story
 from backlogguard.ui.theme import apply_theme, top_band
 
 SOURCE_LABELS = {"preventa": "Línea base (preventa)", "reunion": "Evidencia (reunión)", "minuta": "Evidencia (minuta)"}
@@ -34,7 +37,7 @@ STATE_LABELS = {
 }
 STATUS_TEXT = {
     "en_curso": "en curso",
-    "esperando_decision": "esperando una decisión",
+    "esperando_decision": "esperando una decisión de una persona (mirá «Qué sigue», arriba)",
     "plan_pendiente_de_aprobacion": "esperando que se apruebe el plan de publicación",
     "publicada": "plan publicado en el backlog",
     "plan_rechazado": "plan rechazado: no se publicó nada",
@@ -57,6 +60,15 @@ NODE_NAMES = {
 # ---- piezas ----
 
 
+def date_from_filename(name: str) -> date | None:
+    """«2026-08-21 Daily …vtt» propone 2026-08-21; la persona lo confirma o lo corrige."""
+    found = re.search(r"(\d{4})-(\d{2})-(\d{2})", name)
+    try:
+        return date(int(found[1]), int(found[2]), int(found[3])) if found else None
+    except ValueError:
+        return None
+
+
 def render_status(controller: RunController) -> None:
     state = controller.state()
     status = state.get("status", "sin corrida")
@@ -65,7 +77,10 @@ def render_status(controller: RunController) -> None:
     elif controller.error:
         st.error(f"La corrida falló: {controller.error}")
     else:
-        st.success(f"Estado: {STATUS_TEXT.get(status, status)}") if status in ("publicada", "completada") else st.write(f"**Estado:** {STATUS_TEXT.get(status, status)}")
+        if status in ("publicada", "completada"):
+            st.success(f"Estado: {STATUS_TEXT.get(status, status)}")
+        else:
+            st.write(f"**Estado:** {STATUS_TEXT.get(status, status)}")
     visited = [event["node"] for event in state.get("trace", [])]
     if visited:
         steps = [("✔ " if node in visited else "· ") + NODE_NAMES[node] for node in NODE_ORDER]
@@ -187,7 +202,7 @@ def tab_run(controller: RunController) -> None:
         controller.start(objective, seed=seed)
         st.rerun()
     if waiting:
-        st.caption("Hay una corrida pausada esperando una decisión (pestaña «Mis decisiones»).")
+        st.caption("La corrida está pausada: falta una decisión. Seguí desde «Mis decisiones».")
     state = controller.state()
     if state.get("summary"):
         st.markdown("**Resumen del Supervisor**")
@@ -235,6 +250,12 @@ def tab_runs(controller: RunController) -> None:
     if st.button("Abrir (solo lectura)", key="abrir_corrida", disabled=controller.running):
         controller.open_run(chosen)
         st.rerun()
+    waiting = {r["thread_id"] for r in runs if r["waiting"]}
+    if st.button("Retomar y decidir lo pendiente", key="retomar_corrida", disabled=controller.running or chosen not in waiting):
+        controller.resume_run(chosen)
+        st.rerun()
+    if waiting:
+        st.caption("Una corrida que espera una decisión se retoma desde acá; los pedidos aparecen en «Mis decisiones», de a uno y cada uno para el rol que le corresponde.")
     if controller.read_only:
         st.info(f"Estás viendo la corrida **{controller.thread_id}** (solo lectura). «Iniciar corrida» vuelve al modo normal.")
 
@@ -334,7 +355,7 @@ def tab_decisions(controller: RunController, who) -> None:
         st.info("No hay pedidos pendientes." + (" La corrida terminó." if state.get("summary") else ""))
     elif payload["request"]["decides"] != who.role:
         decider = controller.deps.people.with_role(payload["request"]["decides"])[0].display
-        st.info(f"No tenés pedidos pendientes. El pedido actual lo decide el rol **{decider}**.")
+        st.info(f"Este pedido lo decide el rol **{decider}**. Cambiá el rol en la barra lateral para decidirlo.")
     else:
         decision_form(controller, who, payload)
 
@@ -350,11 +371,17 @@ def tab_board(controller: RunController) -> None:
           "aprobó": i.approved_by or ""} for i in board.items.values()],
         width="stretch", hide_index=True,
     )
+    baseline = current_baseline(controller)
     for item in board.items.values():
         with st.expander(f"{item.id} · {item.state.value} · {item.title}"):
-            st.write(item.description)
-            for criterion in item.acceptance_criteria:
-                st.markdown(f"- {criterion}")
+            if is_story(item):
+                render_story(controller, item, baseline)
+            else:
+                st.write(item.description)
+                for criterion in item.acceptance_criteria:
+                    st.markdown(f"- {criterion}")
+            if item.citations:
+                st.markdown("**Trazabilidad**")
             for citation in item.citations:
                 st.markdown(f"> {citation.quote}")
                 where = f" · p. {citation.page}" if citation.page else ""
@@ -420,11 +447,14 @@ def tab_sources(controller: RunController) -> None:
     busy = controller.running
     kind = st.radio("¿Qué vas a cargar?", ["Preventa (PDF)", "Reunión (texto)", "Minuta (texto)"], horizontal=True, key="tipo_fuente")
     is_pdf = kind.startswith("Preventa")
-    upload = st.file_uploader("Archivo", type=["pdf"] if is_pdf else ["txt", "md"], key=f"archivo-{kind}")
+    upload = st.file_uploader("Archivo", type=["pdf"] if is_pdf else ["txt", "md", "vtt"], key=f"archivo-{kind}")
     name = st.text_input("Nombre de la fuente", key=f"nombre-{kind}")
-    when = st.date_input("Fecha del documento", value=date.today(), key=f"fecha-{kind}")
+    when = st.date_input(
+        "Fecha del documento", value=date_from_filename(upload.name) if upload else None, key=f"fecha-{kind}-{upload.name if upload else ''}",
+        help="La fecha ordena las reuniones: usá la de la reunión, no la de hoy. Si el nombre del archivo empieza con una fecha, se propone esa.",
+    )
     overwrite = st.checkbox("Reemplazar si ya existe una fuente con ese nombre", key=f"reemplazar-{kind}")
-    if st.button("Importar y guardar", key="importar", disabled=busy or upload is None or not name.strip()):
+    if st.button("Importar y guardar", key="importar", disabled=busy or upload is None or not name.strip() or when is None):
         try:
             imported = import_pdf(upload.getvalue()) if is_pdf else import_transcript(upload.getvalue())
             source_type = SourceType.PREVENTA if is_pdf else (SourceType.MINUTA if kind.startswith("Minuta") else SourceType.REUNION)
@@ -460,6 +490,8 @@ def tab_sources(controller: RunController) -> None:
         victim = st.selectbox("Borrar una fuente", [""] + [i for i, _ in entries], key="borrar_fuente")
         if st.button("Borrar", key="borrar", disabled=busy or not victim):
             library.delete(victim)
+            if controller.deps.catalog is not None:
+                controller.deps.catalog.forget_source(victim)  # su fecha ya no cuenta para ordenar las reuniones
             controller.refresh_sources()
             st.rerun()
     baseline_section(controller, library)
@@ -571,10 +603,16 @@ def meetings_section(controller: RunController, library: SourceLibrary) -> None:
                     )
                 st.session_state["ultima_lectura"] = {
                     "reunion": meeting_id, "descartados": [(r.text, r.reason) for r in result.rejected], "fuera_de_orden": result.out_of_order,
+                    "vacia": result.nothing_found,
                 }
                 st.rerun()
         last = st.session_state.get("ultima_lectura")
         if last and last["reunion"] == meeting_id:
+            if last["vacia"]:
+                st.warning(
+                    "No se encontró ningún requisito con cita verificada en esta reunión" + (f" ({len(last['descartados'])} candidatos descartados)" if last["descartados"] else "")
+                    + ". No se marcó como leída: revisá el contenido del archivo, o volvé a leerla si querés."
+                )
             if last["fuera_de_orden"]:
                 st.warning("Esta reunión es anterior a otra ya leída: todas sus propuestas quedan para revisión humana.")
             if last["descartados"]:
@@ -622,31 +660,38 @@ def main() -> None:
     apply_theme()
     top_band("Del dicho al backlog")
     live_status(controller)
-    run, talk, sources, review, catalog, saved, tasks, decisions, board, backlog, activity = st.tabs(
-        ["Corrida", "Conversación", "Fuentes", "Revisión", "Catálogo", "Corridas guardadas", "Tareas entre agentes", "Mis decisiones", "Tablero", "Backlog simulado", "Actividad"]
-    )
-    with run:
-        tab_run(controller)
-    with talk:
-        tab_conversation(controller)
+    render_guide(controller, who)
+    sources, review, run, board, decisions, advanced = st.tabs(TABS, key="nav", on_change="rerun")
     with sources:
+        st.caption(HELP[FUENTES])
         tab_sources(controller)
     with review:
+        st.caption(HELP[REVISION])
         tab_review(controller, who)
-    with catalog:
-        tab_catalog(controller)
-    with saved:
-        tab_runs(controller)
-    with tasks:
-        tab_tasks(controller)
-    with decisions:
-        tab_decisions(controller, who)
+    with run:
+        st.caption(HELP[CORRIDA])
+        tab_run(controller)
     with board:
+        st.caption(HELP[HISTORIAS])
         tab_board(controller)
-    with backlog:
-        tab_backlog(controller)
-    with activity:
-        tab_activity(controller)
+    with decisions:
+        st.caption(HELP[DECISIONES])
+        tab_decisions(controller, who)
+    with advanced:
+        st.caption(HELP[AVANZADO])
+        talk, catalog, saved, tasks, backlog, activity = st.tabs(ADVANCED_TABS)
+        with talk:
+            tab_conversation(controller)
+        with catalog:
+            tab_catalog(controller)
+        with saved:
+            tab_runs(controller)
+        with tasks:
+            tab_tasks(controller)
+        with backlog:
+            tab_backlog(controller)
+        with activity:
+            tab_activity(controller)
 
 
 if __name__ == "__main__":  # Streamlit ejecuta el script como __main__; importar el módulo no dibuja nada
