@@ -58,6 +58,13 @@ h1, h2, h3, h4 {{ font-family: 'Outfit', 'Segoe UI', sans-serif; color: {INDIGO}
 .bg-head {{ font-size: 13px; color: #5d5b7a; }}
 .bg-head b {{ color: var(--c); font-family: 'Outfit', sans-serif; font-size: 15px; }}
 .bg-text {{ margin-top: 2px; overflow-wrap: anywhere; }}
+.bg-scroll {{ max-height: 520px; overflow-y: auto; display: flex; flex-direction: column-reverse; padding-right: 6px; border: 1px solid #dddcec; border-radius: 10px; background: #fbfbfe; }}
+.bg-scroll .bg-chat {{ margin: 0; padding: 10px; }}
+.bg-status {{ display: flex; align-items: center; gap: 10px; border-radius: 8px; padding: 10px 16px; font-weight: 700; font-size: 16px; margin: 4px 0 10px; }}
+.bg-status .dot {{ width: 12px; height: 12px; border-radius: 50%; background: currentColor; flex: none; }}
+.bg-status.ok {{ background: #e6f3d6; color: #2f6a0a; }}
+.bg-status.paused {{ background: #fde7e5; color: #b3261e; }}
+.bg-status.warn {{ background: #fff0d9; color: #a35a00; }}
 .bg-msg ul {{ margin: 6px 0 0; padding-left: 20px; }}
 .bg-q {{ margin: 8px 0 0; padding: 6px 12px; background: #ebe9fb; border-left: 4px solid #13056D; border-radius: 0 6px 6px 0; font-size: 14px; }}
 .bg-q small {{ display: block; color: #5d5b7a; margin-top: 2px; }}

@@ -61,3 +61,26 @@ def test_los_pendientes_propios_dependen_del_rol():
     assert mine(snap(role="service_manager", active=5, to_publish=5)) == "Tus pendientes como service manager: nada por ahora."
     busy = snap(role="product_owner", proposals_mine=3, request_title="x", request_role="product_owner")
     assert mine(busy) == "Tus pendientes como product owner: 3 propuesta(s) por revisar · 1 decisión de la corrida."
+
+
+def test_el_estado_de_la_corrida_es_verde_roja_o_ambar_y_la_pausa_nombra_al_rol():
+    from backlogguard.ui.conversation_view import badge_html, run_badge, scroll_html
+
+    ok = run_badge({"status": "publicada"}, running=False, error=None)
+    assert ok.css == "ok" and "todo salió bien" in ok.text
+    assert run_badge({}, running=True, error=None).css == "ok"
+    paused = run_badge({"status": "esperando_decision"}, running=False, error=None, request_role="product_owner", request_title="Alianzas inactivas")
+    assert paused.css == "paused" and "product owner" in paused.text and "Alianzas inactivas" in paused.text
+    assert run_badge({"status": "presupuesto_agotado"}, running=False, error=None).css == "warn"
+    assert run_badge({}, running=False, error="boom").css == "warn"
+    assert run_badge({}, running=False, error=None) is None
+    assert "bg-status paused" in badge_html(paused) and "<script>" not in badge_html(run_badge({}, running=False, error=None, request_role="x", request_title="<script>"))
+    assert scroll_html([]).startswith('<div class="bg-scroll">')
+
+
+def test_el_encabezado_del_mensaje_nombra_solo_a_quien_habla():
+    from backlogguard.graph.conversation import Message
+    from backlogguard.ui.conversation_view import message_html
+
+    html = message_html(Message("auditor", "supervisor", "Encontré 2 hallazgos."))
+    assert "Auditor" in html and "Supervisor" not in html and "→" not in html
