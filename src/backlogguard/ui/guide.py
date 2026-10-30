@@ -16,16 +16,16 @@ FUENTES, REVISION, CORRIDA, DECISIONES, HISTORIAS, AVANZADO = (
     "Fuentes", "Revisión", "Corrida", "Mis decisiones", "Historias de usuario", "Avanzado",
 )
 TABS = [FUENTES, REVISION, CORRIDA, HISTORIAS, DECISIONES, AVANZADO]
-ADVANCED_TABS = ["Conversación", "Catálogo", "Corridas guardadas", "Tareas entre agentes", "Backlog simulado", "Actividad"]
+ADVANCED_TABS = ["Detalle de la corrida", "Catálogo", "Corridas guardadas", "Backlog simulado"]
 ENGINEER = "full_stack_ia_engineer"  # carga fuentes y aprueba el plan de publicación; la corrida la puede iniciar cualquier rol
 ROLE_NAMES = {"product_owner": "product owner", "service_manager": "service manager", "full_stack_ia_engineer": "ingeniero"}
 HELP = {
     FUENTES: "Paso 1. Cargá la preventa y las reuniones. Los agentes las leen y proponen requisitos.",
     REVISION: "Paso 2. El product owner (o el service manager, si cambia el alcance) aprueba o descarta lo que los agentes entendieron.",
     CORRIDA: "Paso 3. Los agentes redactan una historia por cada requisito aprobado. Acá se inicia y se sigue la corrida.",
-    DECISIONES: "Paso 4. Acá se responde lo que los agentes no pueden decidir solos, y se aprueba el plan de publicación.",
+    DECISIONES: "Paso 4. Todo lo que ya se decidió en el proyecto, por rol: propuestas, cambios de alcance y pedidos de las corridas. Los pedidos nuevos se responden en «Corrida».",
     HISTORIAS: "Paso 5. Las historias de usuario terminadas: se leen completas y se descargan en Word, una por una.",
-    AVANZADO: "Detalle técnico para revisar cómo trabajaron los agentes. No hace falta para avanzar.",
+    AVANZADO: "Detalle técnico para revisar cómo trabajaron los agentes y qué quedó guardado. No hace falta para avanzar.",
 }
 
 
@@ -102,7 +102,7 @@ def next_step(s: Snapshot) -> Next:
         return Next("Los agentes están trabajando. No hace falta hacer nada: cuando necesiten algo de vos, te lo van a decir acá.", None, step=CORRIDA)
     if s.request_title is not None:
         if s.request_role == s.role:
-            return Next(f"Falta tu decisión como {role_name(s.role)}: «{s.request_title}».", DECISIONES, "Ir a decidir", step=DECISIONES)
+            return Next(f"Falta tu decisión como {role_name(s.role)}: «{s.request_title}».", CORRIDA, "Ir a decidir", step=DECISIONES)
         return Next(
             f"La corrida espera la decisión del {role_name(s.request_role)}. Cambiá el rol en la barra lateral para decidirla.", None, step=DECISIONES,
         )

@@ -105,7 +105,7 @@ def test_el_recorrido_completo_desde_la_pantalla(screen):
     assert state["status"] == "publicada" and state["summary"]
     assert "plan publicado en el backlog" in texts(at) or any("plan publicado" in str(m.value) for m in at.success)
     assert [w.title for w in controller.deps.backlog.search() if any(t.startswith("bg-item:") for t in w.tags)]
-    assert "Registro de decisiones" in texts(at)
+    assert any(r["tipo"] == "Pedido de la corrida" and r["qué"] == "Plan de publicación" for r in controller.decision_history())
 
 
 def test_la_pantalla_muestra_la_actividad_y_el_tablero(screen):
@@ -175,8 +175,10 @@ def test_la_pantalla_distingue_linea_base_y_evidencia_y_muestra_las_fuentes_de_l
 
 def test_la_solapa_de_tareas_muestra_el_backlog_entre_agentes(screen):
     at, controller = screen
-    assert "Tareas entre agentes" in [tab.label for tab in at.tabs]
+    assert "Detalle de la corrida" in [tab.label for tab in at.tabs]
     start_and_wait(at, controller)
+    assert at.segmented_control(key="detalle_vista").options == ["Conversación", "Tareas entre agentes", "Actividad técnica"]
+    at.segmented_control(key="detalle_vista").set_value("Tareas entre agentes").run()
     assert not at.exception
     tasks = controller.state()["tasks"]
     assert {t["kind"] for t in tasks} >= {"planificar", "redactar", "revisar", "auditar"}
@@ -190,6 +192,7 @@ def test_la_solapa_de_tareas_filtra_por_agente_y_muestra_el_detalle(screen):
     tasks = controller.state()["tasks"]
     critic = [t for t in tasks if t["target"] == "critico"]
     assert critic
+    at.segmented_control(key="detalle_vista").set_value("Tareas entre agentes").run()
     at.selectbox(key="filtro_agente_tareas").select("Crítico").run()
     assert not at.exception and any(len(df.value) == len(critic) for df in at.dataframe)
     options = at.selectbox(key="detalle_tarea").options

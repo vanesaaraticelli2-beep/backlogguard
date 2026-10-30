@@ -17,6 +17,7 @@ from backlogguard.graph import RunDeps, load_state, pending_request, resume_pipe
 from backlogguard.graph.live import format_event, format_trace
 from backlogguard.graph.setup import build_run_deps, has_user_sources, open_graph, user_sources_dir
 from backlogguard.llm import Settings
+from backlogguard.ui.decision_history import history
 
 DEFAULT_OBJECTIVE = "Armá el backlog a partir de las reuniones y auditalo contra la preventa."
 MAX_EVENTS = 3000
@@ -201,6 +202,15 @@ class RunController:
                 }
             )
         return runs
+
+    def run_states(self) -> list[dict]:
+        """El estado guardado de cada corrida, para juntar sus decisiones."""
+        return [load_state(self.graph, run["thread_id"]) or {} for run in self.list_runs()]
+
+    def decision_history(self) -> list[dict]:
+        """Todo lo que una persona ya decidió en el proyecto: propuestas, cambios de alcance y pedidos de las corridas."""
+        catalog = self.deps.catalog
+        return history(catalog.proposals() if catalog is not None else [], self.deps.memory.current_decisions(), self.run_states())
 
     def open_run(self, thread_id: str) -> None:
         """Muestra una corrida guardada, solo para leer: no se puede decidir ni reanudar desde acá."""

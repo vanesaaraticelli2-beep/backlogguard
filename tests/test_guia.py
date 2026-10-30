@@ -1,6 +1,6 @@
 """La guía del flujo: qué sigue según el estado, y que la pantalla arme sus pestañas con el orden nuevo."""
 from backlogguard.ui.guide import (
-    CORRIDA, DECISIONES, FUENTES, HISTORIAS, REVISION, Snapshot, next_step, steps_html, steps_of,
+    CORRIDA, FUENTES, HISTORIAS, REVISION, Snapshot, next_step, steps_html, steps_of,
 )
 
 
@@ -19,7 +19,7 @@ def test_sin_fuentes_leidas_manda_a_fuentes():
 
 def test_una_decision_propia_lleva_a_decisiones_y_una_ajena_pide_cambiar_de_rol():
     mine = next_step(snap(request_title="Cambiar alcance", request_role="product_owner"))
-    assert mine.tab == DECISIONES and "Cambiar alcance" in mine.text
+    assert mine.tab == CORRIDA and "Cambiar alcance" in mine.text
     other = next_step(snap(request_title="Cambiar alcance", request_role="service_manager"))
     assert other.tab is None and "service manager" in other.text and "barra lateral" in other.text
 

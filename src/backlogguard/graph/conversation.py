@@ -257,11 +257,11 @@ def _publication_messages(state: dict) -> list[Message]:
 def _waiting(state: dict, facts: _Facts) -> list[Message]:
     status = state.get("status")
     if status == "plan_pendiente_de_aprobacion":
-        return [Message("supervisor", "persona", "El plan está listo y espera tu aprobación en «Mis decisiones».", tone="wait")]
+        return [Message("supervisor", "persona", "El plan está listo y espera tu aprobación, acá mismo en «Corrida».", tone="wait")]
     requests = state.get("requests") or []
     if status == "esperando_decision" and requests:
         first = requests[0]
-        return [Message("supervisor", "persona", f"Falta la decisión del {_human(first['decides']).lower()} sobre «{_clip(first['title'], 140)}». La corrida sigue apenas se decida (pestaña «Mis decisiones»).", tone="wait")]
+        return [Message("supervisor", "persona", f"Falta la decisión del {_human(first['decides']).lower()} sobre «{_clip(first['title'], 140)}». La corrida sigue apenas se decida (se responde en «Corrida»).", tone="wait")]
     return []
 
 

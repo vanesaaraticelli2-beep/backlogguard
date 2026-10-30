@@ -31,6 +31,7 @@ from backlogguard.ui.story_view import current_baseline, is_story, render_story
 from backlogguard.ui.theme import apply_theme, top_band
 
 SOURCE_LABELS = {"preventa": "Línea base (preventa)", "reunion": "Evidencia (reunión)", "minuta": "Evidencia (minuta)"}
+ROLE_LABELS_DECISION = {"product_owner": "product owner", "service_manager": "service manager", "full_stack_ia_engineer": "ingeniero"}
 ROLE_LABELS = {"linea_base": "Línea base", "evidencia": "Evidencia"}
 STATE_LABELS = {
     "borrador": "borrador", "objetado": "objetado", "sustentado": "sustentado", "aprobado": "aprobado", "excluido": "excluido",
@@ -166,8 +167,9 @@ def decision_form(controller: RunController, who, payload: dict) -> None:
             st.rerun()
 
 
-def tab_run(controller: RunController) -> None:
+def tab_run(controller: RunController, who) -> None:
     live_conversation(controller)
+    pending_decision(controller, who)
     waiting = controller.pending() is not None
     st.write(f"Modo: **{controller.mode}**" + (" (reproduce una corrida grabada, sin costo)" if controller.mode == "demo" else ""))
     if controller.mode == "simulado":
@@ -202,7 +204,7 @@ def tab_run(controller: RunController) -> None:
         controller.start(objective, seed=seed)
         st.rerun()
     if waiting:
-        st.caption("La corrida está pausada: falta una decisión. Seguí desde «Mis decisiones».")
+        st.caption("La corrida está pausada: falta una decisión. Se responde arriba, en «Decisión pendiente».")
     state = controller.state()
     if state.get("summary"):
         st.markdown("**Resumen del Supervisor**")
@@ -255,7 +257,7 @@ def tab_runs(controller: RunController) -> None:
         controller.resume_run(chosen)
         st.rerun()
     if waiting:
-        st.caption("Una corrida que espera una decisión se retoma desde acá; los pedidos aparecen en «Mis decisiones», de a uno y cada uno para el rol que le corresponde.")
+        st.caption("Una corrida que espera una decisión se retoma desde acá; los pedidos aparecen en «Corrida», de a uno y cada uno para el rol que le corresponde.")
     if controller.read_only:
         st.info(f"Estás viendo la corrida **{controller.thread_id}** (solo lectura). «Iniciar corrida» vuelve al modo normal.")
 
@@ -344,20 +346,35 @@ def tab_tasks(controller: RunController) -> None:
     st.text_area("Detalle (objeciones, veredicto o resultado)", task["detail"] or "(sin detalle)", height=180, disabled=True, key=f"txt_{chosen}")
 
 
-def tab_decisions(controller: RunController, who) -> None:
+def pending_decision(controller: RunController, who) -> None:
+    """El pedido que tiene pausada la corrida, en «Corrida», debajo del estado: se responde sin cambiar de pestaña."""
     payload = controller.pending()
-    state = controller.state()
-    if controller.read_only:
-        st.info("Estás viendo una corrida guardada (solo lectura): acá no se puede decidir. Mirá el registro de decisiones en «Actividad».")
-    elif controller.running:
-        st.info("Los agentes están trabajando. Cuando necesiten una decisión, aparecerá acá.")
-    elif payload is None:
-        st.info("No hay pedidos pendientes." + (" La corrida terminó." if state.get("summary") else ""))
-    elif payload["request"]["decides"] != who.role:
+    if payload is None:
+        return
+    st.markdown("### Decisión pendiente")
+    if payload["request"]["decides"] != who.role:
         decider = controller.deps.people.with_role(payload["request"]["decides"])[0].display
         st.info(f"Este pedido lo decide el rol **{decider}**. Cambiá el rol en la barra lateral para decidirlo.")
-    else:
-        decision_form(controller, who, payload)
+        return
+    decision_form(controller, who, payload)
+
+
+def tab_decisions(controller: RunController, who) -> None:
+    """Todo lo que ya se decidió en el proyecto (por rol): propuestas, cambios de alcance y pedidos de las corridas."""
+    if controller.pending() is not None:
+        st.info("Hay un pedido pendiente: se responde en la pestaña «Corrida», debajo del estado.")
+    rows = controller.decision_history()
+    if not rows:
+        st.info("Todavía no se decidió nada en este proyecto.")
+        return
+    columns = st.columns([1, 1, 2])
+    mine = columns[0].toggle("Solo las de mi rol", value=False, key="decisiones_mias")
+    kinds = sorted({r["tipo"] for r in rows})
+    picked = columns[2].multiselect("Tipo", kinds, key="decisiones_tipo", placeholder="Todos", label_visibility="collapsed")
+    role = ROLE_LABELS_DECISION.get(who.role, who.role)
+    shown = [r for r in rows if (not mine or r["rol"] == role) and (not picked or r["tipo"] in picked)]
+    columns[1].metric("Decisiones", len(shown))
+    st.dataframe(shown, width="stretch", hide_index=True)
 
 
 def tab_board(controller: RunController) -> None:
@@ -427,15 +444,17 @@ def tab_backlog(controller: RunController) -> None:
 def tab_activity(controller: RunController) -> None:
     lines = controller.activity()
     st.code("\n".join(lines) if lines else "Todavía no hay actividad.", language="text")
-    decisions = controller.state().get("decisions", [])
-    if decisions:
-        st.markdown("**Registro de decisiones**")
-        st.dataframe(
-            [{"momento": d["at"][:19], "pedido": d["request_id"], "versión": d["version"], "acción": d["decision"],
-              "persona": d["actor"], "rol": d["actor_role"], "aceptada": d["accepted"], "motivo del rechazo": d["error"] or "",
-              "comentario": d["comment"]} for d in decisions],
-            width="stretch", hide_index=True,
-        )
+
+
+DETAIL_VIEWS = {"Conversación": tab_conversation, "Tareas entre agentes": tab_tasks, "Actividad técnica": tab_activity}
+
+
+def tab_detail(controller: RunController) -> None:
+    """Una sola vista de la corrida abierta (la actual o una guardada): lo que se dijeron, las tareas y el log técnico."""
+    if controller.read_only:
+        st.caption(f"Corrida abierta: **{controller.thread_id}** (solo lectura).")
+    view = st.segmented_control("Ver", list(DETAIL_VIEWS), default="Conversación", required=True, key="detalle_vista", label_visibility="collapsed")
+    DETAIL_VIEWS[view](controller)
 
 
 def tab_sources(controller: RunController) -> None:
@@ -670,7 +689,7 @@ def main() -> None:
         tab_review(controller, who)
     with run:
         st.caption(HELP[CORRIDA])
-        tab_run(controller)
+        tab_run(controller, who)
     with board:
         st.caption(HELP[HISTORIAS])
         tab_board(controller)
@@ -679,19 +698,15 @@ def main() -> None:
         tab_decisions(controller, who)
     with advanced:
         st.caption(HELP[AVANZADO])
-        talk, catalog, saved, tasks, backlog, activity = st.tabs(ADVANCED_TABS)
-        with talk:
-            tab_conversation(controller)
+        detail, catalog, saved, backlog = st.tabs(ADVANCED_TABS)
+        with detail:
+            tab_detail(controller)
         with catalog:
             tab_catalog(controller)
         with saved:
             tab_runs(controller)
-        with tasks:
-            tab_tasks(controller)
         with backlog:
             tab_backlog(controller)
-        with activity:
-            tab_activity(controller)
 
 
 if __name__ == "__main__":  # Streamlit ejecuta el script como __main__; importar el módulo no dibuja nada

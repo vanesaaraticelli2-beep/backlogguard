@@ -121,6 +121,3 @@ def tab_conversation(controller: RunController) -> None:
     picked = st.multiselect("Mostrar solo lo que dicen o reciben", agents, key="conversacion_agentes", placeholder="Todos")
     shown = [m for m in messages if not picked or _label(m.sender) in picked or _label(m.receiver) in picked]
     st.markdown(chat_html(shown), unsafe_allow_html=True)
-    with st.expander("Detalle técnico"):
-        lines = controller.activity()
-        st.code("\n".join(lines) if lines else "Todavía no hay actividad.", language="text")
