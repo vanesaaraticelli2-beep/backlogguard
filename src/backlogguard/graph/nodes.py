@@ -424,7 +424,11 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             "counts": plan.counts(),
             "has_changes": plan.has_changes,
             "items": [
-                {"item_id": i.item_id, "action": i.action, "type": i.work_item_type, "title": i.title, "reason": i.reason}
+                {
+                    "item_id": i.item_id, "action": i.action, "type": i.work_item_type, "title": i.title, "reason": i.reason,
+                    "description": i.description, "acceptance_criteria": list(i.acceptance_criteria),
+                    "parent_item_id": i.parent_item_id, "remote_id": i.remote_id,
+                }
                 for i in plan.items
             ],
             "summary": summary,

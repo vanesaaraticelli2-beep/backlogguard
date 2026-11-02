@@ -24,6 +24,7 @@ from backlogguard.rag.importers import SourceImportError, estimate, import_pdf, 
 from backlogguard.rag.sources import SourceChangeNeedsConfirmation, SourceMetadata, SourceUnchanged, slugify
 from backlogguard.ui.controller import DEFAULT_OBJECTIVE, RunController
 from backlogguard.ui.conversation_view import live_conversation, tab_conversation
+from backlogguard.ui import plan_view
 from backlogguard.ui.guide import ADVANCED_TABS, AVANZADO, CORRIDA, DECISIONES, FUENTES, HELP, HISTORIAS, REVISION, TABS, render_guide
 from backlogguard.ui.revision import KIND_LABELS, tab_catalog, tab_review
 from backlogguard.ui.runtime import make_controller
@@ -138,13 +139,30 @@ def edit_fields(request: dict) -> tuple[dict, dict]:
     return current, typed
 
 
+def plan_preview(payload: dict) -> None:
+    """Lo que se publicaría en Azure DevOps: tabla del plan y la ficha de cada work item."""
+    items = payload["items"]
+    st.markdown(f"**Qué se publicaría en Azure DevOps** · {plan_view.counts_line(items)}")
+    st.dataframe(plan_view.plan_rows(items), hide_index=True, width="stretch")
+    titles = {i["item_id"]: i["title"] for i in items}
+    for item in items:
+        with st.expander(plan_view.item_heading(item), expanded=len(items) <= 3 and item["action"] != "omitir"):
+            st.markdown(plan_view.item_markdown(item, titles.get(item.get("parent_item_id") or "")))
+    st.caption(
+        "Aprobar publica exactamente este plan. «Excluir del plan» saca ítems y genera una versión nueva para volver a revisar."
+    )
+
+
 def decision_form(controller: RunController, who, payload: dict) -> None:
     request = payload["request"]
     st.subheader(request["title"])
     if payload.get("last_error"):
         st.warning(f"Tu última decisión no se aplicó: {payload['last_error']}")
     st.caption(f"Pedido {request['request_id']} · versión {request['version']} · lo decide: {request['decides']}")
-    st.text(request["summary"])
+    if request["kind"] == "plan":
+        plan_preview(request["payload"])
+    else:
+        st.text(request["summary"])
     if request["evidence"]:
         st.markdown("**Evidencia**")
         evidence_cards(request["evidence"])

@@ -326,3 +326,8 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Corrida real con la preventa y la reunión de Infobae para comparar los «vendido no tratado» antes y después (≈US$ 0,2 a 0,5; solo con tu OK). Aplazada: no hay documentos disponibles por ahora.
 - [ ] Vigilar: si `commitment_ids` falta o viene mal, aparecen «pedido y no vendido» de más.
 - [x] Commit del Bloque 3.
+
+## Vista del plan de publicación — [x] (sin commit)
+- [x] El pedido `R-plan` ya no es texto plano: `ui/plan_view.py` arma la tabla (acción, tipo, id, título, padre, «En Azure», motivo) y una ficha por work item con descripción y criterios. `_plan_summary` suma `description`, `acceptance_criteria`, `parent_item_id` y `remote_id`.
+- [x] `tests/test_plan_view.py` (4). Un plan armado antes de este cambio se ve sin descripción ni criterios: hay que volver a armarlo.
+- [ ] Ver la pantalla en el navegador con un plan real.
