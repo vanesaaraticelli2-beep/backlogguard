@@ -69,7 +69,7 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Pendiente detectado: historias casi duplicadas (dos de SSO con títulos distintos) → las cubren el Crítico y el Supervisor.
 - [ ] Pendiente detectado: la cuota gratuita de Gemini es de 20 pedidos por día por modelo → activar facturación o definir un modelo de respaldo antes de la evaluación.
 
-## Día 6 · Crítico y negociación — [x] (falta commit)
+## Día 6 · Crítico y negociación — [x]
 **Objetivo:** que un segundo agente, con otro modelo, revise cada historia del productor y objete lo que no esté bien sustentado.
 
 - [x] `verificar_cita` — comprueba, sin usar un modelo, que la frase citada exista textualmente en la fuente. Ignora espacios, mayúsculas y comillas, pero exige acentos y palabras exactos. También verifica reunión y fecha.
@@ -80,11 +80,11 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] `redactar_historia` con `revises` — el productor corrige un ítem objetado conservando su id y sus objeciones.
 - [x] `scripts/run_critico.py` — corrida real con ítems sembrados: detectó cita deformada, reporte vencido (PDF→Excel), filtro de fecha pospuesto y duplicados de SSO, y sustentó el ítem correcto.
 - [x] Tests sin red (182 en total).
-- [ ] Commit y push (cuando se pida)
+- [x] Commit y push.
 - [ ] Pendiente: probar la negociación completa con el productor real cuando haya cuota de Gemini.
 - [ ] Observación: Opus objeta con criterio estricto (criterios Gherkin genéricos). A medir en la evaluación del Día 13.
 
-## Día 7 · Auditor de Proyecto — [x] (falta commit)
+## Día 7 · Auditor de Proyecto — [x]
 **Objetivo:** comparar lo que se trató con lo que se vendió, y detectar cambios de alcance y contradicciones entre reuniones.
 
 - [x] `comparar_con_preventa` — reúne la evidencia en ambos sentidos: qué reuniones e ítems cubren cada punto vendido, y qué temas de reunión tienen respaldo en la preventa. El modelo clasifica.
@@ -98,7 +98,7 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] Tablero: transición `sustentado → objetado`. Política: pausas para `contradiccion` y `vendido_no_tratado`.
 - [x] Corrida real con Opus: 6 hallazgos con citas verificadas (ERP, app móvil, cambio de alcance, PDF→Excel, contradicción de frecuencia, filtro de fecha) y la inyección informada como dato.
 - [x] Tests sin red (205 en total) y especificación `docs/specs/auditor.md` al día.
-- [ ] Commit y push (cuando se pida)
+- [x] Commit y push.
 - [ ] Observación: el Auditor suma citas de la preventa a sus hallazgos; a medir en la evaluación (Día 13).
 
 ## Día 8 · Supervisor y grafo — [x]
@@ -119,7 +119,7 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Observación: escalaciones redundantes — la app móvil y el cambio PDF→Excel generan cada uno dos hallazgos (`tratado_no_vendido` + `cambio_de_alcance`, `decision_evolucionada` + `cambio_de_alcance`) y por tanto dos escalaciones. Agrupar por tema antes de pedir una decisión humana (Día 10).
 - [x] Commit y push.
 
-## Día 9 · Integración con Azure DevOps simulado — [x] (falta commit)
+## Día 9 · Integración con Azure DevOps simulado — [x]
 **Objetivo:** convertir lo aprobado en un plan de publicación seguro y poder publicarlo sin duplicar, sobre un backlog simulado realista; y ver a los agentes trabajar en vivo.
 
 - [x] `BacklogGateway` y backlog simulado — ids numerados, versiones, etiquetas y padre-hijo; persiste en archivo entre corridas; inyecta fallos para pruebas. El modo real (MCP) queda diferido y avisa con un mensaje claro.
@@ -135,10 +135,10 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] Defectos encontrados en esa corrida y corregidos: `AZDO_PROJECT` vacío pisaba el valor por defecto, y dos historias casi iguales (otro verbo, otro orden) pasaban como distintas.
 - [x] Tests sin red (259 en total) y especificación `docs/specs/integracion.md` al día.
 - [ ] Repetir la corrida real para ver el efecto de la corrección de duplicados (≈US$1).
-- [ ] Commit y push (cuando se pida)
+- [x] Commit y push.
 - [ ] Observación: el productor corrige una historia pero deja otra equivalente (dos versiones del mismo requisito). Mejorar en la evaluación del Día 13.
 
-## Día 10 · Human-in-the-Loop y pantalla de decisiones — [x] (10a subida; 10b falta commit)
+## Día 10 · Human-in-the-Loop y pantalla de decisiones — [x] (subido)
 **Objetivo:** que el sistema se detenga y espere a la persona correcta, que su decisión quede ligada a la versión exacta que vio y que la corrida continúe hasta publicar lo aprobado.
 
 **Etapa 10a · núcleo del HITL — [x]**
@@ -153,7 +153,7 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] `scripts/run_pipeline.py` (pausa y `--auto`) y `scripts/decidir.py` — correr y decidir desde la terminal.
 - [x] Regresión corregida: títulos cortos idénticos ("Notificación por email") dejaron de detectarse como duplicados al unificar la similitud; detectado por un test.
 - [x] Tests sin red (284 en total) y especificación `docs/specs/hitl.md` al día.
-- [ ] Commit y push de la etapa 10a (cuando se pida).
+- [x] Commit y push.
 
 **Etapa 10b · pantalla y modo demo — [x]**
 - [x] Pantalla de Streamlit (`ui/`) — elegir persona (solo ve los pedidos de su rol), pedido con resumen, evidencia con citas y los botones aprobar, editar (crea versión nueva) y rechazar con comentario; estado de la corrida en vivo, tablero con ítems, citas y objeciones, hallazgos, backlog simulado antes y ahora, resultado de la publicación y registro de decisiones.
@@ -163,12 +163,12 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] Pruebas de la pantalla con el probador integrado de Streamlit (`AppTest`) y comprobación de que el servidor arranca (health ok).
 - [x] README: variables de entorno, archivos de configuración y comandos de ejecución locales.
 - [x] Tests sin red (296 en total) y especificación `docs/specs/hitl.md` al día.
-- [ ] Commit y push de la etapa 10b (cuando se pida).
+- [x] Commit y push.
 - [ ] Pendiente: ver la pantalla en un navegador real (las pruebas automáticas cubren el comportamiento, no el aspecto).
 - [ ] Observación: el agente de Integración llamó una vez a `buscar_en_backlog` sin parámetros (error controlado y se recuperó); a medir en la evaluación.
 
 
-## Extra · Carga de fuentes propias (preventa en PDF y transcripción) — [x] (falta commit)
+## Extra · Carga de fuentes propias (preventa en PDF y transcripción) — [x]
 **Objetivo:** correr el sistema con documentos reales en lugar de los de ejemplo.
 
 - [x] Importador de PDF (`rag/importers.py`) — texto por página con el número de página; rechaza PDF escaneados, dañados, protegidos o demasiado grandes. Limpia el ruido que dejan las presentaciones («Icono / Descripción generada automáticamente»).
@@ -183,9 +183,9 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] Roles genéricos (sin nombres de personas) y objetivo genérico (sin «portal de ACME»).
 - [x] Corrida real con la preventa y la transcripción de Infobae (2026-10-25, `corrida-2571a98b`, 12,7 min, 564 mil tokens de un tope de 600 mil, estado `publicada`): 4 historias con citas verificadas (3 publicadas, 1 omitida por duplicada), 6 hallazgos reales del Auditor y 8 pedidos de decisión (aprobados automáticamente por el script).
 - [ ] Hallazgos de esa corrida a resolver: (1) el productor (Haiku) redactó solo 4 historias de al menos 8 requisitos distintos de la reunión; (2) los cambios de alcance que detecta el Auditor (domicilio comercial, roles y permisos, historial de reintentos, destinatarios parametrizables) se aprueban pero nadie los convierte en historias; (3) dos historias casi iguales no se fusionaron tras 2 rondas; (4) la cita de un diálogo lista a todos los oradores del fragmento en lugar de quien dijo la frase; (5) el productor reescribía una historia varias veces seguidas (acotado en `revise_item`).
-- [ ] Commit y push (cuando se pida).
+- [x] Commit y push.
 
-## Bloque 1A · Línea base de la preventa — [x] (falta commit)
+## Bloque 1A · Línea base de la preventa — [x]
 **Objetivo:** tratar la preventa como línea base (lo vendido) y no mezclarla con la evidencia de las reuniones (lo acordado).
 
 - [x] Huella de cada fuente — se guarda al importar y se verifica al cargar; una fuente editada a mano se señala. Reimportar lo mismo no escribe; reimportar algo distinto (contenido, nombre, fecha, tipo o formato) pide confirmación y muestra las huellas.
@@ -197,9 +197,9 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] Verificado con los archivos reales de Infobae, sin costo: reimportar da «sin cambios», una fecha distinta pide confirmación y la búsqueda por defecto ya no trae fragmentos de la preventa.
 - [x] 338 tests; la grabación de la demo sigue reproduciéndose; especificación `docs/specs/linea-base-y-contexto.md` al día.
 - [ ] Siguiente: Bloque A restante del punto 4 (medición, tope de reescrituras y expedientes del Crítico y del Auditor) y luego el Bloque B.
-- [ ] Commit y push (cuando se pida).
+- [x] Commit y push.
 
-## Bloque A (parcial) · Tareas entre agentes, tope de correcciones y expediente — [x] (falta commit)
+## Bloque A (parcial) · Tareas entre agentes, tope de correcciones y expediente — [x]
 **Objetivo:** ver qué se pasan los agentes y cuánto cuesta, y bajar el gasto sin tocar la trazabilidad.
 
 - [x] Registro de tareas entre agentes — cada encargo (planificar, redactar, revisar, corregir, auditar, armar el plan, resumir, decisión de una persona) queda con origen, destino, ítem, ronda, estado, tokens y modelo.
@@ -218,7 +218,7 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] La pantalla lista los compromisos por épica, con página y cita, y los descartados aparte. La épica es solo una agrupación, no un ítem del tablero.
 - [ ] Siguiente: el Bloque 2 (catálogo persistente y continuidad entre reuniones); el Auditor usará estos compromisos en el Bloque 3.
 
-## Bloque 2A · Catálogo persistente de requisitos — [x] (falta commit)
+## Bloque 2A · Catálogo persistente de requisitos — [x]
 - [x] `src/backlogguard/catalog/`: modelos (requisito `RQ-nnn` con id estable, versiones con relación nuevo/refina/reemplaza/divide/fusiona, evidencias, propuestas) y almacén SQLite `data/catalogo.sqlite`.
 - [x] Reglas en código: nada cambia sin propuesta aprobada con nombre; la preventa sola no alcanza como evidencia; reprocesar la misma fuente (id + huella) no duplica; «ya cubierto» solo suma evidencia; clave de publicación por requisito y versión.
 - [x] «Iniciar corrida» con fuentes propias ya no borra la memoria; botón «Empezar proyecto nuevo» con confirmación (conserva fuentes y línea base).
@@ -243,7 +243,7 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - Limitaciones de Streamlit frente al prototipo: sin globo de pendientes en la pestaña (cambiar el rótulo reinicia la pestaña activa), solo tema claro.
 - [ ] Redacción de historias solo para las aprobadas, Crítico, conexión con el grafo, «crear o actualizar» con clave por requisito.
 
-## Día 11 · Skills y contexto — [x] (falta commit; falta medir el ahorro con una corrida real)
+## Día 11 · Skills y contexto — [x] (subido; falta medir el ahorro con una corrida real)
 **Objetivo:** darle a cada agente solo el conocimiento y el contexto que necesita, sin sobrecargarlo.
 
 - [x] Cinco skills en formato Agent Skills (`skills/<nombre>/SKILL.md`) — una por rol: redacción de historias, revisión adversarial, auditoría de alcance, delegación de tareas y plan de publicación. Explican cómo hacer algo y no dan permisos (un `allowed-tools` se rechaza); el procedimiento y los criterios pasaron del `agent.md` a la skill, y el `agent.md` conserva el rol y las reglas duras.
@@ -277,13 +277,13 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [~] MCP para Azure DevOps: **diferido** (2026-10-25). Se avanza con el modo simulado, detrás de una interfaz (`BacklogGateway`) para enchufar MCP después de las clases de noviembre. El servidor oficial (`@azure-devops/mcp`) exige una cuenta con Entra ID.
 - [ ] Embeddings reales (`sentence-transformers`): decidir en la evaluación
 
-## Conversación entre agentes — [x] (sin commit)
+## Conversación entre agentes — [x]
 - [x] `graph/conversation.py`: la corrida contada como mensajes entre agentes, en lenguaje de usuario y por roles. Plantillas por código, sin modelos: cada mensaje sale de un hecho del estado guardado (tareas, tablero, hallazgos, decisiones). Las citas se atribuyen a la fuente, no a las personas; los pedidos de decisión y las decisiones idénticas se agrupan.
 - [x] `ui/conversation_view.py`: panel «Lo que se están diciendo los agentes» arriba de «Corrida» (últimos 8, en vivo) y pestaña «Conversación» completa con filtro por agente y «Detalle técnico» plegado. Funciona también con corridas guardadas.
 - [x] `tests/test_conversacion.py` (8 tests). Suite completa: 452.
 - Límites: se actualiza por etapa, no por cada llamada interna de un agente; el resumen del Supervisor lo redacta un modelo y puede nombrar ids o roles técnicos; los textos de hallazgos vienen del Auditor y pueden nombrar personas si la fuente las nombra. Pendiente: probarlo con una corrida real nueva (con el proyecto nuevo).
 
-## Bloque 2C · paso 2 — la corrida parte del catálogo — [x] (sin commit; falta una corrida real con requisitos aprobados)
+## Bloque 2C · paso 2 — la corrida parte del catálogo — [x] (subido; falta una corrida real con requisitos aprobados)
 - [x] `BacklogItem` suma `requirement_id` y `requirement_version`. `redactar_historia` acepta `requirement_id` (RQ-nnn): el ítem toma la identidad del requisito (`HU-RQ-001`, no cambia si se reescribe el título) y hereda sus citas verificadas; sin requisito sigue exigiendo una cita.
 - [x] `graph/drafting.py` + nodo `produce`: con requisitos activos en el catálogo, el productor redacta una historia por cada requisito que nunca se publicó o cambió de versión (tope 12 por corrida; el resto va a la siguiente). Si no hay nada por redactar no llama a ningún modelo y salta la auditoría. Sin catálogo con requisitos, el flujo anterior (demo) no cambia.
 - [x] Publicación «crear o actualizar» por requisito: la clave de idempotencia es requisito + versión (`integrations/plan.py`); al aprobar el plan, `Catalog.mark_published` anota qué versión quedó en qué work item. Una versión nueva actualiza el mismo work item; una segunda corrida no repite nada.
@@ -292,17 +292,24 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] `tests/test_corrida_catalogo.py` (9). Suite completa: 461.
 - Límites conocidos: el Auditor sigue comparando solo lo que hay en el tablero de esa corrida; en corridas con pocos requisitos nuevos puede marcar de más «vendido y no tratado». Lo resuelve el Bloque 3 (matriz de cobertura). Una historia corregida por el Crítico reemplaza sus citas por las que el productor cite.
 
-## Carga de transcripciones VTT y lectura vacía — [x] (sin commit)
+## Carga de transcripciones VTT y lectura vacía — [x]
 - [x] `rag/importers.py`: `vtt_to_dialogue` convierte un WebVTT (Teams/Zoom/Meet) en «Orador: texto»: quita encabezado, notas, estilos y tiempos; toma el orador de `<v Nombre>` o del prefijo; limpia etiquetas y entidades (`&#209;`); une los fragmentos de una misma intervención por el número del id (`guid/12-3`) aunque otro orador la interrumpa, y ordena por inicio. Sin oradores se importa como nota con aviso. Se pierden las marcas de tiempo.
 - [x] Cargador de «Reunión/Minuta» acepta `.vtt`. La fecha del documento ya no parte de hoy: se propone la del nombre del archivo (`2026-08-21 …`) y hay que confirmarla (el botón queda deshabilitado sin fecha), porque ordena las reuniones.
 - [x] Una lectura sin requisitos verificados avisa y **no** marca la reunión como leída (`IngestResult.nothing_found`); también en `scripts/clasificar_reunion.py`.
 - [x] Borrar una fuente ahora llama a `Catalog.forget_source`: olvida que fue leída (su fecha ya no marca a otras como «fuera de orden») y descarta sus propuestas sin decidir; lo aprobado se conserva.
 - [x] `tests/test_vtt.py` (9). Suite completa: 470.
 
-## Historia de usuario completa y Word por historia — [x] (sin commit; falta regenerar las historias con una corrida real)
+## Historia de usuario completa y Word por historia — [x] (subido; falta regenerar las historias con una corrida real)
 - [x] `BacklogItem` suma `como`, `quiero`, `para`; `redactar_historia` los recibe por separado y arma la descripción «Como … quiero … para …». Los criterios admiten escenarios y reglas simples: una historia necesita **al menos un** escenario Dado/Cuando/Entonces (tool, control DoR del Crítico y edición de pedidos); el máximo de criterios sube de 5 a 12 para cubrir todos los escenarios.
 - [x] Instrucciones: la skill del productor pide identificar **todos** los escenarios de las fuentes (caso feliz, errores, bordes, validaciones, reglas) sin inventar; la del Crítico objeta si falta un escenario que las fuentes mencionan. `graph/drafting.py` le pasa al productor el contexto de la reunión (fragmentos vecinos de cada cita).
 - [x] `export/story.py` + `export/word.py` (python-docx, extra opcional `export`): id `US-003` (del requisito), Feature (área de la línea base con más compromisos del requisito, con su número), Como/Quiero/Para y criterios con tilde. **El Word no lleva citas ni datos de la reunión**; sin campos de contexto (Canal/Ramos).
 - [x] «Tablero»: cada historia se despliega con el formato completo y un botón «Descargar Word» (uno por historia); la trazabilidad (citas, objeciones, requisito y versión) queda solo en pantalla.
 - [x] `tests/test_historia_us.py` (7) y ajustes en `test_critico.py`. Suite completa: 481.
 - No se pudo ver el Word renderizado (no hay LibreOffice en la máquina): se verificó su estructura leyéndolo de vuelta.
+
+## Panel de la corrida y menú «Avanzado» — [x]
+- [x] Conversación completa de la corrida en una caja con scroll anclada al último mensaje, que se refresca sola mientras los agentes trabajan; cada mensaje muestra solo quién habla.
+- [x] Insignia de estado: verde en curso o terminada, rojo pausada con el rol humano que debe continuar, ámbar para problemas. Línea «Tus pendientes» por rol en la guía del flujo.
+- [x] El pedido que pausa la corrida se responde en «Corrida»; «Mis decisiones» es el historial del proyecto por rol (propuestas, cambios de alcance y pedidos de todas las corridas).
+- [x] «Avanzado» queda en 4 sub-menús: Detalle de la corrida, Catálogo, Corridas guardadas y Backlog simulado.
+- [x] Commits `098cdee` y `f1cc742`.
