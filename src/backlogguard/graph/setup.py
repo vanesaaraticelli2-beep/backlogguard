@@ -19,6 +19,7 @@ from backlogguard.llm import Settings, load_models_config
 from backlogguard.llm.recording import Recording, replay_providers
 from backlogguard.memory import ProjectMemory
 from backlogguard.rag import DeterministicLexicalEmbeddings, InMemoryRetriever, SourceLibrary
+from backlogguard.rag.compromisos import BaselineStore
 from backlogguard.tools import load_policy_config
 
 
@@ -69,6 +70,7 @@ def build_run_deps(
         project=settings.azdo_project,
         people=load_people(root / "config" / "people.yaml"),
         catalog=Catalog(data / "catalogo.sqlite"),
+        baselines=BaselineStore(baseline_dir(data)),
         on_event=on_event,
     )
 

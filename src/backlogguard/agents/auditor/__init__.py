@@ -11,10 +11,12 @@ from backlogguard.agents.dossier import dossier_enabled
 from backlogguard.agents.loop import run_basic_agent
 from backlogguard.agents.structured import parse_with_repair
 from backlogguard.board import AgentRole, Board
+from backlogguard.catalog import Catalog
 from backlogguard.llm.errors import InvalidProviderResponseError
 from backlogguard.llm.providers import LLMProvider
 from backlogguard.memory import ProjectMemory
 from backlogguard.skills import skill_instructions
+from backlogguard.rag.compromisos import Baseline
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools import ExecutionContext, ToolPolicy, build_catalog_registry
 from backlogguard.tools.auditor import AuditorToolkit
@@ -51,10 +53,12 @@ def run_auditor(
     max_tokens: int = 200_000,
     on_event: Callable[[dict], None] | None = None,
     precompute: bool | None = None,
+    baseline: Baseline | None = None,
+    catalog: Catalog | None = None,
 ) -> AuditRun:
     """Corre al Auditor sobre todo el proyecto. No aplica el informe: eso lo hace `apply_report`."""
     context = ExecutionContext(user_id="factory", role=AgentRole.AUDITOR, run_id=run_id, approved_by=approved_by)
-    toolkit = AuditorToolkit(retriever, board, memory, context)
+    toolkit = AuditorToolkit(retriever, board, memory, context, baseline=baseline, catalog=catalog)
     registry = build_catalog_registry(toolkit.implementations())
     policy = ToolPolicy()
     instructions = skill_instructions("auditor", INSTRUCTIONS_PATH)

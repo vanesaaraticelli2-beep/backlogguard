@@ -18,6 +18,7 @@ from backlogguard.agents.requerimientos import revise_item, run_requerimientos
 from backlogguard.agents.supervisor import plan_run, summarize_run
 from backlogguard.board import AgentRole, Board, ItemState
 from backlogguard.catalog import RequirementStatus
+from backlogguard.catalog.coverage import current_baseline
 from backlogguard.graph.budgets import over_budget
 from backlogguard.graph.deps import Providers, RunDeps
 from backlogguard.graph.drafting import goal_for, pick
@@ -238,6 +239,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
         log = TaskLog(len(state.get("tasks", [])))
         try:
             mark_audit = meter.mark()
+            baseline = current_baseline(deps.library, deps.baselines) if deps.baselines is not None else None
             run = run_auditor(
                 provider=providers.auditor,
                 retriever=deps.retriever,
@@ -245,12 +247,15 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
                 memory=deps.memory,
                 run_id=state.get("run_id", "run-local"),
                 on_event=sink("auditor"),
+                baseline=baseline,
+                catalog=deps.catalog,
             )
             tokens += run.tokens
             result = apply_report(run.report, board, deps.retriever)
             log.add(
                 "supervisor", "auditor", "auditar",
-                detail=f"Hallazgos aplicados: {len(result.applied)}; descartados: {len(result.discarded)}.",
+                detail=f"Hallazgos aplicados: {len(result.applied)}; descartados: {len(result.discarded)}. "
+                f"Insumo: {'compromisos de la preventa y catálogo' if baseline and deps.catalog else 'preventa completa'}.",
                 stop_reason=run.stop_reason, usage=meter.since(mark_audit), model=model_of(providers.auditor),
             )
             deliver_corrections(board, result.applied)

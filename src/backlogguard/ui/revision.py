@@ -10,6 +10,7 @@ import streamlit as st
 from pydantic import ValidationError
 
 from backlogguard.board import SourceType
+from backlogguard.catalog.coverage import build_coverage
 from backlogguard.catalog import CatalogError, Draft, Proposal, ProposalKind, ProposalState
 from backlogguard.catalog.review import decide_batch, decide_one, decider_role, pending_batch, pending_individual
 from backlogguard.graph.setup import baseline_dir, user_sources_dir
@@ -247,6 +248,35 @@ def incierto_controls(catalog, p: Proposal, can: bool) -> None:
 # ---- Catálogo ----
 
 
+def coverage_section(controller: RunController, catalog) -> None:
+    """Lo vendido frente a lo tratado, solo lectura. Es lo mismo que recibe el Auditor: cada lista es un candidato, no un hallazgo."""
+    baseline = _baseline(controller, SourceLibrary(user_sources_dir(controller.data_dir)))
+    if baseline is None:
+        return
+    coverage = build_coverage(baseline, catalog)
+    with st.expander(f"Cobertura de lo vendido · {len(baseline.commitments)} compromisos"):
+        st.caption("Cruce de los compromisos de la preventa con los requisitos aprobados. Son candidatos para el Auditor, no hallazgos.")
+        for warning in coverage.warnings:
+            st.warning(warning)
+        columns = st.columns(4)
+        columns[0].metric("Cubiertos", len(coverage.covered))
+        columns[1].metric("Vendido sin tratar", len(coverage.vendido_sin_requisito))
+        columns[2].metric("Pedido y no vendido", len(coverage.requisitos_sin_compromiso))
+        columns[3].metric("Vendido como excluido", len(coverage.excluidos_con_requisito))
+        sections = (
+            ("Vendido y sin requisito", [(r["id"], r["epica"], r["capacidad"], f"pág. {r['pagina']}") for r in coverage.vendido_sin_requisito]),
+            ("Pedido en reuniones y no figura en la preventa", [(r["id"], r["titulo"], f"v{r['version']}", "") for r in coverage.requisitos_sin_compromiso]),
+            ("La preventa lo excluía y hay un requisito", [(r["id"], r["epica"], r["capacidad"], ", ".join(x["id"] for x in r["requisitos"])) for r in coverage.excluidos_con_requisito]),
+            ("Lo cubría una versión que ya no rige", [(r["id"], r["epica"], r["capacidad"], ", ".join(x["id"] for x in r["antes"])) for r in coverage.cobertura_perdida]),
+        )
+        for title, rows in sections:
+            if rows:
+                st.markdown(f'<div class="bg-label">{title}</div>', unsafe_allow_html=True)
+                st.dataframe([{"id": a, "detalle": b, "descripción": c, "ref.": d} for a, b, c, d in rows], width="stretch", hide_index=True)
+        if coverage.condiciones:
+            st.caption(f"{len(coverage.condiciones)} supuestos o dependencias de la propuesta no se cuentan como «vendido y no tratado».")
+
+
 def tab_catalog(controller: RunController) -> None:
     catalog = controller.deps.catalog
     if catalog is None:
@@ -259,6 +289,7 @@ def tab_catalog(controller: RunController) -> None:
     columns[1].metric("Versiones", sum(len(r.versions) for r in requirements))
     columns[2].metric("Evidencias", sum(len(r.current.evidence) + len(r.conflicts) for r in requirements))
     columns[3].metric("Propuestas pendientes", len(catalog.proposals(state=ProposalState.PENDIENTE)))
+    coverage_section(controller, catalog)
     if not requirements:
         st.info("Todavía no hay requisitos. Se crean cuando aprobás propuestas en «Revisión».")
         return

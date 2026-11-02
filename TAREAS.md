@@ -313,3 +313,16 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] El pedido que pausa la corrida se responde en «Corrida»; «Mis decisiones» es el historial del proyecto por rol (propuestas, cambios de alcance y pedidos de todas las corridas).
 - [x] «Avanzado» queda en 4 sub-menús: Detalle de la corrida, Catálogo, Corridas guardadas y Backlog simulado.
 - [x] Commits `098cdee` y `f1cc742`.
+
+## Bloque 3 · Matriz de cobertura para el Auditor — [x] (subido; falta una corrida real)
+**Objetivo:** que el Auditor compare lo vendido con lo tratado sobre una planilla ya calculada, y deje de marcar de más «vendido y no tratado».
+
+- [x] `catalog/coverage.py`: cruza los compromisos de la preventa con los requisitos del catálogo (por `commitment_ids`), sin modelo. Cuatro listas de candidatos (vendido sin requisito, requisito sin compromiso, excluido con requisito, cobertura perdida) y los supuestos aparte.
+- [x] «Vendido y no tratado» solo es candidato si ya hay reuniones leídas y requisitos aprobados; si no, avisa. Lo que no figura en la preventa (tratado no vendido, cambio de alcance) no lleva filtro.
+- [x] `comparar_con_preventa` usa la matriz si hay compromisos vigentes y catálogo; si no, el camino anterior (LB-10). La corrida registra el insumo usado. Cada candidato trae `chunk_id` y cita para que el Auditor pueda citarlo.
+- [x] Skill del Auditor explica cómo leer la matriz; las citas se siguen verificando contra el fragmento señalado.
+- [x] Pantalla: «Avanzado → Catálogo → Cobertura de lo vendido», solo lectura.
+- [x] `tests/test_cobertura.py` (11) y uno en `tests/test_ui_revision.py`. Suite completa: 506.
+- [ ] Corrida real con la preventa y la reunión de Infobae para comparar los «vendido no tratado» antes y después (≈US$ 0,2 a 0,5; solo con tu OK). Aplazada: no hay documentos disponibles por ahora.
+- [ ] Vigilar: si `commitment_ids` falta o viene mal, aparecen «pedido y no vendido» de más.
+- [x] Commit del Bloque 3.

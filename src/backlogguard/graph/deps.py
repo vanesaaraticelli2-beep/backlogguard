@@ -13,6 +13,7 @@ from backlogguard.llm.model_config import ModelsConfig
 from backlogguard.llm.providers import LLMProvider, build_provider
 from backlogguard.llm.settings import Settings
 from backlogguard.memory import ProjectMemory
+from backlogguard.rag.compromisos import BaselineStore
 from backlogguard.rag import SourceLibrary, build_chunks
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools.policy_config import PolicyConfig
@@ -51,6 +52,7 @@ class RunDeps:
     project: str = "ACME"
     people: PeopleConfig | None = None
     catalog: Catalog | None = None
+    baselines: BaselineStore | None = None  # compromisos de la preventa, para la matriz de cobertura del Auditor
     on_event: Callable[[dict], None] | None = None
 
 

@@ -12,7 +12,10 @@ from datetime import date
 from pydantic import BaseModel, ConfigDict, Field
 
 from backlogguard.board import Board
+from backlogguard.catalog import Catalog
+from backlogguard.catalog.coverage import build_coverage
 from backlogguard.memory import ProjectMemory
+from backlogguard.rag.compromisos import Baseline, Commitment
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever, SearchResult
 from backlogguard.tools.critico import quote_matches
 from backlogguard.tools.models import ExecutionContext, ToolResult
@@ -89,13 +92,46 @@ class AuditorToolkit:
         board: Board,
         memory: ProjectMemory,
         context: ExecutionContext,
+        *,
+        baseline: Baseline | None = None,
+        catalog: Catalog | None = None,
     ):
         self.retriever = retriever
         self.board = board
         self.memory = memory
         self.context = context
+        self.baseline = baseline  # compromisos vigentes de la preventa, si se extrajeron
+        self.catalog = catalog
+
+    def _presale_chunk(self, commitment: Commitment) -> str | None:
+        """Fragmento de la preventa donde figura la cita del compromiso (el Auditor cita por `chunk_id`)."""
+        found = [
+            c
+            for c in self.retriever.all_chunks({"source_type": "preventa"})
+            if quote_matches(commitment.quote, c.text)
+        ]
+        match = next((c for c in found if c.page == commitment.page), found[0] if found else None)
+        return match.chunk_id if match else None
+
+    def _coverage_report(self) -> ToolResult:
+        coverage = build_coverage(self.baseline, self.catalog, locate=self._presale_chunk)
+        report = coverage.to_dict()
+        report["items"] = self._board_items()
+        return ToolResult(
+            ok=True,
+            content=json.dumps(report, ensure_ascii=False),
+            metadata={"modo": "compromisos", "compromisos": len(self.baseline.commitments)},
+        )
+
+    def _board_items(self) -> list[dict]:
+        return [
+            {"id": item.id, "titulo": item.title, "estado": item.state.value, "citas": [c.fragment_id for c in item.citations]}
+            for item in self.board.items.values()
+        ]
 
     def comparar_con_preventa(self, args: dict) -> ToolResult:
+        if self.baseline is not None and self.catalog is not None:  # LB-10: los compromisos reemplazan a la preventa completa
+            return self._coverage_report()
         chunks = self.retriever.all_chunks()
         selling = [c for c in chunks if c.metadata.get("source_type") == "preventa"]
         meetings = [c for c in chunks if c.metadata.get("source_type") in MEETING_TYPES]
@@ -112,15 +148,7 @@ class AuditorToolkit:
             ][:top]
 
         report = {
-            "items": [
-                {
-                    "id": item.id,
-                    "titulo": item.title,
-                    "estado": item.state.value,
-                    "citas": [c.fragment_id for c in item.citations],
-                }
-                for item in self.board.items.values()
-            ],
+            "items": self._board_items(),
             "preventa": [
                 {**_compact(c), "mejores_coincidencias": best(c.text, meetings, args["matches_per_point"])}
                 for c in selling

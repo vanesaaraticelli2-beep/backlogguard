@@ -31,6 +31,9 @@ Comparar lo que se **trató** en las reuniones con lo que se **vendió** en la p
 | AU-10 | Respeta presupuesto de pasos, tiempo, tools y tokens; si no llega a un informe válido, falla de forma explícita (con una reparación de formato). | `test_auditor_sin_informe_valido_falla` |
 | AU-11 | Los hallazgos corregibles se entregan al productor agrupados por ítem, una vez por informe (un `AgentMessage` por ítem afectado). Los que requieren decisión humana (`cambio_de_alcance`, `contradiccion` sin resolver, `vendido_no_tratado`) no pasan por el productor. El Auditor no abre una negociación propia: tras la corrección, el ítem vuelve al Crítico, que mantiene el tope de 2 rondas. | `test_hallazgos_se_agrupan_por_item_y_los_humanos_no_van_al_productor`, `test_el_auditor_no_agrega_rondas_de_negociacion` |
 | AU-12 | Un hallazgo `decision_evolucionada` sobre un ítem desactualizado reabre el ítem (de borrador o sustentado a objetado, con una objeción del Auditor). Un ítem aprobado no se reabre: el hallazgo va al Supervisor. Un ítem sustentado nunca vuelve a borrador. | `test_un_item_aprobado_no_se_reabre_y_va_al_supervisor`, `test_un_item_sustentado_puede_reabrirse_pero_no_volver_a_borrador` |
+| AU-13 | Matriz de cobertura (Bloque 3). Si hay compromisos vigentes de la preventa y catálogo, `comparar_con_preventa` devuelve la matriz calculada por código (`catalog/coverage.py`) en lugar de la preventa completa: cubiertos, `vendido_sin_requisito`, `requisitos_sin_compromiso`, `excluidos_con_requisito`, `cobertura_perdida` y `condiciones`. Sin compromisos, usa el camino anterior. La corrida registra cuál insumo usó. | `test_la_matriz_separa_lo_cubierto_lo_no_tratado_y_lo_que_cambia_el_alcance`, `test_el_auditor_usa_los_compromisos_si_existen`, `test_sin_compromisos_el_auditor_usa_la_preventa_completa` |
+| AU-14 | «Vendido y no tratado» solo es candidato si ya hay reuniones leídas y requisitos aprobados; si no, se avisa. Los supuestos (`condicion`) no cuentan. Lo que no figura en la preventa (`tratado_no_vendido`, cambio de alcance) **no lleva ningún filtro**. | `test_sin_reuniones_leidas_no_se_acusa_de_vendido_no_tratado`, `test_sin_requisitos_aprobados_tampoco`, `test_lo_que_no_esta_en_la_preventa_se_informa_aunque_no_se_pueda_comparar_lo_vendido` |
+| AU-15 | Las citas de un hallazgo se verifican contra el fragmento que señalan, sea reunión o preventa: un cambio de alcance se cita con la reunión donde se pidió y pasa; una frase inventada se descarta. | `test_un_cambio_de_alcance_se_cita_con_la_reunion_y_con_el_compromiso_y_no_se_pierde`, `test_una_cita_inventada_sigue_descartandose` |
 
 ## Resultado esperado sobre el corpus sintético (`evals/fixtures/`)
 | Hallazgo | Fuente |
@@ -48,6 +51,10 @@ Comparar lo que se **trató** en las reuniones con lo que se **vendió** en la p
 - `approved_by` viaja en el contexto de ejecución, igual que `approved_plan_hash`.
 - Informe estructurado y verificación determinística de las citas de cada hallazgo.
 - Los tipos `decision` y `pregunta_pendiente` de `ProjectMemory` y su fachada (Día 3).
+
+## Matriz de cobertura (Bloque 3, fuera del curso)
+- El vínculo requisito↔compromiso es `Draft.commitment_ids`, que queda guardado al leer cada reunión. Si ese vínculo falta o viene mal, la matriz hereda el error: puede mostrar de más un «pedido y no vendido», que una persona descarta.
+- Cada lista es un candidato; el Auditor lo confirma leyendo la cita y la persona decide. La pantalla («Avanzado → Catálogo → Cobertura de lo vendido») muestra la misma matriz en solo lectura.
 
 ## Límites conocidos
 - Los embeddings determinísticos agrupan por palabras, no por significado: la agrupación de temas es una ayuda, no un veredicto.

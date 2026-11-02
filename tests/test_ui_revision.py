@@ -101,3 +101,18 @@ def test_el_catalogo_lista_los_requisitos_aprobados(world):
     button(at, "Aprobar").click()
     at.run()
     assert any("RQ-001" in e.label for e in at.expander)
+
+
+def test_el_catalogo_muestra_la_cobertura_de_lo_vendido_si_hay_compromisos(world, tmp_path):
+    from backlogguard.rag.compromisos import Baseline, BaselineStore, Commitment
+
+    library = SourceLibrary(tmp_path / "fuentes")
+    library.write("preventa", SourceMetadata(source_name="Propuesta", source_type="preventa", source_date=date(2026, 1, 5), layout="dialogo"), "Vendedor: Incluye un portal.\n")
+    commitment = Commitment(id="C-001", epic="Portal", capability="Portal de clientes", scope="incluido", page=1, quote="Incluye un portal")
+    BaselineStore(tmp_path / "linea_base").save(
+        Baseline(document_id="preventa", fingerprint=library.load("preventa").fingerprint, model="m", extracted_at="2026-11-02", commitments=[commitment])
+    )
+    at = run("product_owner")
+    assert not at.exception
+    assert any("Cobertura de lo vendido" in e.label for e in at.expander)
+    assert "Ninguna reunión fue leída todavía" in " ".join(w.value for w in at.warning)

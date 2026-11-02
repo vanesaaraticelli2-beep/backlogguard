@@ -10,6 +10,13 @@ metadata:
 El expediente ya viene calculado por el sistema («precalculada»): no lo repitas. Leelo y emití el informe. Solo volvé a llamar a una tool si necesitás otro parámetro (por ejemplo más coincidencias por punto).
 - `consultar_decisiones_vigentes`: qué ya está decidido y aprobado. No lo vuelvas a plantear como problema.
 - `comparar_con_preventa`: los puntos de la preventa, las reuniones, los ítems del tablero y las coincidencias más parecidas. La similitud solo ayuda a ordenar: leé los textos y juzgá vos.
+  Si la salida trae `"modo": "compromisos"`, es una **matriz de cobertura** ya calculada por el sistema (compromisos de la preventa cruzados con los requisitos aprobados). Cada lista es un *candidato*, no un veredicto: confirmalo leyendo la cita antes de informarlo.
+  - `vendido_sin_requisito` → posible `vendido_no_tratado`. Si `avisos` dice que falta leer reuniones o aprobar requisitos, no lo informes: todavía no hay con qué comparar.
+  - `requisitos_sin_compromiso` → posible `tratado_no_vendido` (y `cambio_de_alcance` si crece el trabajo). Citá la reunión de su `evidencia`.
+  - `excluidos_con_requisito` → posible `cambio_de_alcance`: la propuesta decía que NO y ahora se pide. Citá el compromiso (su `chunk_id` y `cita`) y la reunión.
+  - `cobertura_perdida` → posible `decision_evolucionada`: lo cubría un requisito o una versión que ya no rige.
+  - `condiciones` son supuestos o dependencias de la propuesta: no son «vendido y no tratado».
+  - `cubiertos` ya están cubiertos: no los informes.
 - `detectar_contradicciones`: pares de fragmentos parecidos, con fecha y orador. Decidí si son una evolución o una contradicción.
 
 ## Tipos de hallazgo (`kind`)
