@@ -26,6 +26,7 @@ from backlogguard.rag.sources import SourceChangeNeedsConfirmation, SourceMetada
 from backlogguard.ui.controller import DEFAULT_OBJECTIVE, RunController
 from backlogguard.ui.conversation_view import live_conversation, tab_conversation
 from backlogguard.ui import plan_view
+from backlogguard.ui.glossary import glossary_markdown
 from backlogguard.ui.guide import ADVANCED_TABS, AVANZADO, CORRIDA, DECISIONES, FUENTES, HELP, HISTORIAS, REVISION, TABS, render_guide
 from backlogguard.ui.revision import KIND_LABELS, tab_catalog, tab_review
 from backlogguard.ui.runtime import make_controller
@@ -690,6 +691,8 @@ def main() -> None:
     who = people.get(name)
     st.sidebar.caption(f"Rol: {who.role}")
     st.sidebar.caption(f"Modo: {controller.mode}")
+    with st.sidebar.expander("Referencia de siglas"):
+        st.markdown(glossary_markdown())
     if controller.using_own_sources:
         st.sidebar.divider()
         st.sidebar.caption("El catálogo, las decisiones y lo publicado se conservan entre corridas.")
