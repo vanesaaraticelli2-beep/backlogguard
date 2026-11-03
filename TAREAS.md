@@ -272,6 +272,13 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] README completo (quitar los ⚠️ A COMPLETAR), integrantes y limitaciones.
 - [ ] Video de respaldo de 3 a 5 minutos — se graba temprano, por si la demo en vivo falla.
 
+## Pendiente · Incorporar las clases 12 y 13 del curso
+**Objetivo:** que el proyecto refleje lo que enseñan las últimas clases del curso (carpeta `Curso ITBA`), y marcar toda decisión que se aparte de ellas.
+
+- [ ] Clase 12 (`clase12_sistemas_multiagente.ipynb`): leerla y contrastarla con el Supervisor, la delegación, el arbitraje y las 2 rondas de negociación que ya hay; incorporar lo que falte.
+- [ ] Clase 13: **el archivo todavía no está en la carpeta `Curso ITBA`** (llega hasta la clase 12). Pedirlo o subirlo y luego incorporarlo.
+- [ ] Avisar toda decisión propia que se aparte del contenido de esas clases.
+
 ## Decisiones abiertas
 - [x] **Productor con Sonnet (2026-10-25):** reemplaza a Haiku (que cubrió 4 de al menos 8 requisitos en la prueba real) y a Gemini (cuota gratuita). Productor y Crítico siguen siendo del mismo proveedor (distinto modelo): revisar la independencia y comparar modelos en la evaluación (Día 13).
 - [~] MCP para Azure DevOps: **diferido** (2026-10-25). Se avanza con el modo simulado, detrás de una interfaz (`BacklogGateway`) para enchufar MCP después de las clases de noviembre. El servidor oficial (`@azure-devops/mcp`) exige una cuenta con Entra ID.
