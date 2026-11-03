@@ -15,6 +15,7 @@ import streamlit as st
 
 from backlogguard.board import Board, SourceType
 from backlogguard.catalog.ingest import estimate_ingest, ingest_meeting
+from backlogguard.graph.failures import explain_llm_failure, first_explained
 from backlogguard.graph.setup import baseline_dir, has_user_sources, user_sources_dir
 from backlogguard.graph.tasks import KIND_TITLES, PARTIES, summarize_tasks
 from backlogguard.llm.metering import load_pricing
@@ -229,15 +230,21 @@ def tab_run(controller: RunController, who) -> None:
         st.write(state["summary"])
     if state:
         st.caption(f"Tokens usados: {state.get('tokens', 0)}")
+    errors = state.get("errors", [])
+    problem = first_explained([e["error"] for e in errors])
+    if problem:
+        st.error(f"**La corrida no pudo usar los modelos.** {problem}")
     incomplete = [t for t in state.get("tasks", []) if t["kind"] == "redactar" and t["status"] == "incompleta"]
-    if incomplete:
+    if incomplete and not problem:
         st.warning(
             "Redacción incompleta: el productor se quedó sin pasos o tokens antes de terminar "
             f"({incomplete[0]['stop_reason']}). Puede haber requisitos sin cubrir."
         )
     if state.get("stop_reason"):
         st.warning(f"La corrida se cortó por presupuesto agotado ({state['stop_reason']}): puede haber ítems sin revisar.")
-    for error in state.get("errors", []):
+    for error in errors:
+        if problem and explain_llm_failure(error["error"]):
+            continue  # ya lo explica el aviso de arriba; el texto original queda en la traza
         st.error(f"{error['node']} ({error.get('ref')}): {error['error']}")
     sources = state.get("sources")
     if sources:

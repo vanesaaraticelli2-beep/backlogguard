@@ -84,12 +84,13 @@ def run_basic_agent(
         if on_event is not None:
             on_event(entry)
 
-    def stop(answer: str, reason: str) -> dict:
+    def stop(answer: str, reason: str, error: str | None = None) -> dict:
         return {
             "answer": answer,
             "trace": trace,
             "observations": observations,
             "stop_reason": reason,
+            "error": error,  # causa de un corte por falla del modelo; sin ella, «unrecoverable_error» no dice qué pasó
         }
 
     for name, arguments in initial_calls or []:
@@ -118,13 +119,9 @@ def run_basic_agent(
         try:
             decision = decide_next(user_message, observations)
         except LLMError as exc:
-            record({
-                "run_id": getattr(context, "run_id", None),
-                "step": step,
-                "event": "llm_error",
-                "error": f"{type(exc).__name__}: {exc}",
-            })
-            return stop(f"Falló el modelo: {exc}", "unrecoverable_error")
+            cause = f"{type(exc).__name__}: {exc}"
+            record({"run_id": getattr(context, "run_id", None), "step": step, "event": "llm_error", "error": cause})
+            return stop(f"Falló el modelo: {exc}", "unrecoverable_error", cause)
 
         if (report := getattr(decide_next, "context_report", None)) is not None:
             record({"run_id": getattr(context, "run_id", None), "step": step, "event": "context", **report})

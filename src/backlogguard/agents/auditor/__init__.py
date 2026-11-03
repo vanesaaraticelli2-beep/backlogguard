@@ -87,7 +87,8 @@ def run_auditor(
         initial_calls=[(name, {}) for name in DOSSIER] if dossier_enabled("auditor", precompute) else None,
     )
     if outcome["stop_reason"] != "final_answer":
-        raise InvalidProviderResponseError(f"el Auditor no llegó a un informe ({outcome['stop_reason']})")
+        cause = f": {outcome['error']}" if outcome.get("error") else ""
+        raise InvalidProviderResponseError(f"el Auditor no llegó a un informe ({outcome['stop_reason']}){cause}")
     report, repair_tokens = parse_with_repair(
         outcome["answer"],
         parse_report,

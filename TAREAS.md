@@ -331,3 +331,9 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] El pedido `R-plan` ya no es texto plano: `ui/plan_view.py` arma la tabla (acción, tipo, id, título, padre, «En Azure», motivo) y una ficha por work item con descripción y criterios. `_plan_summary` suma `description`, `acceptance_criteria`, `parent_item_id` y `remote_id`.
 - [x] `tests/test_plan_view.py` (4). Un plan armado antes de este cambio se ve sin descripción ni criterios: hay que volver a armarlo.
 - [ ] Ver la pantalla en el navegador con un plan real.
+
+## Falla de clave o crédito visible en la corrida — [x] (sin commit)
+- [x] El ciclo del agente (`agents/loop.py`) devuelve `error` con la causa real cuando el modelo falla; el productor la deja en `errors` y el Auditor la agrega a su mensaje.
+- [x] `graph/failures.py` traduce clave rechazada (401), clave faltante y falta de crédito; «Corrida» muestra un aviso claro en lugar de «redacción incompleta».
+- [x] `tests/test_fallas_modelo.py` (4). Suite completa: 514.
+- Motivo: una clave de Anthropic inválida mostraba solo `unrecoverable_error` y tokens en 0.

@@ -150,13 +150,16 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             status="hecha" if outcome["stop_reason"] == "final_answer" else "incompleta", stop_reason=outcome["stop_reason"],
             usage=meter.since(mark), model=model_of(providers.requerimientos), steps=describe_outcome(outcome)["steps"],
         )
-        return {
+        update: dict = {
             "tasks": log.tasks,
             "board": _dump(board),
             "pending": pending,
             "tokens": state.get("tokens", 0) + outcome["tokens"],
             "trace": [{"node": "produce", "stop_reason": outcome["stop_reason"], "items": len(pending)}],
         }
+        if outcome.get("error"):
+            update["errors"] = [{"node": "produce", "ref": None, "error": outcome["error"]}]
+        return update
 
     def review(state: RunState) -> dict:
         pending = list(state.get("pending", []))
