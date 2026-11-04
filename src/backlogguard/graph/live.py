@@ -11,6 +11,9 @@ NODE_TITLES = {
     "plan": "Supervisor planifica",
     "produce": "Requerimientos redacta",
     "review": "Crítico revisa un ítem",
+    "triage": "Se arma la ola de revisiones (duplicados fuera)",
+    "review_one": "Crítico revisa un ítem (en paralelo)",
+    "merge_reviews": "Se juntan las revisiones de la ola",
     "audit": "Auditor audita el proyecto",
     "escalate": "Escalaciones por reglas",
     "decide": "Una persona decide",
@@ -52,6 +55,8 @@ def format_trace(entries: list[dict]) -> list[str]:
 def format_event(event: dict) -> str | None:
     """Línea de texto para un evento, o `None` si no aporta a la vista."""
     agent = AGENT_NAMES.get(event.get("agent", ""), event.get("agent", "?"))
+    if event.get("item"):  # con revisiones en paralelo las líneas se intercalan: se aclara de qué ítem es cada una
+        agent = f"{agent} [{event['item']}]"
     kind = event.get("event")
     if kind == "node_start":
         return f"\n▶ {NODE_TITLES.get(event['node'], event['node'])}"

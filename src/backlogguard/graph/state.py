@@ -9,6 +9,13 @@ import operator
 from typing import Annotated, TypedDict
 
 
+def collect_results(current: list[dict] | None, update: list[dict] | None) -> list[dict]:
+    """Reducer de las ramas paralelas: junta los resultados; `None` vacía la lista (cada ola empieza de cero)."""
+    if update is None:
+        return []
+    return [*(current or []), *update]
+
+
 class RunState(TypedDict, total=False):
     run_id: str
     objective: str
@@ -16,6 +23,8 @@ class RunState(TypedDict, total=False):
     plan: dict
     sources: list[dict]
     pending: list[str]
+    wave: list[str]  # ítems que se revisan a la vez en la ola actual (solo con revisión en paralelo)
+    review_results: Annotated[list[dict], collect_results]  # lo que devuelve cada rama; lo junta `merge_reviews`
     reviewed: dict[str, dict]
     audit: dict
     publish_plan: dict

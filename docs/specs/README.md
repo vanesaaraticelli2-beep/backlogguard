@@ -10,6 +10,7 @@ Cada especificación describe **qué debe cumplir** un agente, en lenguaje funci
 | Supervisor y grafo | Implementado (Día 8) | [supervisor.md](supervisor.md) |
 | Integración | Implementado (Día 9, backlog simulado) | [integracion.md](integracion.md) |
 | Human-in-the-Loop y pantalla | Implementado (Día 10) | [hitl.md](hitl.md) |
+| Correspondencia con la clase 12 (multiagente) | En curso | [clase-12-multiagente.md](clase-12-multiagente.md) |
 
 Las de Requerimientos y Crítico se redactaron **después** de construirlos, a partir del código y los tests. La del Auditor se redactó **antes** de construirlo, y es la base de su plan; se ajustó al terminar.
 

@@ -58,6 +58,9 @@ def build_run_deps(
     if providers is None and replay is not None:  # modo demo: se repiten las respuestas de una corrida grabada
         providers = replay_providers(Recording.load(replay))
     budget = load_budget(root / "config" / "budgets.yaml")
+    if providers is not None or replay is not None or not settings.live_mode:
+        # Respuestas guionadas o grabadas se consumen en orden por agente: en paralelo ese orden no está garantizado.
+        budget = budget.model_copy(update={"max_parallel_reviews": 1})
     return RunDeps(
         providers=providers or build_providers(load_models_config(root / "config" / "models.yaml"), settings),
         library=SourceLibrary(sources_dir or root / "evals" / "fixtures"),

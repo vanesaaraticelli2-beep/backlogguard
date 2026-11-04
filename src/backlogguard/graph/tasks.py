@@ -80,6 +80,14 @@ class TaskLog:
         return task
 
 
+def renumber(tasks: list[dict], existing: int) -> list[dict]:
+    """Copia las tareas de las ramas paralelas con ids que siguen a las `existing` ya registradas.
+
+    Cada rama numera desde 1 porque no ve a las otras; el fan-in les da su lugar definitivo, en el orden de la ola.
+    """
+    return [{**task, "seq": existing + n, "id": f"T-{existing + n:03d}"} for n, task in enumerate(tasks, start=1)]
+
+
 def describe_outcome(outcome: dict) -> dict:
     """Pasos, correcciones logradas e intentos rechazados por el tope, leídos de la traza de un agente."""
     trace = outcome.get("trace", [])

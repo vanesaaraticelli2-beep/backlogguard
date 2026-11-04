@@ -38,6 +38,20 @@ def earlier_twin(board: Board, item_id: str):
     return None
 
 
+def exclude_duplicate(board: Board, item_id: str, round_number: int) -> NegotiationResult | None:
+    """Si el ítem repite a uno anterior, lo excluye sin gastar modelos y devuelve el resultado; si no, `None`."""
+    twin = earlier_twin(board, item_id)
+    if twin is None:
+        return None
+    item = board.items[item_id]
+    reason = f"Duplicado de {twin.id} «{twin.title}»: se excluye porque ya hay un ítem sobre lo mismo."
+    if item.state is ItemState.BORRADOR:
+        item.transition_to(ItemState.OBJETADO)
+    item.add_objection(Objection(id=f"{item_id}-O{len(item.objections) + 1}", raised_by=AgentRole.CRITICO, text=reason, round=round_number))
+    item.transition_to(ItemState.EXCLUIDO)
+    return NegotiationResult(item_id, "excluido_duplicado", round_number, [reason])
+
+
 def negotiate_item(
     item_id: str,
     *,
@@ -54,13 +68,8 @@ def negotiate_item(
 
     for round_number in range(1, max_rounds + 1):
         item = board.items[item_id]
-        if twin := earlier_twin(board, item_id):  # un duplicado no se corrige: se excluye, sin gastar rondas ni modelos
-            reason = f"Duplicado de {twin.id} «{twin.title}»: se excluye porque ya hay un ítem sobre lo mismo."
-            if item.state is ItemState.BORRADOR:
-                item.transition_to(ItemState.OBJETADO)
-            item.add_objection(Objection(id=f"{item_id}-O{len(item.objections) + 1}", raised_by=AgentRole.CRITICO, text=reason, round=round_number))
-            item.transition_to(ItemState.EXCLUIDO)
-            return NegotiationResult(item_id, "excluido_duplicado", round_number, [*all_objections, reason])
+        if duplicate := exclude_duplicate(board, item_id, round_number):  # un duplicado no se corrige: se excluye, sin gastar rondas ni modelos
+            return NegotiationResult(item_id, duplicate.outcome, round_number, [*all_objections, *duplicate.objections])
         verdict = review(item_id)
         failed = [c for c in check_citations(item, retriever) if not c.ok]
         objections = list(verdict.objections) + [

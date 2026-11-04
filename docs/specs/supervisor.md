@@ -15,6 +15,7 @@ Coordinar a los agentes en una corrida completa: de las fuentes al tablero revis
 ## Grafo (LangGraph, patrón de la clase 11)
 `plan → producir → revisar (uno por ítem, en bucle) → auditar → [si hubo ítems reabiertos y es la primera vez: revisar] → escalar → resumir → fin`
 
+- **Revisión en paralelo (clase 12, patrón fan-out/fan-in):** con `max_parallel_reviews` mayor que 1, la revisión va por olas: `triage` (saca duplicados y arma la ola de hasta N ítems) → un `Send` por ítem a `review_one` (corren a la vez) → `merge_reviews` (único escritor del tablero) → siguiente ola o auditoría. Con 1 se revisa de a uno, como antes.
 - Estado: `TypedDict` serializable; el tablero viaja como JSON.
 - Persistencia: `SqliteSaver` por `thread_id` (la clase 11 lo usa igual).
 - Tools del Supervisor: `delegar_tarea` y `escalar_a_persona` (ambas `compute`; registran, no ejecutan).
@@ -36,11 +37,20 @@ Coordinar a los agentes en una corrida completa: de las fuentes al tablero revis
 | SU-11 | Al final, cada ítem tiene estado y cada escalación referencia un ítem o un hallazgo. | `test_el_resultado_final_es_trazable` |
 | SU-12 | Un error de un agente (modelo caído, veredicto inválido) queda registrado y no tumba la corrida: el ítem afectado queda marcado y se sigue con los demás. La corrida termina `completada_con_errores` si no hay escalaciones. | `test_un_error_de_agente_no_tumba_la_corrida` |
 | SU-13 | El texto de las fuentes no cambia el plan ni las escalaciones: una orden dentro de una reunión no altera el recorrido. | `test_inyeccion_no_altera_el_recorrido` |
+| SU-14 | Con `max_parallel_reviews` = N, el Crítico revisa hasta N ítems **a la vez** (un `Send` por ítem) y nunca más de N. | `test_las_revisiones_de_una_ola_corren_a_la_vez_y_en_fila_de_a_una`, `test_las_olas_son_de_a_n_y_se_revisa_cada_item_una_vez` |
+| SU-15 | Revisar en paralelo da el mismo resultado que en fila: mismos estados, mismos tokens y ids de tarea únicos y en el orden de la ola (no el de llegada). Los resultados de las ramas se vacían al juntarlos. | `test_en_paralelo_el_resultado_es_el_mismo_que_en_fila`, `test_los_resultados_de_las_ramas_se_vacian_al_juntarlos` |
+| SU-16 | Si una rama falla, las demás siguen y el error queda registrado con su ítem (falla parcial visible). | `test_si_una_rama_falla_las_demas_siguen_y_el_error_queda_visible` |
+| SU-17 | El tope de ítems a revisar se respeta por olas; los duplicados se excluyen antes de la ola, sin llamar a modelos. | `test_el_tope_de_items_se_respeta_por_olas`, `test_el_triage_excluye_duplicados_sin_modelos_y_arma_la_ola` |
+| SU-18 | La segunda pasada tras la auditoría (ítems reabiertos) ocurre una sola vez también en paralelo, y un plan revisado en paralelo se puede aprobar y publicar. | `test_la_auditoria_reabre_una_sola_vez_tambien_en_paralelo`, `test_un_plan_se_puede_aprobar_despues_de_revisar_en_paralelo` |
 
 ## Estados finales de una corrida
 `completada` · `esperando_decision` (hay escalaciones) · `completada_con_errores` · `presupuesto_agotado`
 
 ## Fuera del curso (decisiones propias)
+- Revisión **por olas** (no todos los `Send` juntos): el presupuesto se mira entre olas y el sobregiro de tokens queda acotado por N × el tope de un ítem.
+- `max_parallel_reviews` en `config/budgets.yaml` (3 con modelos reales; la demo grabada y las pruebas guionadas fuerzan 1 en `graph/setup.py`, porque consumen respuestas en orden por agente).
+- Cada rama usa su propio tablero y su propio `Meter`; el fan-in numera las tareas `T-nnn` en el orden de la ola.
+- `triage` previo de duplicados (`exclude_duplicate`, compartido con `negotiate_item`).
 - Supervisor acotado: el modelo elige fuentes e instrucciones y redacta el resumen; el recorrido y las escalaciones son reglas.
 - `config/budgets.yaml` validado con Pydantic, como `models.yaml` y `policy.yaml`.
 - El tablero viaja como JSON dentro del estado del grafo; el índice de fuentes se reconstruye al reanudar.
@@ -49,6 +59,6 @@ Coordinar a los agentes en una corrida completa: de las fuentes al tablero revis
 ## Límites conocidos
 - Sin `interrupt` todavía: la corrida termina esperando la decisión (Día 10).
 - Sin Integración (Día 9): la corrida no publica.
-- Una corrida procesa un proyecto y los ítems en secuencia, no en paralelo.
+- Una corrida procesa un proyecto. La revisión del Crítico puede ser en paralelo; la redacción, la auditoría y la publicación siguen en secuencia.
 - La plantilla de redacción solo admite reuniones y minutas: el código quita la preventa de las fuentes del productor, aunque el Supervisor la elija.
 - El índice de fuentes se reconstruye al compilar el grafo; con Qdrant persistente (a evaluar) no haría falta.

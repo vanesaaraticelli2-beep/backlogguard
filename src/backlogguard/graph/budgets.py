@@ -14,6 +14,7 @@ class RunBudget(BaseModel):
     max_tokens: int = Field(default=400_000, gt=0)
     max_items_to_review: int = Field(default=12, gt=0)
     max_seconds: float = Field(default=1800.0, gt=0)
+    max_parallel_reviews: int = Field(default=1, ge=1, le=8)  # ítems que el Crítico revisa a la vez (1 = en fila, como antes)
 
 
 class BudgetsConfig(BaseModel):

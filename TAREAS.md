@@ -275,7 +275,7 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 ## Pendiente · Incorporar las clases 12 y 13 del curso
 **Objetivo:** que el proyecto refleje lo que enseñan las últimas clases del curso (carpeta `Curso ITBA`), y marcar toda decisión que se aparte de ellas.
 
-- [ ] Clase 12 (`clase12_sistemas_multiagente.ipynb`): leerla y contrastarla con el Supervisor, la delegación, el arbitraje y las 2 rondas de negociación que ya hay; incorporar lo que falte.
+- [~] Clase 12 (`clase12_sistemas_multiagente.ipynb`): contrastada con el proyecto en `docs/specs/clase-12-multiagente.md`. Hecho: fan-out/fan-in con `Send` en la revisión del Crítico (ver abajo). Falta: contrato tipado de tarea y de resultado (`success/partial/failed`), evaluación de la delegación y comparación contra un agente único (Día 13).
 - [ ] Clase 13: **el archivo todavía no está en la carpeta `Curso ITBA`** (llega hasta la clase 12). Pedirlo o subirlo y luego incorporarlo.
 - [ ] Avisar toda decisión propia que se aparte del contenido de esas clases.
 
@@ -344,3 +344,15 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [x] `graph/failures.py` traduce clave rechazada (401), clave faltante y falta de crédito; «Corrida» muestra un aviso claro en lugar de «redacción incompleta».
 - [x] `tests/test_fallas_modelo.py` (4). Suite completa: 514.
 - Motivo: una clave de Anthropic inválida mostraba solo `unrecoverable_error` y tokens en 0.
+
+## Revisión del Crítico en paralelo (clase 12) — [x] (sin commit; falta una corrida real)
+**Objetivo:** que el Crítico revise varios ítems a la vez (fan-out con `Send`, fan-in en un nodo) para acortar el tiempo de una corrida; no baja el costo.
+
+- [x] `graph/builder.py`: con `max_parallel_reviews` > 1 el recorrido es `triage → Send(review_one) × N → merge_reviews`, por olas; con 1 queda el camino en fila de siempre.
+- [x] `graph/nodes.py`: `negotiate` (núcleo compartido por la fila y las ramas), `triage` (duplicados fuera y arma la ola), `review_one` (rama con su tablero y su `Meter`), `merge_reviews` (único escritor; numera las tareas en el orden de la ola). `agents/negociacion.py`: `exclude_duplicate` extraído.
+- [x] `config/budgets.yaml`: `max_parallel_reviews: 1` por defecto (extensión opcional: 2 o 3, decisión tras la devolución del profesor); `graph/setup.py` lo fuerza a 1 con proveedores guionados, grabados o simulados (consumen respuestas en orden).
+- [x] Eventos en vivo con el `item` de cada línea; `docs/specs/supervisor.md` (SU-14 a SU-18).
+- [x] `tests/test_paralelo.py` (11). Fuera del curso, a contar en la defensa: revisión por olas, medición por rama y triage previo.
+- [ ] Corrida real corta (3 a 4 ítems, ≈US$ 0,2 a 0,5; solo con tu OK) para ver las revisiones intercaladas en «Corrida» y comparar el tiempo.
+- [ ] Vigilar límites de tasa de Anthropic con 3 ramas; bajar a 2 si aparecen 429.
+- [ ] Commit y push (cuando se pida).

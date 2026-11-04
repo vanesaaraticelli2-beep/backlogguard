@@ -13,17 +13,17 @@ from backlogguard.agents.auditor import apply_report, run_auditor
 from backlogguard.agents.auditor.entrega import corrections_by_item, deliver_corrections
 from backlogguard.agents.critico import review_item
 from backlogguard.agents.integracion import execute_approved_plan, run_integracion
-from backlogguard.agents.negociacion import negotiate_item
+from backlogguard.agents.negociacion import exclude_duplicate, negotiate_item
 from backlogguard.agents.requerimientos import revise_item, run_requerimientos
 from backlogguard.agents.supervisor import plan_run, summarize_run
-from backlogguard.board import AgentRole, Board, ItemState
+from backlogguard.board import AgentRole, BacklogItem, Board, ItemState
 from backlogguard.catalog import RequirementStatus
 from backlogguard.catalog.coverage import current_baseline
 from backlogguard.graph.budgets import over_budget
 from backlogguard.graph.deps import Providers, RunDeps
 from backlogguard.graph.drafting import goal_for, pick
 from backlogguard.graph.state import RunState
-from backlogguard.graph.tasks import TaskLog, describe_outcome, model_of
+from backlogguard.graph.tasks import TaskLog, describe_outcome, model_of, renumber
 from backlogguard.hitl import (
     DecisionRecord,
     DecisionRequest,
@@ -74,11 +74,12 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
     meter = Meter()  # cuenta lo que gasta cada llamada a un modelo, para repartirlo entre las tareas
     providers = Providers(**{role: MeteredProvider(getattr(deps.providers, role), meter) for role in ROLES})
 
-    def sink(agent: str):
-        """Callback que anota qué agente emite cada evento (para seguirlos en vivo)."""
+    def sink(agent: str, item: str | None = None):
+        """Callback que anota qué agente emite cada evento (para seguirlos en vivo), y de qué ítem si hay varios a la vez."""
         if deps.on_event is None:
             return None
-        return lambda event: deps.on_event({**event, "agent": agent})
+        extra = {"item": item} if item else {}
+        return lambda event: deps.on_event({**event, "agent": agent, **extra})
 
     def plan(state: RunState) -> dict:
         mark = meter.mark()
@@ -161,60 +162,60 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             update["errors"] = [{"node": "produce", "ref": None, "error": outcome["error"]}]
         return update
 
-    def review(state: RunState) -> dict:
-        pending = list(state.get("pending", []))
-        if not pending:
-            return {}
-        if reason := over_budget(state, deps.budget):
-            return {"stop_reason": reason, "pending": [], "trace": [{"node": "review", "stop": reason}]}
-        item_id, rest = pending[0], pending[1:]
-        board = _board(state)
+    def negotiate(board: Board, item_id: str, run_meter: Meter, run_providers: Providers, first_seq: int, *, tag_item: bool = False) -> dict:
+        """Negocia un ítem con el Crítico (máx. 2 rondas) y devuelve lo que pasó. Sirve igual en fila que en una rama paralela.
+
+        Solo modifica ese ítem de `board`. En paralelo, cada rama trae su propio tablero y su propio `Meter`, así el gasto
+        y los cambios de un ítem no se mezclan con los de otro hasta que `merge_reviews` los junta.
+        """
         spent = [0]
-        log = TaskLog(len(state.get("tasks", [])))
+        log = TaskLog(first_seq)
         round_number = [0]
+        critic_sink = sink("critico", item_id if tag_item else None)
+        producer_sink = sink("requerimientos", item_id if tag_item else None)
 
         def critic_review(ref: str):
             round_number[0] += 1
-            mark = meter.mark()
+            mark = run_meter.mark()
             try:
                 outcome = review_item(
-                    ref, provider=providers.critico, retriever=deps.retriever, board=board, on_event=sink("critico")
+                    ref, provider=run_providers.critico, retriever=deps.retriever, board=board, on_event=critic_sink
                 )
             except LLMError as exc:
                 log.add("requerimientos", "critico", "revisar", ref=ref, round=round_number[0], status="fallida",
-                        detail=str(exc), model=model_of(providers.critico))
+                        detail=str(exc), model=model_of(run_providers.critico))
                 raise
             spent[0] += outcome.tokens
             verdict = outcome.verdict
             log.add(
                 "requerimientos", "critico", "revisar", ref=ref, round=round_number[0],
                 detail=verdict.verdict + (": " + "; ".join(verdict.objections) if verdict.objections else ""),
-                stop_reason=outcome.stop_reason, usage=meter.since(mark), model=model_of(providers.critico),
+                stop_reason=outcome.stop_reason, usage=run_meter.since(mark), model=model_of(run_providers.critico),
             )
             return verdict
 
         def producer_revise(ref: str, objections: list[str]) -> None:
-            mark = meter.mark()
+            mark = run_meter.mark()
             try:
                 outcome = revise_item(
                     ref,
                     objections,
-                    provider=providers.requerimientos,
+                    provider=run_providers.requerimientos,
                     library=deps.library,
                     retriever=deps.retriever,
                     board=board,
-                    on_event=sink("requerimientos"),
+                    on_event=producer_sink,
                 )
             except LLMError as exc:
                 log.add("critico", "requerimientos", "corregir", ref=ref, round=round_number[0], status="fallida",
-                        detail=str(exc), model=model_of(providers.requerimientos))
+                        detail=str(exc), model=model_of(run_providers.requerimientos))
                 raise
             spent[0] += outcome["tokens"]
             done = describe_outcome(outcome)
             log.add(
                 "critico", "requerimientos", "corregir", ref=ref, round=round_number[0], detail="; ".join(objections),
                 status="hecha" if done["corrections"] else "sin_correccion", stop_reason=outcome["stop_reason"],
-                usage=meter.since(mark), model=model_of(providers.requerimientos), **done,
+                usage=run_meter.since(mark), model=model_of(run_providers.requerimientos), **done,
             )
 
         errors: list[dict] = []
@@ -224,14 +225,87 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
         except LLMError as exc:
             info = {"outcome": "error", "rounds": 0, "objections": []}
             errors.append(_error("review", exc, item_id))
+        return {"item_id": item_id, "info": info, "tasks": log.tasks, "tokens": spent[0], "errors": errors}
+
+    def review(state: RunState) -> dict:
+        """Revisión en fila: un ítem por vuelta (así corren las demos grabadas, las pruebas guionadas y `max_parallel_reviews: 1`)."""
+        pending = list(state.get("pending", []))
+        if not pending:
+            return {}
+        if reason := over_budget(state, deps.budget):
+            return {"stop_reason": reason, "pending": [], "trace": [{"node": "review", "stop": reason}]}
+        item_id, rest = pending[0], pending[1:]
+        board = _board(state)
+        done = negotiate(board, item_id, meter, providers, len(state.get("tasks", [])))
+        info = done["info"]
         return {
-            "tasks": log.tasks,
+            "tasks": done["tasks"],
             "board": _dump(board),
             "pending": rest,
             "reviewed": {**state.get("reviewed", {}), item_id: info},
-            "tokens": state.get("tokens", 0) + spent[0],
-            "errors": errors,
+            "tokens": state.get("tokens", 0) + done["tokens"],
+            "errors": done["errors"],
             "trace": [{"node": "review", "item": item_id, **{k: info[k] for k in ("outcome", "rounds")}}],
+        }
+
+    # ---- revisión en paralelo (clase 12: fan-out con Send, ramas independientes, fan-in en un nodo) ----
+
+    def triage(state: RunState) -> dict:
+        """Arma la ola: saca los duplicados (sin modelos) y separa hasta `max_parallel_reviews` ítems para revisar a la vez."""
+        if reason := over_budget(state, deps.budget):
+            return {"stop_reason": reason, "pending": [], "wave": [], "trace": [{"node": "triage", "stop": reason}]}
+        board = _board(state)
+        reviewed = dict(state.get("reviewed", {}))
+        wave: list[str] = []
+        rest: list[str] = []
+        trace: list[dict] = []
+        for item_id in state.get("pending", []):
+            has_room = len(wave) < deps.budget.max_parallel_reviews and len(reviewed) + len(wave) < deps.budget.max_items_to_review
+            if not has_room:
+                rest.append(item_id)
+            elif (duplicate := exclude_duplicate(board, item_id, 1)) is not None:
+                reviewed[item_id] = {"outcome": duplicate.outcome, "rounds": duplicate.rounds, "objections": duplicate.objections[-3:]}
+                trace.append({"node": "review", "item": item_id, "outcome": duplicate.outcome, "rounds": duplicate.rounds})
+            else:
+                wave.append(item_id)
+        return {
+            "board": _dump(board), "pending": rest, "wave": wave, "reviewed": reviewed,
+            "trace": [*trace, {"node": "triage", "wave": wave, "pending": len(rest)}],
+        }
+
+    def review_one(branch: dict) -> dict:
+        """Una rama de la ola: revisa un ítem sobre su propia copia del tablero y devuelve solo su resultado."""
+        item_id = branch["item_id"]
+        board = Board.model_validate(branch["board"])
+        branch_meter = Meter()
+        branch_providers = Providers(**{role: MeteredProvider(getattr(deps.providers, role), branch_meter) for role in ROLES})
+        done = negotiate(board, item_id, branch_meter, branch_providers, 0, tag_item=True)
+        return {"review_results": [{**done, "item": board.items[item_id].model_dump(mode="json")}]}
+
+    def merge_reviews(state: RunState) -> dict:
+        """Fan-in: único escritor del tablero. Junta las ramas en el orden de la ola (no en el de llegada) y numera sus tareas."""
+        results = {r["item_id"]: r for r in state.get("review_results", [])}
+        board = _board(state)
+        reviewed = dict(state.get("reviewed", {}))
+        tasks: list[dict] = []
+        errors: list[dict] = []
+        trace: list[dict] = []
+        tokens = state.get("tokens", 0)
+        for item_id in state.get("wave", []):
+            result = results.get(item_id)
+            if result is None:  # no debería pasar: una rama que se cae tumba la ola entera antes de llegar acá
+                reviewed[item_id] = {"outcome": "error", "rounds": 0, "objections": []}
+                errors.append({"node": "review", "ref": item_id, "error": "la rama de revisión no devolvió resultado"})
+                continue
+            board.items[item_id] = BacklogItem.model_validate(result["item"])
+            reviewed[item_id] = result["info"]
+            tokens += result["tokens"]
+            errors.extend(result["errors"])
+            tasks.extend(renumber(result["tasks"], len(state.get("tasks", [])) + len(tasks)))
+            trace.append({"node": "review", "item": item_id, **{k: result["info"][k] for k in ("outcome", "rounds")}})
+        return {
+            "board": _dump(board), "reviewed": reviewed, "tokens": tokens, "errors": errors, "tasks": tasks,
+            "wave": [], "review_results": None, "trace": trace,
         }
 
     def audit(state: RunState) -> dict:
@@ -558,7 +632,8 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
         return {"tasks": log.tasks, "summary": text, "tokens": state.get("tokens", 0) + spent, "trace": [{"node": "summarize"}]}
 
     nodes = {
-        "plan": plan, "produce": produce, "review": review, "audit": audit, "escalate": escalate,
+        "plan": plan, "produce": produce, "review": review, "triage": triage, "review_one": review_one,
+        "merge_reviews": merge_reviews, "audit": audit, "escalate": escalate,
         "decide": decide, "integrate": integrate, "approve_plan": approve_plan, "summarize": summarize,
     }
 
