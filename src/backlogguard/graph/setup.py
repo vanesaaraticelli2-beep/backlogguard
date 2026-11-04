@@ -5,11 +5,13 @@ y el mismo archivo de checkpoints dentro de `data/`.
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Callable
 
 from backlogguard.board import SourceType
 from backlogguard.catalog import Catalog
+from backlogguard.evaluation.ablation import ABLATION_ENV, ablate, parse_ablation
 from backlogguard.graph.budgets import load_budget
 from backlogguard.graph.builder import build_graph, sqlite_checkpointer
 from backlogguard.graph.deps import Providers, RunDeps, build_providers
@@ -61,8 +63,10 @@ def build_run_deps(
     if providers is not None or replay is not None or not settings.live_mode:
         # Respuestas guionadas o grabadas se consumen en orden por agente: en paralelo ese orden no está garantizado.
         budget = budget.model_copy(update={"max_parallel_reviews": 1})
+    providers = providers or build_providers(load_models_config(root / "config" / "models.yaml"), settings)
+    providers = ablate(providers, parse_ablation(os.environ.get(ABLATION_ENV)))  # evaluación: retirar al Crítico o al Auditor
     return RunDeps(
-        providers=providers or build_providers(load_models_config(root / "config" / "models.yaml"), settings),
+        providers=providers,
         library=SourceLibrary(sources_dir or root / "evals" / "fixtures"),
         retriever=InMemoryRetriever(DeterministicLexicalEmbeddings()),
         memory=ProjectMemory(data / "memoria.sqlite", settings.azdo_project.lower()),

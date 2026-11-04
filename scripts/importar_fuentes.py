@@ -7,13 +7,14 @@
     .venv\\Scripts\\python scripts\\importar_fuentes.py --borrar inception
     .venv\\Scripts\\python scripts\\importar_fuentes.py --limpiar          # vuelve a las fuentes de ejemplo
 
-Las fuentes quedan en `data/fuentes/` (no se suben a git). Mientras haya al menos una preventa y una reunión
+Las fuentes quedan en `data/fuentes/` (o en `$BACKLOGGUARD_DATA/fuentes/`; no se suben a git). Mientras haya al menos una preventa y una reunión
 ahí, las corridas usan esas fuentes en lugar de las de ejemplo. Los documentos no se envían a ningún modelo
 en este paso: solo se leen y se guardan.
 """
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from datetime import date
 from pathlib import Path
@@ -22,10 +23,13 @@ from backlogguard.board import SourceType
 from backlogguard.graph.setup import has_user_sources, user_sources_dir
 from backlogguard.rag import SourceLibrary, build_chunks
 from backlogguard.rag.importers import ImportedSource, SourceImportError, estimate, import_docx, import_pdf, import_transcript
+from backlogguard.rag import anonimizar
+from backlogguard.rag.limpieza import PageSpecError, aplicar, parse_pages
 from backlogguard.rag.sources import SourceChangeNeedsConfirmation, SourceMetadata, SourceUnchanged, slugify
 
 ROOT = Path(__file__).resolve().parents[1]
-LIBRARY = SourceLibrary(user_sources_dir(ROOT / "data"))
+DATA = Path(os.environ.get("BACKLOGGUARD_DATA") or ROOT / "data").resolve()  # la misma carpeta de datos que usa la pantalla
+LIBRARY = SourceLibrary(user_sources_dir(DATA))
 
 
 def save(imported: ImportedSource, name: str, kind: SourceType, when: date, *, overwrite: bool) -> str:
@@ -50,7 +54,7 @@ def save(imported: ImportedSource, name: str, kind: SourceType, when: date, *, o
 
 def listing() -> None:
     entries = LIBRARY.describe() if LIBRARY.root.is_dir() else []
-    print(f"Fuentes propias en {LIBRARY.root.relative_to(ROOT)}: {len(entries)}")
+    print(f"Fuentes propias en {LIBRARY.root}: {len(entries)}")
     for document_id, meta in entries:
         print(f"  {document_id:40} {meta.source_type.value:9} {meta.source_date} {meta.layout:8} {meta.source_name}")
     for row in LIBRARY.inventory() if LIBRARY.root.is_dir() else []:
@@ -76,6 +80,9 @@ def main() -> int:
     parser.add_argument("--reunion-fecha", type=parse_date)
     parser.add_argument("--tipo", choices=["reunion", "minuta"], default="reunion")
     parser.add_argument("--sobrescribir", action="store_true")
+    parser.add_argument("--anonimizar", nargs="?", const=str(ROOT / "evals" / "real" / "anonimizacion.yaml"), metavar="DICCIONARIO", help="anonimiza el nombre y el texto antes de guardar (por defecto evals/real/anonimizacion.yaml)")
+    parser.add_argument("--excluir-paginas", default="", help="preventa: páginas que no se guardan, por ejemplo 1,2,4,35-56 (probalas antes con scripts/limpiar_preventa.py)")
+    parser.add_argument("--quitar-plantilla", action="store_true", help="preventa: quitar el texto de plantilla (FEATURE, «- Descripción», pies y números de página)")
     parser.add_argument("--listar", action="store_true")
     parser.add_argument("--borrar", metavar="ID")
     parser.add_argument("--limpiar", action="store_true")
@@ -106,14 +113,23 @@ def main() -> int:
             print(f"Para importar {path.name} indicá el nombre y la fecha (AAAA-MM-DD).")
             return 1
         try:
-            save(importer(path), name, kind, when, overwrite=options.sobrescribir)
+            imported = importer(path)
+            if kind is SourceType.PREVENTA and (options.excluir_paginas or options.quitar_plantilla):
+                imported, _ = aplicar(imported, parse_pages(options.excluir_paginas, total=imported.pages), quitar_ruido=True)
+            if options.anonimizar:
+                dictionary = anonimizar.cargar(options.anonimizar)
+                imported, alias_result = anonimizar.aplicar(imported, dictionary)
+                name = anonimizar.anonimizar_nombre(name, dictionary)
+                if alias_result.revisar:
+                    print("   ⚠ Revisá si son nombres que faltan en el diccionario: " + ", ".join(alias_result.revisar[:15]))
+            save(imported, name, kind, when, overwrite=options.sobrescribir)
         except SourceUnchanged as exc:
             print(f"= {exc}")
             continue
         except SourceChangeNeedsConfirmation as exc:
             print(f"✘ {exc} Agregá --sobrescribir para reemplazarla.")
             return 1
-        except (SourceImportError, OSError) as exc:
+        except (SourceImportError, PageSpecError, anonimizar.DictionaryError, OSError) as exc:
             print(f"✘ {path.name}: {exc}")
             return 1
     print()

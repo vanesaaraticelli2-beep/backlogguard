@@ -198,3 +198,43 @@ def test_la_solapa_de_tareas_filtra_por_agente_y_muestra_el_detalle(screen):
     options = at.selectbox(key="detalle_tarea").options
     assert len(options) == len(critic) and all("Crítico" in option for option in options)
     assert any(area.value == critic[0]["detail"] for area in at.text_area)
+
+
+def answer_until_plan(at, controller):
+    """Aprueba cada pedido con su rol hasta que la corrida queda esperando el plan de publicación."""
+    for _ in range(10):
+        request = controller.pending()["request"]
+        if request["kind"] == "plan":
+            return request
+        pick(at, request["decides"])
+        at.button(key="aprobar").click().run()
+        assert controller.wait(30)
+        at.run()
+    raise AssertionError("la corrida no llegó al plan de publicación")
+
+
+def test_el_ingeniero_publica_desde_el_backlog_simulado(screen):
+    at, controller = screen
+    start_and_wait(at, controller)
+    request = answer_until_plan(at, controller)
+    pick(at, "full_stack_ia_engineer")
+    assert any(c.key.startswith(f"pub-{request['request_id']}") for c in at.checkbox)  # el plan se puede elegir desde el backlog
+    before = len(controller.deps.backlog.search())
+    at.button(key="plan-publicar").click().run()
+    assert controller.wait(30)
+    at.run()
+    assert controller.state()["status"] == "publicada" and len(controller.deps.backlog.search()) == before + 1
+    assert "Notificación por email" in [w.title for w in controller.deps.backlog.search()]
+
+
+def test_el_ingeniero_rechaza_la_publicacion_desde_el_backlog_simulado(screen):
+    at, controller = screen
+    start_and_wait(at, controller)
+    answer_until_plan(at, controller)
+    pick(at, "full_stack_ia_engineer")
+    before = [w.title for w in controller.deps.backlog.search()]
+    at.button(key="plan-rechazar").click().run()
+    assert controller.wait(30)
+    at.run()
+    assert controller.state()["status"] == "plan_rechazado"
+    assert [w.title for w in controller.deps.backlog.search()] == before  # no se publicó nada

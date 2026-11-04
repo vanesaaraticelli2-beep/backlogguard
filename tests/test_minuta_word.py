@@ -61,3 +61,44 @@ def test_un_archivo_que_no_es_word_se_rechaza_con_un_mensaje_claro():
 def test_un_word_vacio_se_rechaza():
     with pytest.raises(SourceImportError, match="no tiene texto"):
         import_docx(build(lambda document: None))
+
+
+def prosa(document):
+    """Una minuta formal: datos en una tabla, temas con rótulos «Algo: texto» y acuerdos en otra tabla. Nadie 'habla'."""
+    document.add_heading("Minuta de reunión", level=1)
+    facts = document.add_table(rows=3, cols=2)
+    for row, (key, value) in zip(facts.rows, [("Fecha", "24-08-2026"), ("Hora", "14.00"), ("Lugar", "Teams")]):
+        row.cells[0].text, row.cells[1].text = key, value
+    convocados = document.add_table(rows=3, cols=1)
+    for row, value in zip(convocados.rows, ["Convocados a la reunión", "Persona Uno (Empresa A)", "Persona Dos (Empresa B)"]):
+        row.cells[0].text = value
+    document.add_paragraph("Tema #1: Definición de la Entidad Elección")
+    document.add_paragraph("Las elecciones se configuran como entidades aisladas e independientes.")
+    document.add_paragraph("Acuerdo sobre creación: El Super Admin puede crear todas las elecciones.")
+    acuerdos = document.add_table(rows=2, cols=1)
+    for row, value in zip(acuerdos.rows, ["Acuerdos de la reunión", "Acuerdo #1: Las elecciones son ambientes independientes."]):
+        row.cells[0].text = value
+
+
+def test_una_minuta_en_prosa_conserva_los_parrafos_y_no_inventa_oradores():
+    imported = import_docx(build(prosa))
+    lines = imported.text.splitlines()
+    assert imported.speakers == [] and imported.layout == "dialogo"
+    assert all(line.startswith("Nota de la minuta: ") for line in lines)
+    assert "Nota de la minuta: Tema #1: Definición de la Entidad Elección" in lines  # el rótulo no se vuelve un orador
+    assert "Nota de la minuta: Acuerdo sobre creación: El Super Admin puede crear todas las elecciones." in lines
+    assert len(lines) >= 9 and any("Minuta en prosa" in w for w in imported.warnings)
+
+
+def test_los_datos_de_la_reunion_quedan_uno_por_linea_y_las_listas_de_una_columna_tambien():
+    text = import_docx(build(prosa)).text
+    for line in ("Fecha – 24-08-2026", "Hora – 14.00", "Lugar – Teams", "Convocados a la reunión", "Persona Uno (Empresa A)", "Acuerdo #1: Las elecciones son ambientes independientes."):
+        assert f"Nota de la minuta: {line}" in text.splitlines()
+
+
+def test_una_minuta_en_prosa_se_parte_en_fragmentos_por_parrafo():
+    from backlogguard.rag.chunking import build_chunks
+
+    imported = import_docx(build(prosa))
+    chunks = build_chunks("m", imported.text, {"layout": imported.layout, "source_name": "M", "source_type": "minuta", "source_date": "2026-08-24"})
+    assert len(chunks) >= 2 and any("Super Admin puede crear" in c["text"] for c in chunks)

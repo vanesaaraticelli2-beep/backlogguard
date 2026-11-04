@@ -22,6 +22,8 @@ from backlogguard.llm.metering import load_pricing
 from backlogguard.rag import SourceLibrary, build_chunks
 from backlogguard.rag.compromisos import BaselineStore, estimate_extraction, extract_commitments
 from backlogguard.rag.importers import SourceImportError, estimate, import_docx, import_pdf, import_transcript
+from backlogguard.rag import anonimizar
+from backlogguard.rag.limpieza import PageSpecError, aplicar, informe_markdown, parse_pages
 from backlogguard.rag.sources import SourceChangeNeedsConfirmation, SourceMetadata, SourceUnchanged, slugify
 from backlogguard.ui.controller import DEFAULT_OBJECTIVE, RunController
 from backlogguard.ui.conversation_view import live_conversation, tab_conversation
@@ -440,8 +442,90 @@ def tab_board(controller: RunController) -> None:
         )
 
 
-def tab_backlog(controller: RunController) -> None:
+def _set_checks(keys: list[str], value: bool | dict[str, bool]) -> None:
+    for key in keys:
+        st.session_state[key] = value[key] if isinstance(value, dict) else value
+
+
+def publish_selection(controller: RunController, who, request: dict, chosen: set[str], comment: str) -> str | None:
+    """Publica solo lo elegido. Si la selección difiere del plan mostrado, primero arma la versión nueva (excluyendo el resto).
+
+    Solo aprueba si el plan nuevo trae exactamente lo que la persona marcó. Devuelve un mensaje si algo falló."""
+    items = request["payload"]["items"]
+    wanted = plan_view.exclusions_for(items, chosen)
+    if wanted != sorted(request["payload"]["exclude"]):
+        controller.decide(decision_payload(request, who, "edit", comment, {"exclude": wanted}))
+        if not controller.wait(60):
+            return "Armar el plan con tu selección tardó demasiado: esperá y volvé a mirar."
+        payload = controller.pending()
+        if payload is None or payload["request"]["kind"] != "plan" or payload["request"]["version"] <= request["version"]:
+            return (payload or {}).get("last_error") or controller.error or "No se pudo armar el plan con tu selección."
+        request = payload["request"]
+        if set(plan_view.selectable_ids(request["payload"]["items"])) != chosen:
+            return "El plan nuevo no coincide con lo que marcaste. Revisalo abajo y volvé a elegir."
+    controller.decide(decision_payload(request, who, "approve", comment, None))
+    if not controller.wait(120):
+        return "La publicación sigue en curso: mirá el estado arriba."
+    return controller.error
+
+
+def plan_selector(controller: RunController, who) -> None:
+    """Desde el backlog simulado, el ingeniero elige qué work items se envían a Azure DevOps y cuáles no (o rechaza todo)."""
+    payload = controller.pending()
+    if payload is None or payload["request"]["kind"] != "plan":
+        st.info(plan_view.no_pending_plan_text(controller.state().get("status"), controller.running))
+        return
+    request = payload["request"]
+    items = request["payload"]["items"]
+    st.markdown("### Plan de publicación pendiente: elegí qué se envía a Azure DevOps")
+    if payload.get("last_error"):
+        st.warning(f"Tu última decisión no se aplicó: {payload['last_error']}")
+    can_decide = request["decides"] == who.role
+    if not can_decide:
+        decider = controller.deps.people.with_role(request["decides"])[0].display
+        st.info(f"Este plan lo decide el rol **{decider}**. Cambiá el rol en la barra lateral para elegir qué se envía.")
+    key = f"{request['request_id']}-v{request['version']}"
+    excluded = set(request["payload"]["exclude"])
+    box = {i: f"pub-{key}-{i}" for i in plan_view.selectable_ids(items)}
+    original = {box[i]: i not in excluded for i in box}
+    st.caption("Marcá lo que querés mandar. Lo que desmarcás queda afuera de esta publicación y no se crea en Azure.")
+    all_on, all_off, undo = st.columns(3)
+    all_on.button("Marcar todo", key=f"pub-todo-{key}", on_click=_set_checks, args=(list(box.values()), True), disabled=not can_decide, width="stretch")
+    all_off.button("Desmarcar todo", key=f"pub-nada-{key}", on_click=_set_checks, args=(list(box.values()), False), disabled=not can_decide, width="stretch")
+    undo.button("Cancelar mis cambios", key=f"pub-deshacer-{key}", on_click=_set_checks, args=(list(box.values()), original), disabled=not can_decide, width="stretch")
+    chosen: set[str] = set()
+    for item in items:
+        if item["action"] == "omitir":
+            st.checkbox(plan_view.item_heading(item), value=False, disabled=True, key=f"pub-{key}-{item['item_id']}-omitido")
+        elif st.checkbox(plan_view.item_heading(item), value=item["item_id"] not in excluded, disabled=not can_decide, key=box[item["item_id"]]):
+            chosen.add(item["item_id"])
+        st.caption(item["reason"])
+    st.markdown(plan_view.selection_line(items, chosen))
+    for warning in plan_view.orphan_warnings(items, chosen):
+        st.warning(warning)
+    comment = st.text_input("Comentario (opcional)", key=f"pub-comentario-{key}")
+    publish_col, reject_col = st.columns(2)
+    publish = publish_col.button(
+        f"Publicar {len(chosen)} en Azure DevOps", type="primary", key="plan-publicar", width="stretch",
+        disabled=not can_decide or not chosen or controller.running,
+    )
+    reject = reject_col.button("Rechazar toda la publicación", key="plan-rechazar", width="stretch", disabled=not can_decide or controller.running)
+    if reject:
+        controller.decide(decision_payload(request, who, "reject", comment, None))
+        st.rerun()
+    if publish:
+        problem = publish_selection(controller, who, request, chosen, comment)
+        if problem:
+            st.error(problem)
+        else:
+            st.rerun()
+    st.divider()
+
+
+def tab_backlog(controller: RunController, who=None) -> None:
     """Lo que hay en el backlog simulado de Azure DevOps: jerarquía, qué cambió en la corrida y la ficha de cada work item."""
+    if who is not None:
+        plan_selector(controller, who)
     if not controller.running:
         controller.deps.backlog.reload()  # otro proceso pudo haber publicado
     st.info(
@@ -514,29 +598,61 @@ def tab_sources(controller: RunController) -> None:
         "Fecha del documento", value=date_from_filename(upload.name) if upload else None, key=f"fecha-{kind}-{upload.name if upload else ''}",
         help="La fecha ordena las reuniones: usá la de la reunión, no la de hoy. Si el nombre del archivo empieza con una fecha, se propone esa.",
     )
+    pages_out, clean_template = "", False
+    if is_pdf:
+        pages_out = st.text_input(
+            "Páginas a excluir (opcional)", key="paginas-excluidas", placeholder="1,2,4,35-56",
+            help="Portadas, separadores o secciones que no son alcance. Solo se quita texto: lo que queda es textual y las páginas conservan su número.",
+        )
+        clean_template = st.checkbox("Quitar texto de plantilla (FEATURE, «- Descripción», pies y números de página)", value=True, key="quitar-plantilla")
+    dictionary_path = controller.root / "evals" / "real" / "anonimizacion.yaml"
+    use_alias = False
+    if dictionary_path.is_file():
+        use_alias = st.checkbox(
+            "Anonimizar antes de guardar (empresas, personas y datos de contacto)", value=True, key="anonimizar",
+            help="Usa el diccionario evals/real/anonimizacion.yaml: lo que se guarda, se cita y se envía a los modelos ya está anonimizado.",
+        )
+    else:
+        st.caption("Para anonimizar las fuentes, creá `evals/real/anonimizacion.yaml` (ver scripts/anonimizar.py).")
     overwrite = st.checkbox("Reemplazar si ya existe una fuente con ese nombre", key=f"reemplazar-{kind}")
     if st.button("Importar y guardar", key="importar", disabled=busy or upload is None or not name.strip() or when is None):
         try:
             imported = import_pdf(upload.getvalue()) if is_pdf else (import_docx if upload.name.lower().endswith(".docx") else import_transcript)(upload.getvalue())
+            cleaning = None
+            if is_pdf and (pages_out.strip() or clean_template):
+                imported, cleaning = aplicar(imported, parse_pages(pages_out, total=imported.pages), quitar_ruido=clean_template)
+            source_name, alias_result = name.strip(), None
+            if use_alias:
+                dictionary = anonimizar.cargar(dictionary_path)
+                imported, alias_result = anonimizar.aplicar(imported, dictionary)
+                source_name = anonimizar.anonimizar_nombre(source_name, dictionary)
             source_type = SourceType.PREVENTA if is_pdf else (SourceType.MINUTA if kind.startswith("Minuta") else SourceType.REUNION)
-            metadata = SourceMetadata(source_name=name.strip(), source_type=source_type, source_date=when, layout=imported.layout)
-            document_id = slugify(name)
+            metadata = SourceMetadata(source_name=source_name, source_type=source_type, source_date=when, layout=imported.layout)
+            document_id = slugify(source_name)
             saved = library.save(document_id, metadata, imported.text, replace=overwrite)
         except SourceUnchanged as exc:
             st.info(str(exc))
         except SourceChangeNeedsConfirmation as exc:
             st.warning(f"{exc} Marcá «Reemplazar si ya existe…» y volvé a importar.")
-        except SourceImportError as exc:
+        except (SourceImportError, PageSpecError, anonimizar.DictionaryError) as exc:
             st.error(str(exc))
         else:
             chunks = build_chunks(document_id, imported.text, metadata.model_dump(mode="json"))
-            st.success(f"{'Reemplazada' if saved.status == 'cambio' else 'Importada'} «{name.strip()}» (huella {saved.new_fingerprint}): {imported.words:,} palabras (~{estimate(imported.words)['tokens']:,} tokens), {len(chunks)} fragmentos.")
+            st.success(f"{'Reemplazada' if saved.status == 'cambio' else 'Importada'} «{source_name}» (huella {saved.new_fingerprint}): {imported.words:,} palabras (~{estimate(imported.words)['tokens']:,} tokens), {len(chunks)} fragmentos.")
             if imported.speakers:
                 st.caption("Oradores: " + "; ".join(imported.speakers))
             for warning in imported.warnings:
                 st.warning(warning)
             with st.expander("Vista previa"):
                 st.text(imported.text[:1800])
+            if cleaning is not None:
+                with st.expander("Qué se quitó de la preventa"):
+                    st.markdown(informe_markdown(cleaning, titulo=f"Limpieza de «{source_name}»"))
+            if alias_result is not None:
+                with st.expander("Qué se anonimizó", expanded=bool(alias_result.revisar)):
+                    st.write(anonimizar.resumen(alias_result))
+                    if alias_result.revisar:
+                        st.warning("Revisá si alguna de estas palabras es un nombre que falta en el diccionario: " + ", ".join(alias_result.revisar))
             controller.refresh_sources()
             st.session_state["fuentes_importadas"] = st.session_state.get("fuentes_importadas", 0) + 1
     entries = library.describe() if library.root.is_dir() else []
@@ -750,7 +866,7 @@ def main() -> None:
         with saved:
             tab_runs(controller)
         with backlog:
-            tab_backlog(controller)
+            tab_backlog(controller, who)
 
 
 if __name__ == "__main__":  # Streamlit ejecuta el script como __main__; importar el módulo no dibuja nada

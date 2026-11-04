@@ -12,6 +12,7 @@ lo que podría degradar las citas. No hay OCR: un PDF que es una imagen escanead
 from __future__ import annotations
 
 import re
+from collections import Counter
 from html import unescape
 import unicodedata
 from dataclasses import dataclass, field
@@ -346,6 +347,7 @@ def _paragraphs(lines: list[str]) -> list[list[str]]:
 
 _PARTICIPANT_COLUMNS = ("nombre", "participante", "asistente", "integrante")
 _ROLE_COLUMNS = ("rol", "cargo", "puesto", "funcion", "area")
+_FACT_LABELS = ("fecha", "hora", "lugar", "modalidad", "convocad", "proyecto", "cliente", "version", "autor", "estado", "responsable de")
 
 
 def _clean_cell(text: str) -> str:
@@ -367,6 +369,12 @@ def _table_lines(rows: list[list[str]]) -> list[str]:
         people = [f"{row[name_at]} ({row[role_at]})" for row in rows[1:] if len(row) > max(name_at, role_at) and row[name_at] and row[role_at]]
         if people:
             return ["Participantes:", *people, ""]
+    if all(len(row) == 2 for row in rows) and len(rows) > 1 and all(len(row[0].split()) <= 4 for row in rows):
+        facts = any(_fold(row[0]).startswith(_FACT_LABELS) for row in rows) or any(ch.isdigit() for ch in rows[0][1])
+        if facts:  # datos de la reunión («Fecha | 24-08-2026»): una línea por dato, no una tabla de encabezado y filas
+            return [f"{key} – {value}" for key, value in rows if key and value] + [""]
+    if all(len(row) == 1 for row in rows):  # una columna (convocados, acuerdos): una línea por fila, con su título arriba
+        return [row[0] for row in rows] + [""]
     labelled = len(rows) > 1 and all(cell for cell in rows[0])
     lines = []
     for row in rows[1:] if labelled else rows:
@@ -415,7 +423,31 @@ def import_docx(source: bytes | str | Path) -> ImportedSource:
     text = docx_to_text(data)
     if not text.strip():
         raise SourceImportError("El documento de Word no tiene texto.")
-    return import_transcript(text)
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    return import_transcript(text) if _is_dialogue(lines) else _import_prose(lines)
+
+
+def _is_dialogue(lines: list[str]) -> bool:
+    """¿La minuta transcribe lo que dijo cada persona? Hay un bloque «Participantes» o un orador que habla más de una vez."""
+    if any(_PARTICIPANTS_TITLE.match(line) for line in lines):
+        return True
+    speakers = Counter(
+        _fold(match["speaker"]) for line in lines if (match := _TURN.match(line)) and len(match["speaker"].split()) <= 4 and "#" not in match["speaker"]
+    )
+    return any(count >= 2 for count in speakers.values())
+
+
+def _import_prose(lines: list[str]) -> ImportedSource:
+    """Minuta redactada en prosa (temas, acuerdos, próximos pasos): un párrafo por línea, sin oradores.
+
+    No se buscan oradores en cada «Algo: texto», porque ahí los rótulos son títulos («Tema #1: …», «Acuerdo sobre creación: …»).
+    """
+    rendered = "\n".join(f"{NOTE_SPEAKER}: {line}" for line in lines) + "\n"
+    warning = (
+        "Minuta en prosa: no hay intervenciones con el formato «Nombre: texto». Se importa un párrafo por línea y sin oradores: "
+        "las citas no van a poder atribuirse a una persona."
+    )
+    return ImportedSource(text=rendered, layout="dialogo", words=_words(rendered), warnings=[warning])
 
 
 def estimate(words: int) -> dict[str, int]:
