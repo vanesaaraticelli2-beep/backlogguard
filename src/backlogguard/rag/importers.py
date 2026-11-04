@@ -4,6 +4,7 @@ Fuera del curso. Convierten el documento al formato de fuentes de BacklogGuard (
 lo que podría degradar las citas. No hay OCR: un PDF que es una imagen escaneada se rechaza con un mensaje claro.
 
 - PDF → texto por página, marcado con `[[página N]]` (la cita muestra la página).
+- Minuta en Word (.docx) → se lee en el orden del documento (párrafos y tablas) y pasa por el mismo importador de texto.
 - Transcripción → una línea por intervención, `Nombre (rol): texto`. El encabezado (Proyecto, Participantes,
   Fecha) no es parte de la conversación: se usa para dar rol a cada orador. Lo que no lo dice una persona
   (títulos, notas del que tomó la minuta) se conserva como `Nota de la minuta`.
@@ -304,7 +305,10 @@ def _read_header(lines: list[str]) -> tuple[list[tuple[str, str]], dict[str, str
             index += 1
             continue
         looks_like_title = _words(line) <= 12 and _TURN.match(line) is None
-        if line.strip() and (participants or header) and looks_like_title and index < 6:
+        # un título al comienzo («Minuta de reunión») se saltea si enseguida vienen los datos del encabezado
+        ahead = [other for other in lines[index + 1 : index + 5] if other.strip()][:3]
+        opens_header = any(_HEADER.match(other) or _PARTICIPANTS_TITLE.match(other) for other in ahead)
+        if line.strip() and (participants or header or opens_header) and looks_like_title and index < 6:
             index += 1  # título suelto del documento, solo si ya se reconoció un encabezado
             continue
         if not line.strip():
@@ -336,6 +340,82 @@ def _paragraphs(lines: list[str]) -> list[list[str]]:
     if current:
         blocks.append(current)
     return blocks
+
+
+# ---------------------------------------------------------------- minuta en Word
+
+_PARTICIPANT_COLUMNS = ("nombre", "participante", "asistente", "integrante")
+_ROLE_COLUMNS = ("rol", "cargo", "puesto", "funcion", "area")
+
+
+def _clean_cell(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _table_lines(rows: list[list[str]]) -> list[str]:
+    """Una tabla de la minuta como texto. Una lista de participantes queda como el bloque «Participantes»; el resto, una línea por fila.
+
+    Las filas no usan «Encabezado: valor» porque el importador lo leería como la intervención de un orador llamado «Encabezado».
+    """
+    rows = [[_clean_cell(cell) for cell in row] for row in rows if any(_clean_cell(cell) for cell in row)]
+    if not rows:
+        return []
+    header = [_fold(cell) for cell in rows[0]]
+    name_at = next((i for i, h in enumerate(header) if any(word in h for word in _PARTICIPANT_COLUMNS)), None)
+    role_at = next((i for i, h in enumerate(header) if any(word in h for word in _ROLE_COLUMNS)), None)
+    if name_at is not None and role_at is not None and name_at != role_at:
+        people = [f"{row[name_at]} ({row[role_at]})" for row in rows[1:] if len(row) > max(name_at, role_at) and row[name_at] and row[role_at]]
+        if people:
+            return ["Participantes:", *people, ""]
+    labelled = len(rows) > 1 and all(cell for cell in rows[0])
+    lines = []
+    for row in rows[1:] if labelled else rows:
+        cells = [cell for cell in row if cell]
+        parts = [f"{rows[0][i]} – {cell}" for i, cell in enumerate(row) if cell and i < len(rows[0])] if labelled else cells
+        lines.append("; ".join(parts))
+    return [*lines, ""]
+
+
+def docx_to_text(data: bytes) -> str:
+    """Texto de un .docx en el orden del documento: párrafos y tablas (sin encabezados ni pies de página)."""
+    try:
+        from docx import Document
+        from docx.table import Table
+        from docx.text.paragraph import Paragraph
+    except ImportError as exc:  # pragma: no cover - depende del entorno
+        raise SourceImportError("Falta la librería python-docx para leer minutas en Word (pip install python-docx).") from exc
+    try:
+        document = Document(BytesIO(data))
+    except Exception as exc:  # zip dañado, un .doc viejo renombrado, etc.
+        raise SourceImportError(
+            "No pude abrir el archivo como Word (.docx). Si es un .doc antiguo, guardalo como .docx desde Word."
+        ) from exc
+    lines: list[str] = []
+    for child in document.element.body.iterchildren():
+        if child.tag.endswith("}p"):
+            lines.append(Paragraph(child, document).text.strip())
+        elif child.tag.endswith("}tbl"):
+            table = Table(child, document)
+            rows = []
+            for row in table.rows:
+                cells: list[str] = []
+                for cell in row.cells:
+                    if not cells or cell.text != cells[-1]:  # las celdas combinadas se repiten
+                        cells.append(cell.text)
+                rows.append(cells)
+            lines.extend(_table_lines(rows))
+    return "\n".join(lines)
+
+
+def import_docx(source: bytes | str | Path) -> ImportedSource:
+    """Minuta o transcripción en Word: se convierte a texto y se importa como cualquier transcripción."""
+    data = Path(source).read_bytes() if isinstance(source, (str, Path)) else source
+    if len(data) > MAX_PDF_BYTES:
+        raise SourceImportError(f"El archivo pesa {len(data) // (1024 * 1024)} MB; el máximo es {MAX_PDF_BYTES // (1024 * 1024)} MB.")
+    text = docx_to_text(data)
+    if not text.strip():
+        raise SourceImportError("El documento de Word no tiene texto.")
+    return import_transcript(text)
 
 
 def estimate(words: int) -> dict[str, int]:

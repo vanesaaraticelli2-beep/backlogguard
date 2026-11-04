@@ -9,6 +9,8 @@ __pycache__/
 arquitectura-implementada.md
 Curso ITBA/
 data/
+data_*/
 
 # Documentos reales del usuario (no se versionan)
 entrada/
+evals/real/

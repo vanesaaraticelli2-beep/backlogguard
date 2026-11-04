@@ -21,7 +21,7 @@ from pathlib import Path
 from backlogguard.board import SourceType
 from backlogguard.graph.setup import has_user_sources, user_sources_dir
 from backlogguard.rag import SourceLibrary, build_chunks
-from backlogguard.rag.importers import ImportedSource, SourceImportError, estimate, import_pdf, import_transcript
+from backlogguard.rag.importers import ImportedSource, SourceImportError, estimate, import_docx, import_pdf, import_transcript
 from backlogguard.rag.sources import SourceChangeNeedsConfirmation, SourceMetadata, SourceUnchanged, slugify
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -97,7 +97,7 @@ def main() -> int:
     if options.preventa:
         jobs.append((options.preventa, options.preventa_nombre, options.preventa_fecha, SourceType.PREVENTA, import_pdf))
     if options.reunion:
-        jobs.append((options.reunion, options.reunion_nombre, options.reunion_fecha, SourceType(options.tipo), import_transcript))
+        jobs.append((options.reunion, options.reunion_nombre, options.reunion_fecha, SourceType(options.tipo), import_docx if options.reunion.suffix.lower() == ".docx" else import_transcript))
     if not jobs:
         parser.print_help()
         return 1

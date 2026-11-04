@@ -356,3 +356,23 @@ Leyenda: `[x]` hecho · `[~]` en curso · `[ ]` pendiente
 - [ ] Corrida real corta (3 a 4 ítems, ≈US$ 0,2 a 0,5; solo con tu OK) para ver las revisiones intercaladas en «Corrida» y comparar el tiempo.
 - [ ] Vigilar límites de tasa de Anthropic con 3 ramas; bajar a 2 si aparecen 429.
 - [ ] Commit y push (cuando se pida).
+
+## Devolución del profesor (Gabriel) — prioridades hasta la entrega
+Resumen: el caso es válido y está avanzado; cuidar el alcance (no armar una software factory completa), asegurar el recorrido de punta a punta (minuta + preventa → historias con evidencia → revisión crítica → inconsistencia → decisión humana → publicar lo aprobado), **medir la calidad** (requisitos, inconsistencias, citas y comparación con una solución más simple) y dejar claro qué integración es real y cuál simulada.
+
+- [x] Paralelo en 1 por defecto (extensión opcional) y commit `7341e9b`.
+- [x] Minutas en Word: `import_docx` en `rag/importers.py` (párrafos y tablas en orden; tabla de participantes; filas de acciones sin confundirse con oradores; un título al comienzo ya no corta el encabezado). El cargador de «Fuentes» y `scripts/importar_fuentes.py` aceptan `.docx`. `tests/test_minuta_word.py` (5).
+- [x] «Avanzado → Backlog simulado» rediseñado: aviso de **Azure SIMULADO**, jerarquía épica → historia → tarea, nuevo / actualizado / sin cambios frente a antes de la corrida, filtros, ficha con descripción, criterios, requisito y evidencia. `ui/backlog_view.py` y `tests/test_backlog_view.py` (8).
+- [x] README: sección «Qué es real y qué es simulado» y se corrigieron tres frases que sugerían un Azure real. `AZDO_MODE=real` sigue sin existir.
+- [x] `.gitignore`: `data_*/` y `evals/real/` (documentos reales fuera de git).
+- [ ] **Evaluación (Día 13), lo que más pesa:** dataset con respuestas conocidas, métricas (requisitos identificados y falsos, inconsistencias detectadas y falsos avisos, citas verificables), agente único como comparación y ablación sin Crítico y sin Auditor. Dataset sintético ACME versionado (reproducible) + dataset real en `evals/real/` (no se versiona).
+- [ ] Azure real: decisión tomada, **se sigue con la simulación**; el cliente MCP (clase 13) queda como extensión.
+- [ ] Congelar funciones: no agregar interfaz ni catálogo nuevos antes de la evaluación.
+
+### Preparación antes de cargar los documentos reales (una sola oportunidad, cuesta dinero)
+- [ ] Carpeta de datos aparte: `BACKLOGGUARD_DATA=data_real` (ignorada por git). «Empezar proyecto nuevo» **conserva** las fuentes y la línea base, y `data/` tiene fuentes de pruebas anteriores.
+- [ ] Verificar la clave con una llamada mínima y tener el tope de gasto a la vista (`config/budgets.yaml`).
+- [ ] Armar las respuestas conocidas **antes** de correr: requisitos que debería salir de cada minuta, y las inconsistencias o cambios de alcance que ya sabés que existen. Sin eso no se puede medir.
+- [ ] Orden de carga: preventa, extraer compromisos (≈US$ 0,6, explícito), y las minutas **en orden cronológico con su fecha** (la fecha ordena las reuniones).
+- [ ] Leer cada minuta contra el catálogo (≈US$ 0,2 cada una) y revisar las propuestas antes de la corrida completa (≈US$ 1).
+- [ ] Respaldar `data_real/` antes de cada paso caro, y grabar la corrida final como demo.

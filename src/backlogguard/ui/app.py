@@ -21,11 +21,11 @@ from backlogguard.graph.tasks import KIND_TITLES, PARTIES, summarize_tasks
 from backlogguard.llm.metering import load_pricing
 from backlogguard.rag import SourceLibrary, build_chunks
 from backlogguard.rag.compromisos import BaselineStore, estimate_extraction, extract_commitments
-from backlogguard.rag.importers import SourceImportError, estimate, import_pdf, import_transcript
+from backlogguard.rag.importers import SourceImportError, estimate, import_docx, import_pdf, import_transcript
 from backlogguard.rag.sources import SourceChangeNeedsConfirmation, SourceMetadata, SourceUnchanged, slugify
 from backlogguard.ui.controller import DEFAULT_OBJECTIVE, RunController
 from backlogguard.ui.conversation_view import live_conversation, tab_conversation
-from backlogguard.ui import plan_view
+from backlogguard.ui import backlog_view, plan_view
 from backlogguard.ui.glossary import glossary_markdown
 from backlogguard.ui.guide import ADVANCED_TABS, AVANZADO, CORRIDA, DECISIONES, FUENTES, HELP, HISTORIAS, REVISION, TABS, render_guide
 from backlogguard.ui.revision import KIND_LABELS, tab_catalog, tab_review
@@ -441,22 +441,38 @@ def tab_board(controller: RunController) -> None:
 
 
 def tab_backlog(controller: RunController) -> None:
+    """Lo que hay en el backlog simulado de Azure DevOps: jerarquía, qué cambió en la corrida y la ficha de cada work item."""
     if not controller.running:
         controller.deps.backlog.reload()  # otro proceso pudo haber publicado
-    before, after = st.columns(2)
-    rows = lambda items: [{"#": w["id"] if isinstance(w, dict) else w.id, "tipo": (w["type"] if isinstance(w, dict) else w.type),
-                           "título": (w["title"] if isinstance(w, dict) else w.title),
-                           "origen": "BacklogGuard" if any(t.startswith("bg-item:") for t in (w["tags"] if isinstance(w, dict) else w.tags)) else "manual"}
-                          for w in items]
-    with before:
-        st.markdown("**Antes de la corrida**")
-        if controller.read_only:
-            st.caption("No se guardó cómo estaba el backlog antes de una corrida abierta desde el historial.")
-        else:
-            st.dataframe(rows(controller.backlog_before), width="stretch", hide_index=True)
-    with after:
-        st.markdown("**Ahora**")
-        st.dataframe(rows(controller.deps.backlog.search()), width="stretch", hide_index=True)
+    st.info(
+        "**Azure DevOps SIMULADO.** Estos work items se guardan en `data/backlog_simulado.json` y se comportan como Azure "
+        "(ids, versiones, etiquetas y padres), pero no existen en un Azure DevOps real: la integración real todavía no está conectada."
+    )
+    before = None if controller.read_only else controller.backlog_before
+    nodes = backlog_view.build_nodes(controller.deps.backlog.search(), before)
+    if controller.read_only:
+        st.caption("No se guardó cómo estaba el backlog antes de una corrida abierta desde el historial: no se puede marcar qué cambió.")
+    total = backlog_view.counts(nodes)
+    for column, (label, key) in zip(st.columns(4), [("Work items", "total"), ("Nuevos en la corrida", "nuevos"), ("Actualizados", "actualizados"), ("Cargados a mano", "manuales")]):
+        column.metric(label, total[key])
+    if not nodes:
+        st.caption("El backlog está vacío: todavía no se publicó nada.")
+    else:
+        view = st.segmented_control("Mostrar", backlog_view.FILTERS, default=backlog_view.FILTERS[0], required=True, key="backlog_filtro")
+        shown = backlog_view.apply_filter(nodes, view)
+        st.dataframe(backlog_view.rows(shown), width="stretch", hide_index=True)
+        if shown:
+            by_label = {backlog_view.option_label(n): n for n in shown}
+            pick = st.selectbox("Ver el detalle de un work item", list(by_label), key="backlog_detalle")
+            node = by_label[pick]
+            board_item = None
+            state_board = controller.state().get("board")
+            if node.board_id and state_board:
+                board_item = Board.model_validate(state_board).items.get(node.board_id)
+            st.markdown(backlog_view.detail_markdown(node, board_item))
+            if board_item is not None and board_item.citations:
+                st.markdown("**Evidencia**")
+                evidence_cards([c.model_dump(mode="json") for c in board_item.citations])
     publication = controller.state().get("publication")
     if publication:
         st.markdown("**Resultado de la publicación**")
@@ -486,13 +502,13 @@ def tab_detail(controller: RunController) -> None:
 def tab_sources(controller: RunController) -> None:
     library = SourceLibrary(user_sources_dir(controller.data_dir))
     st.caption(
-        "Cargá tu preventa (PDF) y la transcripción de una reunión (texto). Se guardan en `data/fuentes/` (no se suben a git). "
+        "Cargá tu preventa (PDF) y la transcripción de una reunión (texto) o una minuta (texto o Word .docx). Se guardan en `data/fuentes/` (no se suben a git). "
         "Mientras haya al menos una preventa y una reunión, las corridas usan estas fuentes en lugar de las de ejemplo."
     )
     busy = controller.running
-    kind = st.radio("¿Qué vas a cargar?", ["Preventa (PDF)", "Reunión (texto)", "Minuta (texto)"], horizontal=True, key="tipo_fuente")
+    kind = st.radio("¿Qué vas a cargar?", ["Preventa (PDF)", "Reunión (texto)", "Minuta (texto o Word)"], horizontal=True, key="tipo_fuente")
     is_pdf = kind.startswith("Preventa")
-    upload = st.file_uploader("Archivo", type=["pdf"] if is_pdf else ["txt", "md", "vtt"], key=f"archivo-{kind}")
+    upload = st.file_uploader("Archivo", type=["pdf"] if is_pdf else ["txt", "md", "vtt", "docx"], key=f"archivo-{kind}")
     name = st.text_input("Nombre de la fuente", key=f"nombre-{kind}")
     when = st.date_input(
         "Fecha del documento", value=date_from_filename(upload.name) if upload else None, key=f"fecha-{kind}-{upload.name if upload else ''}",
@@ -501,7 +517,7 @@ def tab_sources(controller: RunController) -> None:
     overwrite = st.checkbox("Reemplazar si ya existe una fuente con ese nombre", key=f"reemplazar-{kind}")
     if st.button("Importar y guardar", key="importar", disabled=busy or upload is None or not name.strip() or when is None):
         try:
-            imported = import_pdf(upload.getvalue()) if is_pdf else import_transcript(upload.getvalue())
+            imported = import_pdf(upload.getvalue()) if is_pdf else (import_docx if upload.name.lower().endswith(".docx") else import_transcript)(upload.getvalue())
             source_type = SourceType.PREVENTA if is_pdf else (SourceType.MINUTA if kind.startswith("Minuta") else SourceType.REUNION)
             metadata = SourceMetadata(source_name=name.strip(), source_type=source_type, source_date=when, layout=imported.layout)
             document_id = slugify(name)

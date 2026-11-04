@@ -59,10 +59,23 @@ flowchart TD
     R --> Q[(Qdrant local<br/>fragmentos con metadata)]
     S -->|escalar_a_persona| H{{Pausa humana<br/>interrupt}}
     H --> S
-    I -->|solo plan aprobado| D[(Azure DevOps<br/>simulado o real)]
+    I -->|solo plan aprobado| D[(Azure DevOps<br/>SIMULADO)]
 ```
 
 > ⚠️ A COMPLETAR: reemplazar o validar este diagrama contra la implementación final (`docs/arquitectura/`).
+
+### Qué es real y qué es simulado
+Para la entrega, esto es lo que funciona de verdad y lo que está simulado:
+
+| Componente | Estado | Detalle |
+|---|---|---|
+| Modelos de lenguaje (Anthropic) | **Real** con `LIVE_MODE=1` | Sonnet, Opus y Haiku según `config/models.yaml`. Con `LIVE_MODE=0` la demo reproduce una corrida grabada, sin red ni costo. |
+| **Azure DevOps** | **Simulado** | `SimulatedBacklog` ([integrations/simulated.py](src/backlogguard/integrations/simulated.py)) guarda los work items en `data/backlog_simulado.json` y se comporta como Azure: ids numerados, versiones (`rev`), etiquetas, padres, conflictos por versión y fallas inyectables. **No existe un Azure DevOps real conectado**: `AZDO_MODE=real` devuelve «no disponible». La interfaz `BacklogGateway` ([integrations/gateway.py](src/backlogguard/integrations/gateway.py)) está pensada para reemplazar el simulado por un cliente real (MCP) sin tocar el plan ni la aprobación. |
+| Publicación segura | **Real** | Plan en *dry-run*, aprobación humana por rol, hash del plan, revalidación contra el backlog e idempotencia por requisito y versión: todo corre igual contra el simulado. |
+| Fuentes del proyecto | **Real** | Preventa en PDF y minutas o transcripciones (`.txt`, `.md`, `.vtt` y Word `.docx`) cargadas por la persona. |
+| Verificación de citas | **Real**, determinística | Cada cita se compara literalmente contra el fragmento de la fuente; las que no coinciden se descartan o se objetan. |
+| Recuperación de fragmentos | **Léxica, en memoria** | Búsqueda determinística (BM25). Los embeddings reales y Qdrant están disponibles como extra (`rag`), pero la demo y los tests no los usan. |
+| Demo sin costo | **Grabada** | `evals/recordings/demo_acme.json`; reproduce una corrida real, no genera respuestas nuevas. |
 
 ### Agentes, tools y skills
 | Agente | Tools | Skill |
@@ -97,7 +110,7 @@ Policy gate por rol (cada agente ve solo sus tools), imposibilidad de escribir s
 | LangGraph | Grafo con estado, checkpoints e `interrupt` para el Human-in-the-Loop. |
 | RAG con Qdrant local | Las citas dependen de recuperar fragmentos con reunión, fecha y orador. |
 | SQLite y JSON | SQLite para la memoria del proyecto y los checkpoints del grafo; JSON versionado para los snapshots del tablero. Es el enfoque del curso (clases 10 y 11): simple y reproducible. |
-| Adaptador de Azure DevOps con modo simulado y real | Tests y demo estables aunque el servicio externo no responda. |
+| Adaptador de Azure DevOps (`BacklogGateway`) con implementación simulada | Tests y demo estables aunque el servicio externo no responda. El modo real (MCP) quedó como extensión: ver «Qué es real y qué es simulado». |
 | Skills en formato Agent Skills | Criterio de cada rol versionado y reutilizable fuera de los prompts. |
 | Validación con Pydantic y policy gate | Salidas estructuradas y autorización fuera del modelo. |
 
@@ -153,7 +166,7 @@ streamlit run src/backlogguard/ui/app.py --server.address localhost
 python scripts/run_pipeline.py --reset --seed        # --auto aprueba todo con la persona que corresponde
 python scripts/decidir.py <corrida>                  # ver el pedido pendiente; --accion approve|edit|reject para decidir
 
-# Usar tus propios documentos (preventa en PDF y transcripción en texto); requiere LIVE_MODE=1 para correr.
+# Usar tus propios documentos (preventa en PDF; reunión o minuta en texto, VTT o Word); requiere LIVE_MODE=1 para correr.
 python scripts/importar_fuentes.py --preventa preventa.pdf --preventa-nombre "Propuesta" --preventa-fecha 2025-10-01 \
     --reunion minuta.txt --reunion-nombre "Inception" --reunion-fecha 2026-01-25
 python scripts/importar_fuentes.py --listar           # --limpiar vuelve a las fuentes de ejemplo
@@ -177,7 +190,7 @@ Recorrido principal (⚠️ ajustar a la interfaz final):
 4. Observar la objeción del Crítico y la corrección del productor.
 5. Resolver la pausa por cambio de alcance (service manager).
 6. Revisar el plan en dry-run y aprobarlo, editarlo o rechazarlo.
-7. Ver los work items publicados en el modo simulado, con sus citas.
+7. Ver los work items publicados en el backlog **simulado** (Avanzado → Backlog simulado): jerarquía, qué cambió y la evidencia de cada uno.
 
 **Demo y video:** ⚠️ URL de la demo (si existe) y del video de respaldo de 3 a 5 minutos.
 
@@ -205,7 +218,7 @@ Recorrido principal (⚠️ ajustar a la interfaz final):
 ⚠️ A COMPLETAR al cierre. Limitaciones previstas:
 - Datos sintéticos; no se validó con material real de clientes.
 - La evaluación usa un dataset pequeño con errores sembrados.
-- El modo real de Azure DevOps se probó solo en un proyecto de prueba.
+- **Azure DevOps está simulado**: la publicación se prueba contra `SimulatedBacklog`; la integración con un Azure real (MCP) quedó como extensión.
 - El Crítico y el productor usan modelos de lenguaje; la verificación textual de citas es determinística, pero el juicio de sustento no lo es.
 - Quedan fuera del alcance: notificaciones reales, deduplicación semántica avanzada y varios proyectos en simultáneo.
 
@@ -224,7 +237,7 @@ backlogguard/
 │   ├── memory/        # memoria del proyecto y checkpoints
 │   ├── board/         # modelos Pydantic y tablero
 │   ├── graph/         # grafo de LangGraph
-│   ├── integrations/  # Azure DevOps (simulado y real)
+│   ├── integrations/  # Azure DevOps (simulado; el real queda como extensión)
 │   └── ui/            # interfaz Streamlit
 ├── tests/
 ├── evals/             # dataset y resultados
