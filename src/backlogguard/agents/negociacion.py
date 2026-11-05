@@ -33,6 +33,8 @@ def earlier_twin(board: Board, item_id: str):
     for other_id, other in board.items.items():
         if other_id == item_id:
             return None  # solo cuentan los anteriores: el más nuevo es el que sobra
+        if item.requirement_id and other.requirement_id and item.requirement_id != other.requirement_id:
+            continue  # dos requisitos que una persona aprobó por separado no se descartan por parecerse en las palabras
         if other.state is not ItemState.EXCLUIDO and repeats(item, other):
             return other
     return None

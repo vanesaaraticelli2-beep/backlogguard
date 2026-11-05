@@ -4,6 +4,8 @@ Los colores base los fija `.streamlit/config.toml`; acá va solo lo que el tema 
 """
 from __future__ import annotations
 
+from html import escape
+
 import streamlit as st
 
 INDIGO = "#13056D"
@@ -70,12 +72,30 @@ h1, h2, h3, h4 {{ font-family: 'Outfit', 'Segoe UI', sans-serif; color: {INDIGO}
 .bg-q small {{ display: block; color: #5d5b7a; margin-top: 2px; }}
 .bg-tag.ok {{ background: {GREEN}; color: #10270a; }}
 .bg-tag.no {{ background: #fde7e5; color: #b3261e; }}
+.bg-anchor {{ scroll-margin-top: 72px; height: 0; }}
+.stTabs [data-baseweb="tab"] {{ font-weight: 600; font-size: 16px; padding: 10px 16px; }}
+.bg-help {{ font-size: 16px; font-weight: 600; color: {INDIGO}; margin: 4px 0 12px; line-height: 1.4; }}
+.bg-role {{ display: inline-block; background: #e1defa; color: {INDIGO}; border: 1px solid #c9c4f2; border-radius: 999px; padding: 3px 12px; font-size: 14px; font-weight: 700; margin: 8px 8px 4px 0; }}
+.bg-role-note {{ display: inline; font-size: 14px; color: #5d5b7a; }}
+.bg-next {{ font-size: 17px; font-weight: 600; }}
+[class*="st-key-rev_metrics"] [data-testid="stMetric"] {{ border-radius: 10px; padding: 8px 16px; border-left: 5px solid var(--c); background: var(--bg); display: flex; flex-direction: row; align-items: baseline; justify-content: space-between; gap: 12px; }}
+[class*="st-key-rev_metrics"] [data-testid="stMetricLabel"] p {{ font-size: 15px; font-weight: 700; color: var(--c); margin: 0; }}
+[class*="st-key-rev_metrics"] [data-testid="stMetricValue"] {{ font-family: 'Outfit', sans-serif; font-size: 30px; font-weight: 700; color: var(--c); line-height: 1.2; }}
+[class*="st-key-rev_metrics"] [data-testid="stColumn"]:nth-child(1) {{ --c: #a35a00; --bg: #fff3df; }}
+[class*="st-key-rev_metrics"] [data-testid="stColumn"]:nth-child(2) {{ --c: #2f6a0a; --bg: #eaf5dc; }}
+[class*="st-key-rev_metrics"] [data-testid="stColumn"]:nth-child(3) {{ --c: #b3261e; --bg: #fdeceb; }}
+[class*="st-key-rev_reunion"] label p {{ font-size: 15px; font-weight: 600; color: {INDIGO}; }}
+[class*="st-key-rev_reunion"] [data-baseweb="select"] > div {{ font-size: 16px; font-weight: 500; }}
 </style>
 """
 
 
 def apply_theme() -> None:
     st.markdown(CSS, unsafe_allow_html=True)
+
+
+def help_line(text: str) -> None:
+    st.markdown(f'<div class="bg-help">{escape(text)}</div>', unsafe_allow_html=True)
 
 
 def top_band(title: str) -> None:

@@ -33,7 +33,11 @@ from backlogguard.ui.guide import ADVANCED_TABS, AVANZADO, CORRIDA, DECISIONES, 
 from backlogguard.ui.revision import KIND_LABELS, tab_catalog, tab_review
 from backlogguard.ui.runtime import make_controller
 from backlogguard.ui.story_view import current_baseline, is_story, render_story
-from backlogguard.ui.theme import apply_theme, top_band
+from backlogguard.ui.theme import apply_theme, help_line, top_band
+from backlogguard.ui.coverage_view import coverage_section
+from backlogguard.ui.request_view import summary_view
+from backlogguard.ui.scroll import DECISION, anchor, apply_scroll, request_scroll
+from backlogguard.ui.working import runner_html, working
 
 SOURCE_LABELS = {"preventa": "Línea base (preventa)", "reunion": "Evidencia (reunión)", "minuta": "Evidencia (minuta)"}
 ROLE_LABELS_DECISION = {"product_owner": "product owner", "service_manager": "service manager", "full_stack_ia_engineer": "ingeniero"}
@@ -79,7 +83,7 @@ def render_status(controller: RunController) -> None:
     state = controller.state()
     status = state.get("status", "sin corrida")
     if controller.running:
-        st.info(f"Los agentes están trabajando… ({len(controller.events)} eventos)")
+        st.markdown(runner_html(f"Los agentes están trabajando… ({len(controller.events)} eventos)"), unsafe_allow_html=True)
     elif controller.error:
         st.error(f"La corrida falló: {controller.error}")
     else:
@@ -159,14 +163,16 @@ def plan_preview(payload: dict) -> None:
 
 def decision_form(controller: RunController, who, payload: dict) -> None:
     request = payload["request"]
+    anchor(DECISION)
     st.subheader(request["title"])
     if payload.get("last_error"):
         st.warning(f"Tu última decisión no se aplicó: {payload['last_error']}")
     st.caption(f"Pedido {request['request_id']} · versión {request['version']} · lo decide: {request['decides']}")
     if request["kind"] == "plan":
+        coverage_section(controller.state())
         plan_preview(request["payload"])
     else:
-        st.text(request["summary"])
+        summary_view(request)
     if request["evidence"]:
         st.markdown("**Evidencia**")
         evidence_cards(request["evidence"])
@@ -179,6 +185,7 @@ def decision_form(controller: RunController, who, payload: dict) -> None:
         rejected = reject.form_submit_button("Rechazar", key="rechazar", width="stretch")
     if approved or rejected:
         controller.decide(decision_payload(request, who, "approve" if approved else "reject", comment, None))
+        request_scroll(DECISION)
         st.rerun()
     if edited:
         changes = {name: value for name, value in typed.items() if value != current[name]}
@@ -186,6 +193,7 @@ def decision_form(controller: RunController, who, payload: dict) -> None:
             st.warning("No cambiaste nada: no hay nada que editar.")
         else:
             controller.decide(decision_payload(request, who, "edit", comment, changes))
+            request_scroll(DECISION)
             st.rerun()
 
 
@@ -411,6 +419,7 @@ def tab_board(controller: RunController) -> None:
         st.info("Todavía no hay tablero.")
         return
     board = Board.model_validate(state["board"])
+    coverage_section(state)
     st.dataframe(
         [{"id": i.id, "tipo": i.kind.value, "estado": i.state.value, "título": i.title, "citas": len(i.citations),
           "aprobó": i.approved_by or ""} for i in board.items.values()],
@@ -478,6 +487,7 @@ def plan_selector(controller: RunController, who) -> None:
     request = payload["request"]
     items = request["payload"]["items"]
     st.markdown("### Plan de publicación pendiente: elegí qué se envía a Azure DevOps")
+    coverage_section(controller.state())
     if payload.get("last_error"):
         st.warning(f"Tu última decisión no se aplicó: {payload['last_error']}")
     can_decide = request["decides"] == who.role
@@ -711,17 +721,27 @@ def baseline_section(controller: RunController, library: SourceLibrary) -> None:
                 st.info("La extracción necesita modelos reales (LIVE_MODE=1).")
             sure = st.checkbox("Confirmo el gasto", key=f"confirmar-linea-base-{presale}")
             if st.button("Extraer compromisos", key=f"extraer-{presale}", disabled=controller.running or controller.mode != "real" or not sure):
-                with st.spinner("Extrayendo y verificando las citas…"):
-                    extract_commitments(document, controller.deps.providers.auditor, store, confirmed=True, pricing=load_pricing())
+                with working("Extrayendo los compromisos de la preventa…"):
+                    bar = st.progress(0.0, text="Extrayendo los compromisos…")
+                    extract_commitments(
+                        document, controller.deps.providers.auditor, store, confirmed=True, pricing=load_pricing(),
+                        on_progress=lambda done, total: bar.progress(done / total, text=f"Ventana {done} de {total} lista"),
+                    )
                 st.rerun()
         baseline = store.current(document)
         if baseline is None:
             continue
         real = f"~US$ {baseline.cost_usd:.3f}" if baseline.cost_usd is not None else "sin precio"
+        took = f" · {baseline.seconds:.0f} s en {len(baseline.windows)} ventana(s) a la vez" if baseline.seconds else ""
         st.caption(
             f"{len(baseline.commitments)} compromisos verificados, {len(baseline.discarded)} descartados · {baseline.model} · "
-            f"{baseline.input_tokens:,} tokens de entrada y {baseline.output_tokens:,} de salida ({real}) · {baseline.extracted_at}"
+            f"{baseline.input_tokens:,} tokens de entrada y {baseline.output_tokens:,} de salida ({real}){took} · {baseline.extracted_at}"
         )
+        if baseline.uncovered_pages:
+            st.warning(
+                "De estas páginas con texto no salió ningún compromiso, y puede ser una extracción incompleta: "
+                + ", ".join(str(n) for n in baseline.uncovered_pages)
+            )
         for epic, rows in baseline.by_epic().items():
             with st.expander(f"{epic} · {len(rows)}"):
                 st.dataframe(
@@ -761,7 +781,7 @@ def meetings_section(controller: RunController, library: SourceLibrary) -> None:
         st.markdown(f"«{document.metadata.source_name}» · {document.metadata.source_date} · huella `{document.fingerprint}` · **{label}**")
         if status != "procesada":
             models = (getattr(providers.requerimientos, "model", "?"), getattr(providers.auditor, "model", "?"))
-            estimate_ = estimate_ingest(document, baseline, models[0], models[1], load_pricing())
+            estimate_ = estimate_ingest(document, baseline, models[0], models[1], load_pricing(), catalog)
             cost = f"~US$ {estimate_['cost_usd']:.2f}" if estimate_["cost_usd"] is not None else "sin precio configurado"
             st.caption(
                 f"Estimación (enumera {models[0]}, clasifica {models[1]}): ~{estimate_['candidates']} candidatos, ~{estimate_['calls']} llamadas, "
@@ -773,7 +793,7 @@ def meetings_section(controller: RunController, library: SourceLibrary) -> None:
                 st.info("Leer la reunión necesita modelos reales (LIVE_MODE=1).")
             sure = st.checkbox("Confirmo el gasto", key=f"confirmar-reunion-{meeting_id}")
             if st.button("Leer reunión contra el catálogo", key=f"leer-{meeting_id}", disabled=controller.running or controller.mode != "real" or not sure):
-                with st.spinner("Enumerando, clasificando y verificando las citas…"):
+                with working("Enumerando, clasificando y verificando las citas…"):
                     result = ingest_meeting(
                         document, catalog=catalog, enumerator=providers.requerimientos, classifier=providers.auditor, confirmed=True,
                         baseline=baseline, presale=presale, pricing=load_pricing(),
@@ -842,22 +862,22 @@ def main() -> None:
     render_guide(controller, who)
     sources, review, run, board, decisions, advanced = st.tabs(TABS, key="nav", on_change="rerun")
     with sources:
-        st.caption(HELP[FUENTES])
+        help_line(HELP[FUENTES])
         tab_sources(controller)
     with review:
-        st.caption(HELP[REVISION])
+        help_line(HELP[REVISION])
         tab_review(controller, who)
     with run:
-        st.caption(HELP[CORRIDA])
+        help_line(HELP[CORRIDA])
         tab_run(controller, who)
     with board:
-        st.caption(HELP[HISTORIAS])
+        help_line(HELP[HISTORIAS])
         tab_board(controller)
     with decisions:
-        st.caption(HELP[DECISIONES])
+        help_line(HELP[DECISIONES])
         tab_decisions(controller, who)
     with advanced:
-        st.caption(HELP[AVANZADO])
+        help_line(HELP[AVANZADO])
         detail, catalog, saved, backlog = st.tabs(ADVANCED_TABS)
         with detail:
             tab_detail(controller)
@@ -867,6 +887,7 @@ def main() -> None:
             tab_runs(controller)
         with backlog:
             tab_backlog(controller, who)
+    apply_scroll(DECISION)
 
 
 if __name__ == "__main__":  # Streamlit ejecuta el script como __main__; importar el módulo no dibuja nada

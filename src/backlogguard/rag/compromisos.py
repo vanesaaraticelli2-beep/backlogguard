@@ -13,11 +13,13 @@ Reglas que no dependen del modelo:
 from __future__ import annotations
 
 import json
+import time
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Literal
+from typing import Callable, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -29,20 +31,22 @@ from backlogguard.rag.chunking import PAGE_MARKER
 from backlogguard.rag.sources import SourceDocument
 from backlogguard.board import SourceType
 
-WINDOW_CHARS = 100_000  # una preventa más larga se extrae por ventanas de páginas completas
+WINDOW_CHARS = 9_000  # se extrae por ventanas de páginas completas: la salida de una sola llamada tiene tope y una preventa larga lo pasa
 CHARS_PER_TOKEN = 3.2  # estimación para el español, a verificar con el uso real
-EXPECTED_OUTPUT_TOKENS = 12_000  # calibrado con una extracción real (80 compromisos, ~24k de salida en total); a revisar con más datos
+EXPECTED_OUTPUT_TOKENS = 7_000  # por ventana de ~6 páginas (~60 compromisos de ~125 tokens); medido con una preventa real
+MAX_PARALLEL_WINDOWS = 6  # las ventanas son independientes: se piden a la vez (el tiempo manda lo que el modelo escribe, no lo que lee)
 PROMPT_OVERHEAD_TOKENS = 900
+MIN_WORDS_FOR_COVERAGE = 25  # una página con menos texto (un título suelto) no se espera que tenga compromisos
 Scope = Literal["incluido", "excluido", "condicion"]
 
 SYSTEM = """Sos el Auditor de Proyecto. Leés una propuesta comercial (la preventa) y extraés lo que se VENDIÓ, para usarlo como línea base.
 
 Extraé una lista de compromisos. Cada compromiso es una capacidad o condición concreta de la propuesta, no un título genérico.
 - "epica": el módulo o tema mayor al que pertenece (por ejemplo "Alta de clientes"). Usá el mismo nombre para lo que va junto.
-- "capacidad": qué se compromete, en una frase.
+- "capacidad": qué se compromete, en una frase corta (hasta 20 palabras).
 - "alcance": "incluido" si la propuesta lo incluye, "excluido" si dice que NO se hace, "condicion" si es un supuesto o dependencia.
 - "pagina": el número de la página donde figura (los marcadores son [[página N]]).
-- "cita": una frase TEXTUAL copiada de esa página, sin cambiar una palabra. Se verifica por código y el compromiso con una cita que no existe se descarta.
+- "cita": una frase TEXTUAL copiada de esa página, sin cambiar una palabra, de hasta 25 palabras: la parte más corta que sostenga el compromiso. Se verifica por código y el compromiso con una cita que no existe se descarta.
 
 Reglas:
 - No inventes compromisos ni parafrasees la cita. Si no podés citarlo textualmente, no lo incluyas.
@@ -85,6 +89,16 @@ class Discarded(BaseModel):
     reason: str
 
 
+class WindowStat(BaseModel):
+    """Lo que costó pedir una ventana de páginas: sirve para medir dónde se va el tiempo."""
+
+    pages: str
+    seconds: float
+    input_tokens: int
+    output_tokens: int
+    calls: int
+
+
 class Baseline(BaseModel):
     """Compromisos de una preventa, ligados a la huella del texto del que salieron."""
 
@@ -97,6 +111,9 @@ class Baseline(BaseModel):
     cost_usd: float | None = None
     commitments: list[Commitment]
     discarded: list[Discarded] = Field(default_factory=list)
+    uncovered_pages: list[int] = Field(default_factory=list, description="Páginas con texto de las que no salió ningún compromiso: avisan de una extracción incompleta")
+    seconds: float | None = Field(default=None, description="Duración total de la extracción (las ventanas corren a la vez)")
+    windows: list[WindowStat] = Field(default_factory=list)
 
     def by_epic(self) -> dict[str, list[Commitment]]:
         groups: dict[str, list[Commitment]] = defaultdict(list)
@@ -111,6 +128,13 @@ class ExtractionNotConfirmed(Exception):
 
 class ExtractionNeedsRealModel(Exception):
     """Con un modelo simulado o una grabación no hay nada que extraer."""
+
+
+class ExtractionTruncated(Exception):
+    """La respuesta del modelo se cortó por el tope de salida y no se puede achicar más la ventana de páginas."""
+
+
+TRUNCATED = ("max_tokens", "length")  # `finish_reason` de una respuesta cortada por el tope de salida
 
 
 def split_pages(text: str) -> dict[int, str]:
@@ -180,6 +204,11 @@ def _ask(provider: LLMProvider, pages: dict[int, str], numbers: list[int]) -> li
     body = "\n\n".join(f"[[página {n}]]\n{pages[n]}" for n in numbers)
     prompt = f"Extraé los compromisos de estas páginas.\n\n<preventa>\n{body.replace('<', '‹').replace('>', '›')}\n</preventa>"
     outcome = generate_with_resilience_sync(provider, prompt, system=SYSTEM, max_retries=2, base_delay_seconds=0.5)
+    if outcome.result.finish_reason in TRUNCATED:  # una respuesta cortada no es JSON válido, y repararla perdería en silencio lo que falta
+        if len(numbers) < 2:
+            raise ExtractionTruncated(f"La página {numbers[0]} sola ya supera el tope de salida del modelo.")
+        half = len(numbers) // 2
+        return _ask(provider, pages, numbers[:half]) + _ask(provider, pages, numbers[half:])
     parsed, _ = parse_with_repair(
         outcome.result.text,
         lambda text: RawExtraction.model_validate_json(extract_json(text)),
@@ -189,6 +218,17 @@ def _ask(provider: LLMProvider, pages: dict[int, str], numbers: list[int]) -> li
         subject="el Auditor",
     )
     return parsed.compromisos
+
+
+def _timed_ask(provider: LLMProvider, pages: dict[int, str], numbers: list[int]) -> tuple[list[RawCommitment], WindowStat]:
+    meter = Meter()  # uno por ventana: así las ventanas en paralelo no se pisan al contar
+    started = time.perf_counter()
+    rows = _ask(MeteredProvider(provider, meter), pages, numbers)
+    stat = WindowStat(
+        pages=f"{numbers[0]}-{numbers[-1]}" if len(numbers) > 1 else str(numbers[0]), seconds=round(time.perf_counter() - started, 1),
+        input_tokens=meter.input_tokens, output_tokens=meter.output_tokens, calls=meter.calls,
+    )
+    return rows, stat
 
 
 class BaselineStore:
@@ -230,8 +270,13 @@ def extract_commitments(
     confirmed: bool,
     pricing: dict | None = None,
     allow_fake: bool = False,
+    max_parallel: int = MAX_PARALLEL_WINDOWS,
+    on_progress: Callable[[int, int], None] | None = None,
 ) -> Baseline:
-    """Extrae, verifica y guarda los compromisos de una preventa. Sin `confirmed=True` no hace nada."""
+    """Extrae, verifica y guarda los compromisos de una preventa. Sin `confirmed=True` no hace nada.
+
+    Las ventanas de páginas se piden a la vez (hasta `max_parallel`); el resultado no depende del orden en que lleguen.
+    """
     if document.metadata.source_type is not SourceType.PREVENTA:
         raise ValueError(f"{document.document_id} no es una preventa")
     if not confirmed:
@@ -239,23 +284,40 @@ def extract_commitments(
     if not allow_fake and not is_real(provider):
         raise ExtractionNeedsRealModel("La extracción necesita un modelo real (LIVE_MODE=1).")
     pages = split_pages(document.text)
-    meter = Meter()
-    metered = MeteredProvider(provider, meter)
-    raw: list[RawCommitment] = []
-    for numbers in windows(pages):
-        raw.extend(_ask(metered, pages, numbers))
+    groups = windows(pages)
+    started = time.perf_counter()
+    done: dict[int, tuple[list[RawCommitment], WindowStat]] = {}
+    pool = ThreadPoolExecutor(max_workers=max(1, min(max_parallel, len(groups))))
+    try:
+        futures = {pool.submit(_timed_ask, provider, pages, numbers): index for index, numbers in enumerate(groups)}
+        for finished, future in enumerate(as_completed(futures), 1):
+            done[futures[future]] = future.result()  # si una ventana falla, el error sale acá y no se guarda nada incompleto
+            if on_progress:
+                on_progress(finished, len(groups))  # siempre desde este hilo: la pantalla puede dibujar el avance
+    except BaseException:
+        pool.shutdown(wait=False, cancel_futures=True)
+        raise
+    pool.shutdown()
+    seconds = time.perf_counter() - started
+    raw = [row for index in range(len(groups)) for row in done[index][0]]  # en el orden de las páginas, no en el de llegada
+    stats = [done[index][1] for index in range(len(groups))]
     commitments, dropped = verify(raw, pages)
+    covered = {c.page for c in commitments}
+    uncovered = [n for n, body in pages.items() if len(body.split()) >= MIN_WORDS_FOR_COVERAGE and n not in covered]
     model = str(getattr(provider, "model", "?"))
     baseline = Baseline(
         document_id=document.document_id,
         fingerprint=document.fingerprint,
         model=model,
         extracted_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        input_tokens=meter.input_tokens,
-        output_tokens=meter.output_tokens,
-        cost_usd=estimate_cost(model, meter.input_tokens, meter.output_tokens, pricing or {}),
+        input_tokens=sum(w.input_tokens for w in stats),
+        output_tokens=sum(w.output_tokens for w in stats),
+        cost_usd=estimate_cost(model, sum(w.input_tokens for w in stats), sum(w.output_tokens for w in stats), pricing or {}),
         commitments=commitments,
         discarded=dropped,
+        uncovered_pages=uncovered,
+        seconds=round(seconds, 1),
+        windows=stats,
     )
     store.save(baseline)
     return baseline

@@ -11,7 +11,8 @@ from test_graph import EMAIL, GHERKIN, NO_FINDINGS, PDF, PLAN, STORY, World, fin
 from backlogguard.board import BacklogItem, Board, ItemKind, SourceType
 from backlogguard.catalog import Catalog, Draft, Evidence, Proposal, ProposalKind, RequirementStatus
 from backlogguard.graph import build_graph, pending_request, resume_pipeline, sqlite_checkpointer
-from backlogguard.graph.drafting import MAX_REQUIREMENTS_PER_RUN, goal_for, pick
+from backlogguard.graph.coverage import from_state as coverage_of, summary_line
+from backlogguard.graph.drafting import BATCH_SIZE, batches, goal_for
 from backlogguard.hitl import load_people
 from backlogguard.integrations.plan import idempotency_key
 from backlogguard.tools.requerimientos import DraftArgs, RequirementsToolkit
@@ -84,7 +85,7 @@ def test_la_historia_nace_del_requisito_aprobado_con_su_identidad_y_sus_citas(wo
     assert [c.quote for c in item.citations] == [EMAIL[1]]  # la cita verificada del catálogo, sin que el modelo la repita
     prompt = world.providers.requerimientos.prompts[0]
     assert RID in prompt and TITLE in prompt and "C-001" in prompt
-    assert any("Requisitos aprobados por redactar: 1" in t["detail"] for t in state["tasks"])
+    assert any(t["detail"].startswith("Tanda 1 de 1 (RQ-001)") for t in state["tasks"])
 
 
 def test_el_modelo_no_puede_atribuir_una_historia_a_un_requisito_que_no_existe_o_no_esta_activo(world):
@@ -186,12 +187,50 @@ def test_la_clave_de_publicacion_es_del_requisito_y_su_version_no_de_como_quedo_
     assert idempotency_key("P", item("Un título", 1)) != idempotency_key("P", item("Un título", 2))
 
 
-def test_cada_corrida_toma_un_tope_de_requisitos_y_el_resto_queda_para_la_siguiente(world):
+def test_los_requisitos_se_redactan_en_tandas_y_ninguno_queda_afuera(world):
     approve_requirement(world)
-    pending = world.catalog.to_publish() * (MAX_REQUIREMENTS_PER_RUN + 3)
-    picked, later = pick(pending)
-    assert len(picked) == MAX_REQUIREMENTS_PER_RUN and later == 3
-    assert "RQ-001 (versión 1)" in goal_for(picked[:1]) and "Se dijo" in goal_for(picked[:1])
+    pending = world.catalog.to_publish() * (BATCH_SIZE + 3)
+    groups = batches(pending)
+    assert [len(g) for g in groups] == [BATCH_SIZE, 3] and sum(len(g) for g in groups) == len(pending)
+    assert "RQ-001 (versión 1)" in goal_for(groups[0][:1]) and "Se dijo" in goal_for(groups[0][:1])
+
+
+def five_requirements(world):
+    return [approve_requirement(world, f"Requisito {n} con su propio título", EMAIL if n % 2 else PDF, key=f"k{n}") for n in range(1, 6)]
+
+
+def test_una_corrida_cubre_todos_los_requisitos_aprobados_en_tandas(world):
+    rids = five_requirements(world)
+    titles = [f"Historia {n} del requisito" for n in range(1, 6)]
+    producer = [write(r, t) for r, t in zip(rids[:4], titles)] + [final("Tanda 1."), write(rids[4], titles[4]), final("Tanda 2.")]
+    state = run_once(world, "t1", producer=producer, critic=[verdict_of(f"HU-{r}") for r in rids])
+    drafting = [t["detail"] for t in state["tasks"] if t["detail"].startswith("Tanda")]
+    assert len(drafting) == 2 and drafting[0].startswith("Tanda 1 de 2") and drafting[1].startswith("Tanda 2 de 2")
+    found = coverage_of(state)
+    assert [r["id"] for r in found] == rids and {r["status"] for r in found} == {"con_historia"}
+    assert summary_line(found) == "5 de 5 requisitos con historia"
+
+
+def test_lo_que_el_productor_no_redacta_se_reintenta_y_si_sigue_faltando_se_dice_por_que(world):
+    rids = five_requirements(world)
+    titles = [f"Historia {n} del requisito" for n in range(1, 6)]
+    producer = [write(r, t) for r, t in zip(rids[:4], titles)] + [final("Tanda 1."), final("No redacté nada."), final("Tampoco ahora.")]
+    state = run_once(world, "t1", producer=producer, critic=[verdict_of(f"HU-{r}") for r in rids[:4]])
+    assert any(t["detail"].endswith("(reintento). Ítems en el tablero: 4.") for t in state["tasks"])
+    found = coverage_of(state)
+    missing = [r for r in found if r["status"] == "sin_historia"]
+    assert [r["id"] for r in missing] == [rids[4]] and "reintento" in missing[0]["reason"] and missing[0]["item_id"] is None
+    assert summary_line(found).startswith("4 de 5 requisitos con historia · 1 sin cubrir")
+
+
+def test_dos_requisitos_aprobados_por_separado_no_se_descartan_por_parecerse(world):
+    first = approve_requirement(world, "Notificación por email del nuevo estado", EMAIL, key="a")
+    second = approve_requirement(world, "Notificación por email del nuevo estado del pedido", EMAIL, key="b")
+    producer = [write(first, "Notificación por email del nuevo estado"), write(second, "Notificación por email del nuevo estado del pedido"), final("Listo.")]
+    state = run_once(world, "t1", producer=producer, critic=[verdict_of(f"HU-{first}"), verdict_of(f"HU-{second}")])
+    board = Board.model_validate(state["board"])
+    assert not [i for i in board.items.values() if i.state.value == "excluido"]
+    assert {r["status"] for r in coverage_of(state)} == {"con_historia"}
 
 
 def test_solo_se_listan_para_publicar_los_requisitos_activos_sin_publicar_o_con_version_nueva(world):

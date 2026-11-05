@@ -23,6 +23,8 @@ class RunState(TypedDict, total=False):
     plan: dict
     sources: list[dict]
     pending: list[str]
+    coverage_scope: list[dict]  # requisitos aprobados que esta corrida debía dejar en una historia (id y título)
+    not_drafted: dict[str, str]  # requisito → por qué no se redactó
     wave: list[str]  # ítems que se revisan a la vez en la ola actual (solo con revisión en paralelo)
     review_results: Annotated[list[dict], collect_results]  # lo que devuelve cada rama; lo junta `merge_reviews`
     reviewed: dict[str, dict]

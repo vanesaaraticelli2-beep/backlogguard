@@ -174,3 +174,155 @@ def test_la_pantalla_muestra_los_compromisos_por_epica_y_pide_confirmar_el_gasto
     text = " | ".join([*(m.value for m in at.markdown), *(c.value for c in at.caption)])
     assert "vigente" in text and "3 compromisos verificados" in text
     assert {e.label for e in at.expander} >= {"Alta de clientes · 1", "Alcance · 1", "Usuarios · 1"}
+
+
+class CappedProvider:
+    """Modelo cuya respuesta se corta por el tope de salida cuando recibe más de `max_pages` páginas (como pasó con una preventa real)."""
+
+    model = "claude-opus-5-5"
+
+    def __init__(self, rows, max_pages):
+        self.rows, self.max_pages, self.calls = rows, max_pages, []
+
+    def generate(self, prompt, *, system=None, temperature=0.2):
+        import re
+
+        from backlogguard.llm.providers import GenerationResult
+
+        pages = [int(n) for n in re.findall(r"\[\[página (\d+)\]\]", prompt)]
+        self.calls.append(pages)
+        if len(pages) > self.max_pages:
+            return GenerationResult(text='{"compromisos": [{"epica": "Alta", "capacidad": "x", "al', model=self.model, provider="fake", latency_ms=0, input_tokens=10, output_tokens=16000, finish_reason="max_tokens")
+        mine = [r for r in self.rows if r["pagina"] in pages]
+        return GenerationResult(text=json.dumps({"compromisos": mine}), model=self.model, provider="fake", latency_ms=0, input_tokens=10, output_tokens=5)
+
+    async def agenerate(self, prompt, *, system=None, temperature=0.2):
+        return self.generate(prompt, system=system, temperature=temperature)
+
+
+def test_una_respuesta_cortada_por_el_tope_de_salida_se_reparte_en_ventanas_mas_chicas_sin_perder_paginas(presale):
+    document, _, store, _ = presale
+    provider = CappedProvider(GOOD, max_pages=1)
+    baseline = extract_commitments(document, provider, store, confirmed=True, allow_fake=True)
+    assert provider.calls[0] == [1, 2, 3]  # primero intenta con todo y la respuesta se corta
+    assert sorted(p for call in provider.calls if len(call) == 1 for p in call) == [1, 2, 3]  # termina página por página
+    assert {c.page for c in baseline.commitments} == {1, 2, 3} and baseline.uncovered_pages == []
+
+
+def test_si_una_pagina_sola_no_entra_en_el_tope_falla_con_un_mensaje_claro(presale):
+    from backlogguard.rag.compromisos import ExtractionTruncated
+
+    document, _, store, _ = presale
+    with pytest.raises(ExtractionTruncated, match="página 1 sola"):
+        extract_commitments(document, CappedProvider(GOOD, max_pages=0), store, confirmed=True, allow_fake=True)
+    assert store.status(document) == "sin_extraer"  # no se guarda una extracción incompleta
+
+
+def test_se_avisan_las_paginas_con_texto_de_las_que_no_salio_ningun_compromiso(presale, monkeypatch):
+    monkeypatch.setattr("backlogguard.rag.compromisos.MIN_WORDS_FOR_COVERAGE", 5)  # las páginas de prueba son muy cortas
+    document, _, store, _ = presale
+    baseline = extract_commitments(document, fake(GOOD[:2]), store, confirmed=True, allow_fake=True)
+    assert baseline.uncovered_pages == [3]
+    assert store.current(document).uncovered_pages == [3]  # queda guardado para mostrarlo en la pantalla
+
+
+def test_las_ventanas_por_defecto_parten_una_preventa_larga_antes_de_pasar_el_tope():
+    pages = {n: "palabra " * 300 for n in range(1, 31)}  # ~2.400 caracteres por página
+    assert len(windows(pages)) >= 4 and all(len(group) <= 8 for group in windows(pages))
+
+
+# ---- ventanas en paralelo ----
+
+
+class PerPageProvider:
+    """Responde por el contenido del pedido (en paralelo el orden de las llamadas no está garantizado) y cuenta cuántas corren a la vez."""
+
+    model = "claude-opus-5-5"
+
+    def __init__(self, delay=0.0, fail_on=None):
+        import threading
+
+        self.delay, self.fail_on, self.prompts = delay, fail_on, []
+        self.active = self.peak = 0
+        self._lock = threading.Lock()
+
+    def generate(self, prompt, *, system=None, temperature=0.2):
+        import re
+        import time
+
+        from backlogguard.llm.errors import ProviderConfigurationError
+        from backlogguard.llm.providers import GenerationResult
+
+        self.prompts.append(prompt)
+        pages = [int(n) for n in re.findall(r"\[\[página (\d+)\]\]", prompt)]
+        with self._lock:
+            self.active += 1
+            self.peak = max(self.peak, self.active)
+        try:
+            time.sleep(self.delay)
+        finally:
+            with self._lock:
+                self.active -= 1
+        if self.fail_on in pages:
+            raise ProviderConfigurationError("credencial inválida simulada")
+        rows = [raw("Módulo", f"Función de la página {n}", n, f"Funcionalidad {n}: el sistema hará lo {n}") for n in pages]
+        return GenerationResult(text=json.dumps({"compromisos": rows}), model=self.model, provider="fake", latency_ms=0, input_tokens=100, output_tokens=50)
+
+    async def agenerate(self, prompt, *, system=None, temperature=0.2):
+        return self.generate(prompt, system=system, temperature=temperature)
+
+
+@pytest.fixture
+def long_presale(tmp_path):
+    """Cinco páginas de ~9.000 caracteres: cada una ocupa su propia ventana."""
+    body = " ".join(["relleno"] * 1200)
+    text = "".join(f"[[página {n}]]\nFuncionalidad {n}: el sistema hará lo {n}. {body}\n" for n in range(1, 6))
+    library = SourceLibrary(tmp_path / "fuentes")
+    meta = SourceMetadata(source_name="Larga", source_type=SourceType.PREVENTA, source_date=date(2025, 10, 1), layout="paginas")
+    library.write("larga", meta, text)
+    return library.load("larga"), BaselineStore(tmp_path / "linea_base")
+
+
+def test_las_ventanas_se_piden_a_la_vez_y_el_resultado_no_depende_del_orden_de_llegada(long_presale):
+    document, store = long_presale
+    assert len(windows(split_pages(document.text))) == 5
+    slow = PerPageProvider(delay=0.05)
+    parallel = extract_commitments(document, slow, store, confirmed=True, allow_fake=True)
+    assert slow.peak == 5  # las 5 ventanas a la vez (el tope es 6)
+    one_by_one = PerPageProvider()
+    sequential = extract_commitments(document, one_by_one, BaselineStore(store.root.parent / "otra"), confirmed=True, allow_fake=True, max_parallel=1)
+    assert one_by_one.peak == 1
+    assert [(c.id, c.page) for c in parallel.commitments] == [(c.id, c.page) for c in sequential.commitments] == [(f"C-00{n}", n) for n in range(1, 6)]
+
+
+def test_la_extraccion_guarda_cuanto_tardo_cada_ventana_y_suma_los_tokens(long_presale):
+    document, store = long_presale
+    baseline = extract_commitments(document, PerPageProvider(delay=0.1), store, confirmed=True, allow_fake=True)
+    assert [w.pages for w in baseline.windows] == ["1", "2", "3", "4", "5"] and all(w.seconds >= 0.1 for w in baseline.windows)
+    assert baseline.input_tokens == 500 and baseline.output_tokens == 250 and baseline.seconds is not None
+    assert store.current(document).windows[0].calls == 1  # queda guardado para mostrarlo
+
+
+def test_el_avance_se_informa_desde_el_hilo_principal(long_presale):
+    import threading
+
+    document, store = long_presale
+    seen = []
+    extract_commitments(document, PerPageProvider(), store, confirmed=True, allow_fake=True, on_progress=lambda done, total: seen.append((done, total, threading.current_thread().name)))
+    assert [(d, t) for d, t, _ in seen] == [(n, 5) for n in range(1, 6)]
+    assert {name for *_, name in seen} == {threading.current_thread().name}
+
+
+def test_si_una_ventana_falla_no_se_guarda_nada_y_se_ve_el_error(long_presale):
+    from backlogguard.llm.errors import ProviderConfigurationError
+
+    document, store = long_presale
+    with pytest.raises(ProviderConfigurationError, match="credencial"):
+        extract_commitments(document, PerPageProvider(fail_on=3), store, confirmed=True, allow_fake=True)
+    assert store.status(document) == "sin_extraer"
+
+
+def test_el_pedido_limita_el_largo_de_la_cita_y_de_la_capacidad(long_presale):
+    from backlogguard.rag.compromisos import SYSTEM
+
+    assert "hasta 25 palabras" in SYSTEM and "hasta 20 palabras" in SYSTEM

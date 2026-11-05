@@ -286,3 +286,250 @@ def test_si_el_segundo_intento_tampoco_cita_bien_el_candidato_sigue_descartado(w
     enumerator = FakeProvider("fake-enum", delay_seconds=0, responses=[enumeration(world["meeting"], [paraphrased]), enumeration(world["meeting"], [paraphrased])])
     result = ingest_meeting(world["meeting"], catalog=world["catalog"], enumerator=enumerator, classifier=FakeProvider(delay_seconds=0), confirmed=True, allow_fake=True)
     assert not result.candidates and "tampoco en el segundo intento" in result.rejected[0].reason
+
+
+# ---- verificación de vínculos con la propuesta ----
+
+
+def links(*rows):
+    return json.dumps({"vinculos": [{"par": n, "relacion": rel, "diferencia": diff, "motivo": why} for n, (rel, diff, why) in enumerate(rows, 1)]})
+
+
+def test_los_vinculos_con_la_propuesta_se_verifican_y_solo_quedan_los_que_piden_lo_mismo(world):
+    classify = [
+        answer({"tipo": "nuevo", "titulo": "Validar el CUIT en ARCA", "compromisos": ["C-001", "C-002"]}),
+        links(("mismo", "propuesta: al crear la cuenta; reunión: antes de crearla", ""), ("distinto", "", "es otro módulo: el score no valida el CUIT")),
+    ]
+    result, _, classifier = run(world, [CUIT], classify)
+    proposal = result.proposals[0]
+    assert proposal.drafts[0].commitment_ids == ["C-001"]  # C-002 se descartó
+    assert "C-001 confirmado (difiere: propuesta: al crear la cuenta; reunión: antes de crearla)" in proposal.rationale
+    assert "C-002 descartado (es otro módulo: el score no valida el CUIT)" in proposal.rationale
+    assert [e.page for e in proposal.evidence if e.source_type is SourceType.PREVENTA] == [7]  # la evidencia de la preventa es solo la del vínculo que quedó
+    assert len(classifier.prompts) == 2 and "<pares>" in classifier.prompts[1]
+
+
+def test_la_verificacion_ve_solo_los_pares_y_no_todo_el_mapa_de_compromisos(world):
+    classify = [answer({"tipo": "nuevo", "titulo": "Validar el CUIT", "compromisos": ["C-001"]}), links(("mismo", "", ""))]
+    _, _, classifier = run(world, [CUIT], classify)
+    check = classifier.prompts[1]
+    assert "C-001" in check and "Validación del CUIT contra ARCA" in check and "C-002" not in check and "<propuesta>" not in check
+
+
+def test_si_la_verificacion_falla_los_vinculos_se_conservan_y_se_avisa(world):
+    classify = [answer({"tipo": "nuevo", "titulo": "Validar el CUIT", "compromisos": ["C-001"]}), "basura", "más basura"]
+    result, _, _ = run(world, [CUIT], classify)
+    assert result.proposals[0].drafts[0].commitment_ids == ["C-001"] and "C-001 sin verificar" in result.proposals[0].rationale
+
+
+def test_sin_vinculos_no_se_hace_la_llamada_de_verificacion(world):
+    _, _, classifier = run(world, [CUIT], [answer({"tipo": "nuevo", "titulo": "Validar el CUIT", "compromisos": []})])
+    assert len(classifier.prompts) == 1
+
+
+def test_un_requisito_que_no_fue_vendido_queda_sin_compromisos_cuando_todos_se_descartan(world):
+    classify = [answer({"tipo": "nuevo", "titulo": "Carga de la carta marina", "compromisos": ["C-001"]}), links(("distinto", "", "solo comparten la palabra importar"))]
+    result, _, _ = run(world, [CUIT], classify)
+    assert result.proposals[0].drafts[0].commitment_ids == [] and [e.source_type for e in result.proposals[0].evidence] == [SourceType.REUNION]
+
+
+def test_el_pedido_exige_la_misma_funcionalidad_y_acepta_que_nada_haya_sido_vendido():
+    from backlogguard.catalog.ingest import CLASSIFY_SYSTEM, VERIFY_SYSTEM
+
+    assert "LA MISMA funcionalidad" in CLASSIFY_SYSTEM and "NO fue vendido" in CLASSIFY_SYSTEM and "título general de un módulo" in CLASSIFY_SYSTEM
+    assert '"mismo"' in VERIFY_SYSTEM and '"distinto"' in VERIFY_SYSTEM
+
+
+def test_la_estimacion_incluye_la_verificacion_de_vinculos(world):
+    with_baseline = estimate_ingest(world["meeting"], world["baseline"], "claude-sonnet-5-5", "claude-opus-5-5", PRICING)
+    without = estimate_ingest(world["meeting"], None, "claude-sonnet-5-5", "claude-opus-5-5", PRICING)
+    assert with_baseline["calls"] > without["calls"]
+
+
+# ---- reabrir propuestas y auditar vínculos ----
+
+
+def _pending(world, rows, classify):
+    result, _, _ = run(world, rows, classify)
+    return result.proposals
+
+
+def test_una_propuesta_rechazada_se_puede_reabrir_y_se_decide_de_nuevo(world):
+    from backlogguard.catalog import CatalogError
+
+    first, = _pending(world, [CUIT], [answer({"tipo": "nuevo", "titulo": "Validar el CUIT"})])
+    catalog = world["catalog"]
+    with pytest.raises(CatalogError, match="solo se reabre una propuesta rechazada"):
+        catalog.reopen(first.id, by="product_owner")  # una pendiente no se reabre
+    catalog.decide(first.id, approve=False, by="product_owner", note="vínculo incoherente")
+    reopened = catalog.reopen(first.id, by="product_owner", note="el vínculo ya se corrigió")
+    assert reopened.state is ProposalState.PENDIENTE and reopened.decided_by is None
+    assert "Reabierta por product_owner" in reopened.note and "vínculo incoherente" in reopened.note
+    assert catalog.proposal(first.id).state is ProposalState.PENDIENTE
+    with pytest.raises(CatalogError, match="necesita el rol"):
+        catalog.reopen(first.id, by=" ")
+    catalog.decide(first.id, approve=True, by="product_owner")
+    catalog.apply(first.id)
+    with pytest.raises(CatalogError, match="solo se reabre una propuesta rechazada"):
+        catalog.reopen(first.id, by="product_owner")  # una aprobada y aplicada no se reabre
+
+
+def test_corregir_los_vinculos_de_un_requisito_no_cambia_lo_que_dice(world):
+    first, = _pending(world, [CUIT], [answer({"tipo": "nuevo", "titulo": "Validar el CUIT", "compromisos": ["C-001", "C-002"]}), links(("mismo", "", ""), ("mismo", "", ""))])
+    catalog = world["catalog"]
+    catalog.decide(first.id, approve=True, by="product_owner")
+    catalog.apply(first.id)
+    before = catalog.requirement("RQ-001")
+    fixed = catalog.set_requirement_links("RQ-001", ["C-001", "C-001"])
+    assert fixed.current.draft.commitment_ids == ["C-001"] and fixed.current.draft.title == before.current.draft.title == "Validar el CUIT"
+    assert fixed.current.number == before.current.number  # no se creó una versión nueva
+
+
+def _approved(world):
+    first, = _pending(world, [CUIT], [answer({"tipo": "nuevo", "titulo": "Validar el CUIT", "compromisos": ["C-001", "C-002"]}), links(("mismo", "", ""), ("mismo", "", ""))])
+    world["catalog"].decide(first.id, approve=True, by="product_owner")
+    world["catalog"].apply(first.id)
+    return world["catalog"]
+
+
+def test_la_auditoria_descarta_los_vinculos_distintos_y_conserva_los_confirmados(world):
+    from backlogguard.catalog import links as audit
+
+    catalog = _approved(world)
+    pairs = audit.collect(catalog, world["baseline"])
+    assert [(l.target, l.commitment) for l, _ in pairs] == [("RQ-001", "C-001"), ("RQ-001", "C-002")]
+    provider = FakeProvider("fake-class", delay_seconds=0, responses=[links(("mismo", "", "es lo mismo"), ("distinto", "", "es otro módulo"))])
+    result = audit.audit(provider, pairs)
+    assert [(l.commitment, l.relation) for l in result] == [("C-001", "mismo"), ("C-002", "distinto")]
+    assert len(provider.prompts) == 1 and "<pares>" in provider.prompts[0]
+    assert audit.corrections(result) == {("requisito", "RQ-001"): ["C-001"]}
+    assert audit.apply(catalog, result) == {"RQ-001": ["C-001"]}
+    assert catalog.requirement("RQ-001").current.draft.commitment_ids == ["C-001"]
+    assert "C-002" in audit.report(result) and "es otro módulo" in audit.report(result)
+
+
+def test_la_auditoria_no_toca_lo_que_no_pudo_verificar_y_un_compromiso_inexistente_se_descarta(world):
+    from backlogguard.catalog import links as audit
+
+    catalog = _approved(world)
+    catalog.set_requirement_links("RQ-001", ["C-001", "C-999"])
+    result = audit.audit(FakeProvider("fake-class", delay_seconds=0), audit.collect(catalog, world["baseline"]))  # el modelo no responde un JSON
+    assert [(l.commitment, l.relation) for l in result] == [("C-001", "sin verificar"), ("C-999", "distinto")]
+    assert audit.apply(catalog, result) == {"RQ-001": ["C-001"]}  # solo se saca el que no existe
+
+
+def test_la_auditoria_tambien_revisa_las_propuestas_pendientes_y_se_guarda_en_un_archivo(world, tmp_path):
+    from backlogguard.catalog import links as audit
+
+    first, = _pending(world, [CUIT], [answer({"tipo": "nuevo", "titulo": "Validar el CUIT", "compromisos": ["C-001"]}), links(("mismo", "", ""))])
+    catalog = world["catalog"]
+    pairs = audit.collect(catalog, world["baseline"], requirements=False)
+    result = audit.audit(FakeProvider("fake-class", delay_seconds=0, responses=[links(("distinto", "", "solo comparten la palabra CUIT"))]), pairs)
+    audit.save(result, tmp_path / "a.json")
+    assert [(l.kind, l.relation) for l in audit.load(tmp_path / "a.json")] == [("propuesta", "distinto")]
+    audit.apply(catalog, audit.load(tmp_path / "a.json"))
+    assert catalog.proposal(first.id).drafts[0].commitment_ids == []
+
+
+def test_la_decision_de_una_persona_manda_sobre_la_del_modelo_en_la_auditoria(world):
+    from backlogguard.catalog import links as audit
+
+    catalog = _approved(world)
+    provider = FakeProvider("fake-class", delay_seconds=0, responses=[links(("mismo", "", "ok"), ("distinto", "", "otro módulo"))])
+    result = audit.audit(provider, audit.collect(catalog, world["baseline"]))
+    result = audit.override(result, keep={("RQ-001", "C-002")}, drop={("RQ-001", "C-001")})
+    assert [(l.commitment, l.relation) for l in result] == [("C-001", "distinto"), ("C-002", "mismo")]
+    assert "descartado por una persona" in result[0].reason and "conservado por una persona" in result[1].reason
+    with pytest.raises(ValueError, match="No hay ese vínculo"):
+        audit.override(result, drop={("RQ-009", "C-001")})
+    assert audit.parse_pairs("rq-004:c-014; RQ-005:C-014") == {("RQ-004", "C-014"), ("RQ-005", "C-014")}
+    with pytest.raises(ValueError, match="RQ-004:C-014"):
+        audit.parse_pairs("RQ-004")
+
+
+# ---- el catálogo se compara por significado ----
+
+
+def second(world):
+    """Una segunda reunión: la primera ya se leyó (y no se vuelve a leer con la misma huella)."""
+    meta = SourceMetadata(source_name="Reunión 2", source_type=SourceType.REUNION, source_date=date(2026, 2, 10), layout="turnos")
+    world["library"].write("reunion_02", meta, MEETING)
+    return world["library"].load("reunion_02")
+
+
+
+def test_con_un_catalogo_chico_el_clasificador_lee_el_catalogo_entero_una_sola_vez(world):
+    _approved(world)  # RQ-001: «Validar el CUIT»
+    _, _, classifier = run(world, [SCORE, CUIT], document=second(world), classify=[answer({"tipo": "nuevo", "titulo": "Vigencia del score"}, {"tipo": "nuevo", "titulo": "Otro"})])
+    prompt = classifier.prompts[0]
+    assert prompt.count("<catalogo>") == 1 and "RQ-001 · Validar el CUIT" in prompt  # el catálogo va una vez, no por candidato
+    assert "Requisitos parecidos" not in prompt.split("<candidatos>")[1]
+
+
+def test_un_requisito_sin_ninguna_palabra_en_comun_igual_llega_al_clasificador_y_puede_contradecirlo(world):
+    """Antes, sin palabras compartidas el candidato era «nuevo» sin siquiera preguntarle al modelo."""
+    _approved(world)
+    result, _, classifier = run(world, [SCORE], document=second(world), classify=[answer({"tipo": "contradice", "destinos": ["RQ-001"], "titulo": "Vigencia del score", "reemplaza": True})])
+    assert classifier.prompts and result.proposals[0].kind is ProposalKind.CONTRADICE and result.proposals[0].targets == ["RQ-001"]
+
+
+def test_con_un_catalogo_grande_se_vuelve_a_recuperar_por_palabras(world, monkeypatch):
+    _approved(world)
+    monkeypatch.setattr("backlogguard.catalog.ingest.FULL_CATALOG_LIMIT", 0)
+    _, _, classifier = run(world, [CUIT], document=second(world), classify=[answer({"tipo": "nuevo", "titulo": "Validar el CUIT otra vez"})])
+    assert "<catalogo>" not in classifier.prompts[0] and "Requisitos parecidos" in classifier.prompts[0]
+
+
+def test_la_regla_de_comparar_por_significado_esta_en_el_pedido_y_la_estimacion_suma_el_catalogo(world):
+    from backlogguard.catalog.ingest import CLASSIFY_SYSTEM
+
+    assert "SIGNIFICADO, no por palabras" in CLASSIFY_SYSTEM and "<catalogo>" in CLASSIFY_SYSTEM
+    catalog = _approved(world)
+    base = estimate_ingest(world["meeting"], world["baseline"], "claude-sonnet-5-5", "claude-opus-5-5", PRICING)
+    with_catalog = estimate_ingest(world["meeting"], world["baseline"], "claude-sonnet-5-5", "claude-opus-5-5", PRICING, catalog)
+    assert with_catalog["input_tokens"] > base["input_tokens"]
+
+
+# ---- lo dicho frente a lo vendido: la verificación queda guardada ----
+
+
+def test_la_propuesta_guarda_que_dijo_la_verificacion_de_cada_vinculo(world):
+    classify = [
+        answer({"tipo": "nuevo", "titulo": "Validar el CUIT", "compromisos": ["C-001", "C-002"]}),
+        links(("mismo", "propuesta: al crear la cuenta; reunión: antes de crearla", "es la misma validación"), ("distinto", "", "es otro módulo")),
+    ]
+    result, _, _ = run(world, [CUIT], classify)
+    checks = {l.commitment_id: l for l in result.proposals[0].links}
+    assert checks["C-001"].relation == "mismo" and checks["C-001"].difference.startswith("propuesta: al crear la cuenta")
+    assert checks["C-002"].relation == "distinto" and checks["C-002"].reason == "es otro módulo"
+    assert world["catalog"].proposal(result.proposals[0].id).links == result.proposals[0].links  # sobrevive al guardado
+
+
+def test_un_vinculo_confirmado_sin_diferencia_lo_dice_en_el_motivo(world):
+    classify = [answer({"tipo": "nuevo", "titulo": "Validar el CUIT", "compromisos": ["C-001"]}), links(("mismo", "", ""))]
+    result, _, _ = run(world, [CUIT], classify)
+    assert "C-001 confirmado (dice lo mismo)" in result.proposals[0].rationale and result.proposals[0].links[0].difference == ""
+
+
+def test_con_el_catalogo_vacio_el_pedido_lo_dice_y_no_habla_de_requisitos_parecidos(world):
+    from backlogguard.catalog.ingest import CLASSIFY_SYSTEM
+
+    _, _, classifier = run(world, [CUIT], [answer({"tipo": "nuevo", "titulo": "Validar el CUIT"})])
+    assert "el catálogo todavía está vacío" in classifier.prompts[0] and "Requisitos parecidos" not in classifier.prompts[0].split("<candidatos>")[1]
+    assert 'no uses la expresión "requisitos parecidos"' in CLASSIFY_SYSTEM
+
+
+def test_la_diferencia_se_lee_de_lo_guardado_y_en_propuestas_viejas_del_motivo():
+    from backlogguard.catalog import LinkCheck
+    from backlogguard.ui.revision import link_difference
+    from test_catalogo import draft, evidence, proposal
+
+    new = proposal(key="n", drafts=[draft("Requisito A")], ev=[evidence()]).model_copy(update={"links": [
+        LinkCheck(commitment_id="C-001", relation="mismo", difference="propuesta: tiempo real; reunión: dos veces al día"),
+        LinkCheck(commitment_id="C-002", relation="mismo"), LinkCheck(commitment_id="C-003", relation="distinto", reason="otro módulo"),
+    ]})
+    assert link_difference(new, "C-001") == "propuesta: tiempo real; reunión: dos veces al día"
+    assert link_difference(new, "C-002").startswith("ninguna detectada") and link_difference(new, "C-003") == "no es el mismo compromiso."
+    old = proposal(key="o", drafts=[draft("Requisito B")], ev=[evidence()]).model_copy(update={"rationale": "Motivo. | Vínculos con la propuesta: C-010 confirmado (difiere: propuesta: crear nodos; reunión: con campos); C-011 confirmado."})
+    assert link_difference(old, "C-010") == "propuesta: crear nodos; reunión: con campos" and link_difference(old, "C-011") == "ninguna detectada."
+    assert link_difference(old, "C-099") == "sin verificar."

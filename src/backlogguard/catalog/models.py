@@ -6,6 +6,7 @@ relación explícita y evidencias citadas. Los cambios llegan como propuestas qu
 from __future__ import annotations
 
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -105,6 +106,15 @@ NEEDS_MEETING_EVIDENCE = {ProposalKind.NUEVO, ProposalKind.REFINA, ProposalKind.
 ALWAYS_HUMAN = {ProposalKind.CONTRADICE, ProposalKind.DIVIDE, ProposalKind.FUSIONA, ProposalKind.INCIERTO}
 
 
+class LinkCheck(_Strict):
+    """Qué concluyó la verificación de un vínculo con un compromiso de la preventa."""
+
+    commitment_id: str
+    relation: Literal["mismo", "distinto", "sin verificar"]
+    difference: str = ""
+    reason: str = ""
+
+
 class Proposal(_Strict):
     id: str = ""
     source_id: str = Field(min_length=1)
@@ -121,6 +131,7 @@ class Proposal(_Strict):
     created_at: str = ""
     affected: list[str] = Field(default_factory=list, description="Requisitos que quedaron creados o cambiados al aplicarla")
     confidence: float | None = Field(default=None, ge=0, le=1, description="Confianza del clasificador, si lo hubo")
+    links: list[LinkCheck] = Field(default_factory=list, description="Vínculos con la preventa y su verificación (confirmados, descartados o sin verificar)")
     out_of_order: bool = Field(default=False, description="La reunión es anterior a otra ya procesada: se revisa a mano")
 
     @property

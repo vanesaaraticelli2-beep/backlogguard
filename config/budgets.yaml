@@ -1,9 +1,9 @@
 # Presupuesto de una corrida completa (los límites por agente viven en los parámetros de cada agente).
 # Validado con Pydantic en src/backlogguard/graph/budgets.py.
 run:
-  max_tokens: 600000        # suma de todos los agentes (con documentos reales, el tope de gasto de una corrida)
+  max_tokens: 3000000       # suma de todos los agentes. Una corrida cubre TODOS los requisitos aprobados (unos 72.000 tokens por historia)
   max_items_to_review: 60   # válvula de seguridad: el freno real de una corrida es max_tokens
-  max_seconds: 3600         # tiempo total de la corrida
+  max_seconds: 10800        # tiempo total de la corrida (con la revisión en fila, unos 3 minutos por historia)
   # Revisión del Crítico por olas: hasta N ítems a la vez (fan-out con Send y fan-in en un nodo, clase 12).
   # 1 = de a uno (reproducible, sin riesgo de límites de tasa); es la opción de la demo y la evaluación.
   # Subirlo (2 o 3) es una extensión opcional que acorta el tiempo con modelos reales, no el costo.

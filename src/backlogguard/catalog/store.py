@@ -163,6 +163,30 @@ class Catalog:
             self._save_proposal(conn, decided)
         return decided
 
+    def reopen(self, proposal_id: str, *, by: str, note: str = "") -> Proposal:
+        """Una persona vuelve a dejar pendiente una propuesta que rechazó (por ejemplo, por un dato mal asociado). Aprobar sigue siendo otro paso."""
+        if not by.strip():
+            raise CatalogError("Reabrir una propuesta necesita el rol de quien la reabre.")
+        proposal = self.proposal(proposal_id)
+        if proposal.state is not ProposalState.RECHAZADA:
+            raise CatalogError(f"{proposal_id} está {proposal.state}: solo se reabre una propuesta rechazada.")
+        earlier = f" Rechazo anterior de {proposal.decided_by}" + (f": {proposal.note}" if proposal.note else ".") if proposal.decided_by else ""
+        reopened = proposal.model_copy(update={"state": ProposalState.PENDIENTE, "decided_by": None, "note": f"Reabierta por {by}. {note}".strip() + earlier})
+        with closing(self._connect()) as conn, conn:
+            self._save_proposal(conn, reopened)
+        return reopened
+
+    def set_requirement_links(self, requirement_id: str, commitment_ids: list[str]) -> Requirement:
+        """Corrige a qué compromisos de la preventa está ligado un requisito (metadato de la versión vigente: no cambia lo que el requisito dice)."""
+        requirement = self.requirement(requirement_id)
+        number = requirement.current.number
+        with closing(self._connect()) as conn, conn:
+            row = conn.execute("SELECT json FROM versions WHERE requirement_id = ? AND number = ?", (requirement_id, number)).fetchone()
+            version = Version.model_validate_json(row["json"])
+            version.draft = version.draft.model_copy(update={"commitment_ids": list(dict.fromkeys(commitment_ids))})
+            conn.execute("UPDATE versions SET json = ? WHERE requirement_id = ? AND number = ?", (version.model_dump_json(), requirement_id, number))
+        return self.requirement(requirement_id)
+
     def edit(self, proposal_id: str, draft: Draft) -> Proposal:
         """Una persona corrige el borrador de una propuesta pendiente antes de decidirla."""
         proposal = self.proposal(proposal_id)

@@ -2,6 +2,7 @@
 from backlogguard.catalog.models import (
     Draft,
     Evidence,
+    LinkCheck,
     EvidenceRole,
     Proposal,
     ProposalKind,
@@ -18,6 +19,7 @@ __all__ = [
     "CatalogError",
     "Draft",
     "Evidence",
+    "LinkCheck",
     "EvidenceRole",
     "Proposal",
     "ProposalKind",

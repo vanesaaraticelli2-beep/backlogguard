@@ -4,6 +4,7 @@ La regla de quién decide y qué entra en un lote vive en `catalog/review.py`; a
 """
 from __future__ import annotations
 
+import re
 from html import escape
 
 import streamlit as st
@@ -17,6 +18,7 @@ from backlogguard.graph.setup import baseline_dir, user_sources_dir
 from backlogguard.rag import SourceLibrary
 from backlogguard.rag.compromisos import BaselineStore
 from backlogguard.ui.controller import RunController
+from backlogguard.ui.scroll import REVIEW, anchor, apply_scroll, request_scroll
 
 KIND_LABELS = {
     "nuevo": "nuevo", "refina": "refina uno existente", "cubierto": "ya cubierto", "contradice": "contradice uno existente",
@@ -39,6 +41,15 @@ def _role(role: str) -> str:
 
 def _fmt(value: float) -> str:
     return f"{value:.2f}".replace(".", ",")
+
+
+def confidence_level(value: float) -> tuple[str, str]:
+    """Color y nivel de la barra de confianza: rojo bajo el mínimo (0,70), amarillo hasta 0,79, verde desde 0,80."""
+    if value < 0.70:
+        return "#b3261e", "baja"
+    if value < 0.80:
+        return "#e0a100", "media"
+    return "#3f7d12", "alta"
 
 
 def _baseline(controller: RunController, library: SourceLibrary):
@@ -70,6 +81,10 @@ def tab_review(controller: RunController, who) -> None:
         st.info("Todavía no hay propuestas para revisar. Leé una reunión contra el catálogo en la pestaña «Fuentes».")
         return
     names = {i: m for i, m in library.describe()}
+    if st.session_state.get("rev_reunion") not in with_proposals:  # al entrar, la primera reunión que tiene pendientes (después se respeta lo que elija la persona)
+        st.session_state["rev_reunion"] = next(
+            (i for i in with_proposals if catalog.proposals(state=ProposalState.PENDIENTE, source_id=i)), with_proposals[0]
+        )
     meeting = st.selectbox(
         "Reunión", with_proposals, key="rev_reunion",
         format_func=lambda i: f"{names[i].source_name} · {names[i].source_date}",
@@ -78,11 +93,16 @@ def tab_review(controller: RunController, who) -> None:
     open_props = [p for p in all_props if p.state is ProposalState.PENDIENTE]
     done_props = [p for p in all_props if p.state is not ProposalState.PENDIENTE]
     ok_count = sum(1 for p in done_props if p.state is not ProposalState.RECHAZADA)
-    columns = st.columns(3)
-    columns[0].metric("Pendientes", len(open_props))
-    columns[1].metric("Aprobadas", ok_count)
-    columns[2].metric("Rechazadas", len(done_props) - ok_count)
-    st.caption(f"Actuás como **{_role(who.role)}**. Cada propuesta la decide el rol que le corresponde; se guarda el rol, no el nombre.")
+    with st.container(key="rev_metrics"):
+        columns = st.columns(3)
+        columns[0].metric("Pendientes", len(open_props))
+        columns[1].metric("Aprobadas", ok_count)
+        columns[2].metric("Rechazadas", len(done_props) - ok_count)
+    st.markdown(
+        f'<span class="bg-role">Actuás como {escape(_role(who.role))}</span>'
+        '<div class="bg-role-note">Cada propuesta la decide el rol que le corresponde; se guarda el rol, no el nombre.</div>',
+        unsafe_allow_html=True,
+    )
     if st.session_state.get("rev_msg"):
         st.success(st.session_state.pop("rev_msg"))
 
@@ -113,8 +133,10 @@ def tab_review(controller: RunController, who) -> None:
                     label, _ = _resolved_label(p)
                     st.button(f"{p.id} · {label}", key=f"sel-{p.id}", width="stretch", on_click=_select, args=(p.id,))
     with right:
+        anchor(REVIEW)
         chosen = next(p for p in all_props if p.id == st.session_state["rev_sel"])
         detail(catalog, chosen, who, commitments, shown)
+    apply_scroll(REVIEW)
 
 
 def batch_section(catalog, meeting: str, who) -> None:
@@ -144,8 +166,48 @@ def batch_section(catalog, meeting: str, who) -> None:
 
 
 def _advance(catalog, proposal: Proposal, shown: list[Proposal]) -> None:
-    remaining = [p for p in shown if p.id != proposal.id and catalog.proposal(p.id).state is ProposalState.PENDIENTE]
+    """Pasa a la siguiente pendiente de la lista (la que sigue a la decidida; si no hay, la primera que quede)."""
+    ids = [p.id for p in shown]
+    position = ids.index(proposal.id) + 1 if proposal.id in ids else 0
+    order = shown[position:] + shown[:position]
+    remaining = [p for p in order if p.id != proposal.id and catalog.proposal(p.id).state is ProposalState.PENDIENTE]
     st.session_state["rev_sel"] = remaining[0].id if remaining else proposal.id
+    request_scroll(REVIEW)  # la pantalla sube hasta el título de la siguiente
+
+
+CONFIDENCE_IN = {"nuevo": "es nuevo", "refina": "refina uno existente", "cubierto": "ya está cubierto", "contradice": "contradice lo aprobado"}
+LINKS_MARK = " | Vínculos con la propuesta:"
+
+
+def reason_parts(p: Proposal, commitments: dict | None = None) -> tuple[str, list[str]]:
+    """El motivo separado en lo que se comparó con el catálogo y lo que se comparó con la preventa (una línea por vínculo, con el título del compromiso)."""
+    catalog_text = (p.rationale or "").split(LINKS_MARK, 1)[0].strip()
+    lines = []
+    for l in p.links:
+        found = (commitments or {}).get(l.commitment_id)
+        name = f"**{l.commitment_id}** «{found.capability}»" if found else f"**{l.commitment_id}**"
+        if l.relation == "mismo":
+            lines.append(f"{name} confirmado" + (f" · difiere: {l.difference}" if l.difference else " · dice lo mismo que se vendió"))
+        elif l.relation == "distinto":
+            lines.append(f"{name} descartado · {l.reason or 'es de otro tema'}")
+        else:
+            lines.append(f"{name} sin verificar")
+    if not lines and LINKS_MARK in (p.rationale or ""):  # propuestas viejas, sin los vínculos guardados
+        lines.append((p.rationale or "").split(LINKS_MARK, 1)[1].strip())
+    return catalog_text, lines
+
+
+def link_difference(p: Proposal, commitment_id: str) -> str:
+    """Qué difiere entre lo que se dijo y el compromiso vendido, o que no difiere. Las propuestas viejas la sacan del motivo."""
+    for l in p.links:
+        if l.commitment_id == commitment_id:
+            if l.relation == "mismo":
+                return l.difference or "ninguna detectada: la reunión pide lo mismo que se vendió."
+            return "sin verificar." if l.relation == "sin verificar" else "no es el mismo compromiso."
+    match = re.search(rf"{re.escape(commitment_id)} confirmado(?: \(([^)]*)\))?", p.rationale or "")
+    if match and match.group(1):
+        return match.group(1).removeprefix("difiere: ").strip() or "ninguna detectada."
+    return "ninguna detectada." if match else "sin verificar."
 
 
 def detail(catalog, p: Proposal, who, commitments: dict, shown: list[Proposal]) -> None:
@@ -166,19 +228,50 @@ def detail(catalog, p: Proposal, who, commitments: dict, shown: list[Proposal]) 
             for c in linked:
                 where = f"preventa, p. {c.page}" if c.page else "preventa"
                 st.markdown(f'<div class="bg-commit"><b>{escape(c.id)}</b>{escape(c.capability)} <span style="color:#5d5b7a">· {where}</span></div>', unsafe_allow_html=True)
+                st.markdown(f'<blockquote class="bg-quote">«{escape(c.quote)}»</blockquote>', unsafe_allow_html=True)
+                st.markdown(f"**Diferencia con lo dicho:** {link_difference(p, c.id)}")
+        dropped = [l for l in p.links if l.relation == "distinto"]
+        if dropped:
+            with st.expander(f"Vínculos que se descartaron · {len(dropped)}"):
+                for l in dropped:
+                    capability = commitments[l.commitment_id].capability if l.commitment_id in commitments else ""
+                    st.markdown(f"- **{l.commitment_id}** {escape(capability)}: {escape(l.reason or 'es de otro tema')}")
 
         if p.confidence is not None:
-            st.markdown('<div class="bg-label">Confianza del clasificador</div>', unsafe_allow_html=True)
-            st.progress(p.confidence, text=f"{_fmt(p.confidence)} · el mínimo es 0,70")
+            about = CONFIDENCE_IN.get(p.kind.value)
+            st.markdown(f'<div class="bg-label">{"Confianza en que " + about if about else "Confianza del clasificador"}</div>', unsafe_allow_html=True)
+            color, level = confidence_level(p.confidence)
+            ok = p.confidence >= 0.70
+            text = f"{_fmt(p.confidence)} · {level} · " + ("supera el mínimo de 0,70" if ok else "por debajo del mínimo de 0,70: por eso se propone como incierto")
+            st.markdown(
+                f'<div style="background:#e4e2f2;border-radius:6px;height:12px;overflow:hidden">'
+                f'<div style="width:{p.confidence * 100:.0f}%;background:{color};height:100%"></div></div>'
+                f'<div style="font-size:14px;margin-top:4px">{escape(text)}</div>',
+                unsafe_allow_html=True,
+            )
         if p.rationale:
+            catalog_text, preventa_lines = reason_parts(p, commitments)
             st.markdown('<div class="bg-label">Por qué</div>', unsafe_allow_html=True)
-            st.write(p.rationale)
+            if preventa_lines:
+                st.markdown(f"**Frente al catálogo:** {catalog_text}")
+                st.markdown("**Frente a la preventa:**\n" + "\n".join(f"- {line}" for line in preventa_lines))
+            else:
+                st.write(catalog_text)
 
         if p.state is not ProposalState.PENDIENTE:
             label, style = _resolved_label(p)
             who_ = "automáticamente" if p.decided_by == "automático" else f"por el {_role(p.decided_by or '')}"
             note = f" Nota: {p.note}" if p.note else ""
             (st.success if style == "ok" else st.error)(f"{label} {who_}." + (f" Quedó en {', '.join(p.affected)}." if p.affected else "") + note)
+            if p.state is ProposalState.RECHAZADA:
+                needed = decider_role(p)
+                can = who.role == needed
+                if not can:
+                    st.caption(f"Reabrirla lo decide el {_role(needed)}. Estás como {_role(who.role)}.")
+                if st.button("Reabrir (volver a dejarla pendiente)", key=f"reabrir-{p.id}", disabled=not can):
+                    catalog.reopen(p.id, by=who.role)
+                    st.session_state["rev_msg"] = f"{p.id} reabierta: quedó pendiente para decidirla de nuevo."
+                    st.rerun()
             return
         decision_controls(catalog, p, who, shown)
 
@@ -188,7 +281,7 @@ def decision_controls(catalog, p: Proposal, who, shown: list[Proposal]) -> None:
     can = who.role == needed
     try:
         if p.kind is ProposalKind.INCIERTO:
-            incierto_controls(catalog, p, can)
+            incierto_controls(catalog, p, can, shown)
         else:
             edited = None
             if p.kind in (ProposalKind.NUEVO, ProposalKind.REFINA) and p.drafts:
@@ -218,7 +311,7 @@ def decision_controls(catalog, p: Proposal, who, shown: list[Proposal]) -> None:
         st.error(str(exc))
 
 
-def incierto_controls(catalog, p: Proposal, can: bool) -> None:
+def incierto_controls(catalog, p: Proposal, can: bool, shown: list[Proposal]) -> None:
     st.markdown('<div class="bg-label">Resolver</div>', unsafe_allow_html=True)
     st.caption("Un incierto no se aprueba tal cual: decidí qué es, o descartalo.")
     option = st.radio(
@@ -227,9 +320,9 @@ def incierto_controls(catalog, p: Proposal, can: bool) -> None:
     )
     target = None
     if option != "nuevo":
-        active = [r.id for r in catalog.requirements() if r.status.value == "activo"]
+        active = {r.id: r.current.draft.title for r in catalog.requirements() if r.status.value == "activo"}
         if active:
-            target = st.selectbox("Requisito destino", active, key=f"destino-{p.id}")
+            target = st.selectbox("Requisito destino", list(active), key=f"destino-{p.id}", format_func=lambda rid: f"{rid} · {active[rid]}")
         else:
             st.info("Todavía no hay requisitos activos a los que ligarlo.")
     if not can:
@@ -242,6 +335,7 @@ def incierto_controls(catalog, p: Proposal, can: bool) -> None:
     if right.button("Descartar", key=f"descartar-{p.id}", disabled=not can):
         decide_one(catalog, p.id, approve=False, role=decider_role(p))
         st.session_state["rev_msg"] = f"{p.id} descartada."
+        _advance(catalog, p, shown)
         st.rerun()
 
 

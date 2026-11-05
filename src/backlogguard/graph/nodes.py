@@ -21,7 +21,8 @@ from backlogguard.catalog import RequirementStatus
 from backlogguard.catalog.coverage import current_baseline
 from backlogguard.graph.budgets import over_budget
 from backlogguard.graph.deps import Providers, RunDeps
-from backlogguard.graph.drafting import goal_for, pick
+from backlogguard.graph.coverage import from_state as coverage_of, summary_line
+from backlogguard.graph.drafting import batches, goal_for
 from backlogguard.graph.state import RunState
 from backlogguard.graph.tasks import TaskLog, describe_outcome, model_of, renumber
 from backlogguard.hitl import (
@@ -54,6 +55,9 @@ def _board(state: RunState) -> Board:
 
 def _dump(board: Board) -> dict:
     return board.model_dump(mode="json")
+
+
+BUDGET_STOPS = {"tokens": "se agotó el presupuesto de tokens de la corrida", "tiempo": "se agotó el tiempo de la corrida", "items": "se alcanzó el máximo de ítems a revisar"}
 
 
 def _mark_published(catalog, board: Board, report) -> None:
@@ -117,49 +121,78 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             return {"stop_reason": reason, "pending": [], "trace": [{"node": "produce", "stop": reason}]}
         board = _board(state)
         plan_data = state["plan"]
-        mark = meter.mark()
         from_catalog = deps.catalog is not None and bool(deps.catalog.requirements(RequirementStatus.ACTIVO))
+        log = TaskLog(len(state.get("tasks", [])))
+        scope_rows: list[dict] = []
         if from_catalog:  # parte de lo que una persona aprobó en «Revisión», no de las fuentes
-            todo, later = pick(deps.catalog.to_publish())
+            todo = deps.catalog.to_publish()
             if not todo:
-                log = TaskLog(len(state.get("tasks", [])))
                 log.add("supervisor", "requerimientos", "redactar", detail="Requisitos aprobados por redactar: 0. Ítems redactados: 0.")
                 return {"tasks": log.tasks, "pending": [], "audit_passes": 1, "trace": [{"node": "produce", "items": 0, "requisitos": 0}]}
-            goal, scope = goal_for(todo, deps.retriever), f"Requisitos aprobados por redactar: {len(todo)}" + (f" (quedan {later} para la próxima corrida)" if later else "")
+            groups = batches(todo)
+            scope_rows = [{"id": r.id, "title": r.current.draft.title} for r in todo]
+            runs = [(group, f"Tanda {n} de {len(groups)} ({', '.join(r.id for r in group)})") for n, group in enumerate(groups, 1)]
+            scope = f"Requisitos aprobados por redactar: {len(todo)}"
         else:
-            todo, scope = [], f"Fuentes: {', '.join(plan_data['sources'])}"
-            goal = (
-                f"{plan_data['instruction']}\n"
-                f"Redactá solo a partir de estas fuentes: {', '.join(plan_data['sources'])}. "
-                "No redactes a partir de la preventa."
-            )
-        outcome = run_requerimientos(
-            goal,
-            provider=providers.requerimientos,
-            library=deps.library,
-            retriever=deps.retriever,
-            board=board,
-            catalog=deps.catalog if from_catalog else None,
-            run_id=state.get("run_id", "run-local"),
-            on_event=sink("requerimientos"),
-        )
+            scope = f"Fuentes: {', '.join(plan_data['sources'])}"
+            runs = [(None, scope)]
+        spent, errors, not_drafted, last_stop = 0, [], {}, "final_answer"
+        for group, label in runs:
+            missing = list(group) if group else []
+            for attempt in (1, 2) if group else (1,):  # lo que una tanda no redactó se reintenta una vez, solo
+                if group and not missing:
+                    break
+                if stop := over_budget({"tokens": state.get("tokens", 0) + spent, "started_at": state.get("started_at")}, deps.budget):
+                    for requirement in missing:
+                        not_drafted[requirement.id] = f"La corrida se cortó antes de redactarlo: {BUDGET_STOPS.get(stop, stop)}."
+                    missing = []
+                    break
+                if group:
+                    goal = goal_for(missing, deps.retriever)
+                else:
+                    goal = (
+                        f"{plan_data['instruction']}\n"
+                        f"Redactá solo a partir de estas fuentes: {', '.join(plan_data['sources'])}. "
+                        "No redactes a partir de la preventa."
+                    )
+                mark = meter.mark()
+                outcome = run_requerimientos(
+                    goal,
+                    provider=providers.requerimientos,
+                    library=deps.library,
+                    retriever=deps.retriever,
+                    board=board,
+                    catalog=deps.catalog if from_catalog else None,
+                    run_id=state.get("run_id", "run-local"),
+                    on_event=sink("requerimientos"),
+                )
+                spent += outcome["tokens"]
+                last_stop = outcome["stop_reason"]
+                drafted = {item.requirement_id for item in board.items.values() if item.requirement_id}
+                missing = [r for r in missing if r.id not in drafted]
+                log.add(
+                    "supervisor", "requerimientos", "redactar",
+                    detail=f"{label}{' (reintento)' if attempt == 2 else ''}. Ítems en el tablero: {len(board.items)}.",
+                    status="hecha" if outcome["stop_reason"] == "final_answer" else "incompleta", stop_reason=outcome["stop_reason"],
+                    usage=meter.since(mark), model=model_of(providers.requerimientos), steps=describe_outcome(outcome)["steps"],
+                )
+                if outcome.get("error"):
+                    errors.append({"node": "produce", "ref": None, "error": outcome["error"]})
+                for requirement in missing if attempt == 2 else []:
+                    not_drafted[requirement.id] = f"El productor no lo redactó ni en el reintento (terminó por «{outcome['stop_reason']}»)."
         pending = [item.id for item in board.items.values() if item.state is ItemState.BORRADOR]
-        log = TaskLog(len(state.get("tasks", [])))
-        log.add(
-            "supervisor", "requerimientos", "redactar",
-            detail=f"{scope}. Ítems redactados: {len(pending)}.",
-            status="hecha" if outcome["stop_reason"] == "final_answer" else "incompleta", stop_reason=outcome["stop_reason"],
-            usage=meter.since(mark), model=model_of(providers.requerimientos), steps=describe_outcome(outcome)["steps"],
-        )
         update: dict = {
             "tasks": log.tasks,
             "board": _dump(board),
             "pending": pending,
-            "tokens": state.get("tokens", 0) + outcome["tokens"],
-            "trace": [{"node": "produce", "stop_reason": outcome["stop_reason"], "items": len(pending)}],
+            "tokens": state.get("tokens", 0) + spent,
+            "trace": [{"node": "produce", "stop_reason": last_stop, "items": len(pending), "tandas": len(runs)}],
         }
-        if outcome.get("error"):
-            update["errors"] = [{"node": "produce", "ref": None, "error": outcome["error"]}]
+        if from_catalog:
+            update["coverage_scope"] = scope_rows
+            update["not_drafted"] = not_drafted
+        if errors:
+            update["errors"] = errors
         return update
 
     def negotiate(board: Board, item_id: str, run_meter: Meter, run_providers: Providers, first_seq: int, *, tag_item: bool = False) -> dict:
@@ -620,6 +653,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             ),
             "corte": state.get("stop_reason"),
             "plan_de_publicacion": state.get("publish_plan", {}).get("counts"),
+            "cobertura": summary_line(coverage) if (coverage := coverage_of(state)) else None,
         }
         exhausted = state.get("tokens", 0) >= deps.budget.max_tokens
         mark = meter.mark()

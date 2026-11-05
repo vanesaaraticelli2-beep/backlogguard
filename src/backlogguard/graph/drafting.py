@@ -1,14 +1,15 @@
 """Qué redacta el productor cuando la corrida parte del catálogo de requisitos aprobados (fuera del curso).
 
 Una corrida ya no relee las fuentes para decidir qué hay que hacer: toma lo que una persona aprobó en «Revisión» y todavía
-no está publicado (o cambió de versión desde que se publicó). El tope por corrida acota el costo; lo que queda va a la siguiente.
+no está publicado (o cambió de versión desde que se publicó). Se redacta por tandas chicas dentro de la misma corrida: así ninguna
+llamada del productor agota su tope de tokens a mitad y ningún requisito queda sin historia sin que se diga por qué.
 """
 from __future__ import annotations
 
 from backlogguard.catalog import Requirement
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 
-MAX_REQUIREMENTS_PER_RUN = 12
+BATCH_SIZE = 4  # requisitos por llamada del productor
 MAX_QUOTES = 2
 MAX_TEXT = 300
 NEIGHBORS = 2  # fragmentos antes y después de cada cita, para que el productor vea todo lo que se dijo del tema
@@ -25,9 +26,9 @@ GOAL = (
 )
 
 
-def pick(pending: list[Requirement]) -> tuple[list[Requirement], int]:
-    """Los requisitos de esta corrida y cuántos quedan para la siguiente."""
-    return pending[:MAX_REQUIREMENTS_PER_RUN], max(0, len(pending) - MAX_REQUIREMENTS_PER_RUN)
+def batches(pending: list[Requirement], size: int = BATCH_SIZE) -> list[list[Requirement]]:
+    """Los requisitos de la corrida en tandas de `size`, en el orden en que se aprobaron."""
+    return [pending[start : start + size] for start in range(0, len(pending), size)]
 
 
 def _clip(text: str, limit: int) -> str:
