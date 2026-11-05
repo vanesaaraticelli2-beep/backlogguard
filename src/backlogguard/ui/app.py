@@ -523,6 +523,13 @@ def plan_selector(controller: RunController, who) -> None:
     if reject:
         controller.decide(decision_payload(request, who, "reject", comment, None))
         st.rerun()
+    if st.button(
+        "Volver a armar el plan (sin costo: lo arma el código, no un modelo)", key="plan-rearmar", width="stretch",
+        disabled=not can_decide or controller.running,
+        help="Arma el plan de nuevo con las mismas exclusiones. Sirve si cambió el backlog o la regla de duplicados.",
+    ):
+        controller.decide(decision_payload(request, who, "edit", comment, {"exclude": sorted(excluded)}))
+        st.rerun()
     if publish:
         problem = publish_selection(controller, who, request, chosen, comment)
         if problem:

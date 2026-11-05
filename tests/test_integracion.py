@@ -387,3 +387,15 @@ def test_el_plan_no_publica_dos_items_casi_iguales(env):
 def test_un_proyecto_vacio_en_el_env_usa_el_valor_por_defecto():
     assert Settings(azdo_project="").azdo_project == "ACME" and Settings(azdo_project="  ").azdo_project == "ACME"
     assert Settings(azdo_project="Mi Proyecto").azdo_project == "Mi Proyecto"
+
+
+def test_dos_historias_de_requisitos_aprobados_distintos_se_publican_las_dos_aunque_se_parezcan(env):
+    board, _, service, _ = env
+    first = make_item("HU-RQ-007", "DNI obligatorio y único en el maestro de autoridades")
+    second = make_item("HU-RQ-025", "DNI obligatorio y único en el maestro de personal")
+    first.requirement_id, second.requirement_id = "RQ-007", "RQ-025"
+    add(board, first, second)
+    assert actions(service.arm()) == {"HU-RQ-007": "crear", "HU-RQ-025": "crear"}
+    third = make_item("HU-X", "DNI obligatorio y único en el maestro de autoridades")  # sin requisito: el control sigue valiendo
+    add(board, third)
+    assert actions(service.arm())["HU-X"] == "omitir"

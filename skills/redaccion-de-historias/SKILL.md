@@ -18,6 +18,14 @@ Procedimiento, en este orden:
 - Cada criterio se puede comprobar con sí o no. No inventes escenarios: si algo no figura en las fuentes, no es un criterio; mencionalo en tu respuesta final como duda.
 - No agrupes en un criterio escenarios distintos, y no repitas el mismo escenario con otras palabras.
 
+## Antes de entregar cada historia (lo que el Crítico objeta primero)
+Repasá cada historia con esta lista; en la última corrida el Crítico objetó 28 de 33 en la primera ronda por estos motivos:
+1. **Cada promesa tiene su criterio.** Si la descripción dice «asociar cada comprobante a su registro», hay un criterio que lo verifica.
+2. **Cada dato concreto figura en una frase citada de la historia** (un botón, un campo, una clave, un plazo, un rol). Si lo viste en el contexto pero esa frase no está entre las citas, buscala con `buscar_en_fuentes` y agregala en `citations` (con su `chunk_id` y la frase textual), o sacá el dato del criterio.
+3. **El rol del «Como» es el que nombran las fuentes.** No lo inventes ni lo generalices («administrador que carga…» si nadie lo dijo).
+4. **Los casos que más se omiten:** el error o rechazo (qué se informa y a quién), volver a importar o reemplazar datos ya cargados, qué pasa si falta un dato o viene repetido, y quién puede hacerlo.
+5. **Algo posterior que cambia lo pedido** (otra reunión que lo reemplaza): no lo redactes distinto por tu cuenta; mencionalo en tu respuesta final.
+
 ## Cuántas historias y de qué tamaño (no hay un número fijo)
 - Primero recorré la reunión y pensá la lista de **requisitos distintos**: cosas que el usuario o el negocio necesitan. Una historia por requisito; el objetivo es cubrirlos todos.
 - Varias frases que hablan de lo mismo son **un** requisito. Ejemplo: «conservar el historial de cada reintento de una factura», «saber cuántas veces fue reprocesada» y «cada intento queda como evento independiente» son la misma funcionalidad: no hacen tres historias.

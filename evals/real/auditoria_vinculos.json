@@ -1,0 +1,533 @@
+[
+  {
+    "kind": "requisito",
+    "target": "RQ-001",
+    "title": "Elecciones como entidades aisladas e independientes",
+    "commitment": "C-012",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-012 es un título general de alcance («Soporte multielección y entornos de prueba»), no una funcionalidad concreta."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-001",
+    "title": "Elecciones como entidades aisladas e independientes",
+    "commitment": "C-266",
+    "relation": "mismo",
+    "difference": "",
+    "reason": "Ambos piden configurar cada elección como entidad o red independiente dentro de Multielección."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-001",
+    "title": "Elecciones como entidades aisladas e independientes",
+    "commitment": "C-267",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-267 trata la configuración de maestros, calendarios y parámetros por elección. El requisito pide aislamiento de datos entre elecciones. Solo comparten el tema multielección."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-002",
+    "title": "Perfiles Super Admin y Admin por elección",
+    "commitment": "C-011",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-011 es un título general transversal (dashboards, seguridad, roles, auditoría)."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-002",
+    "title": "Perfiles Super Admin y Admin por elección",
+    "commitment": "C-262",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-262 es el mecanismo genérico de roles. El requisito define perfiles específicos (Super Admin / Admin) ligados a la multielección."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-002",
+    "title": "Perfiles Super Admin y Admin por elección",
+    "commitment": "C-263",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-263 es el mecanismo genérico de permisos por rol. No define los perfiles Super Admin/Admin."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-002",
+    "title": "Perfiles Super Admin y Admin por elección",
+    "commitment": "C-268",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-268 ofrece dashboards particulares por elección. El requisito pide perfiles, uno de ellos con vista consolidada de todas las elecciones. Solo comparten el tema."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-003",
+    "title": "Permisos de creación y visualización de elecciones por perfil",
+    "commitment": "C-262",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "Mecanismo genérico de roles frente a una regla específica de visibilidad y creación de elecciones por perfil."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-003",
+    "title": "Permisos de creación y visualización de elecciones por perfil",
+    "commitment": "C-263",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "Mecanismo genérico de permisos frente a una regla concreta de alcance por elección creada."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-003",
+    "title": "Permisos de creación y visualización de elecciones por perfil",
+    "commitment": "C-266",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-266 trata la configuración de una elección. El requisito trata permisos de visualización y creación por perfil."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-004",
+    "title": "Carga masiva de Carta Marina solo con Excel",
+    "commitment": "C-014",
+    "relation": "mismo",
+    "difference": "propuesta: importación masiva sin formato especificado; reunión: exclusivamente archivo Excel",
+    "reason": "Ambos refieren a la carga masiva del maestro de ubicaciones (Carta Marina / nodos) en el mismo módulo."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-005",
+    "title": "Carga masiva de Carta Marina con reemplazo total por elección",
+    "commitment": "C-014",
+    "relation": "mismo",
+    "difference": "propuesta: importación masiva sin modo definido; reunión: cada carga borra y reemplaza todos los datos de la elección",
+    "reason": "Misma funcionalidad de importación masiva del maestro, con un detalle de comportamiento."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-006",
+    "title": "Edición individual de campos de Carta Marina desde la grilla",
+    "commitment": "C-013",
+    "relation": "mismo",
+    "difference": "propuesta: crear/editar/eliminar registros; reunión: edición campo a campo desde la grilla con ícono de lápiz",
+    "reason": "Misma funcionalidad de edición de registros del maestro en el mismo módulo."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-007",
+    "title": "Cruce de presentismo y autogestión con órdenes de pago autorizadas",
+    "commitment": "C-100",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-100 es la consulta de estado de pago en el portal. El requisito es el cruce de presentismo con órdenes de pago para determinar a quién se paga."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-007",
+    "title": "Cruce de presentismo y autogestión con órdenes de pago autorizadas",
+    "commitment": "C-110",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-110 notifica el resultado del pago. No realiza el cruce con órdenes autorizadas."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-008",
+    "title": "Notificar en pantalla la fila del Excel con duplicidad",
+    "commitment": "C-032",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-032 es genérico (reglas de validación). El requisito pide un comportamiento concreto de presentación del error en pantalla."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-009",
+    "title": "Bloquear importación de Carta Marina ante combinaciones duplicadas de Escuela y Mesa",
+    "commitment": "C-032",
+    "relation": "mismo",
+    "difference": "propuesta: reglas de validación genéricas al importar; reunión: bloqueo por duplicado de ID Escuela + Código de Mesa",
+    "reason": "Es una regla de validación en la importación del mismo módulo de maestro."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-009",
+    "title": "Bloquear importación de Carta Marina ante combinaciones duplicadas de Escuela y Mesa",
+    "commitment": "C-014",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-014 es la importación en sí. La regla de bloqueo por duplicados corresponde a la validación (C-032)."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-010",
+    "title": "DNI obligatorio y único en el maestro de autoridades",
+    "commitment": "C-004",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-004 es un título general de alcance."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-010",
+    "title": "DNI obligatorio y único en el maestro de autoridades",
+    "commitment": "C-084",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-084 gestiona estados administrativos. El requisito trata la unicidad y obligatoriedad del DNI."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-011",
+    "title": "Sin otros campos obligatorios en el maestro de autoridades",
+    "commitment": "C-004",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-004 es un título general del alcance y no trata campos obligatorios del maestro de autoridades."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-011",
+    "title": "Sin otros campos obligatorios en el maestro de autoridades",
+    "commitment": "C-084",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "Gestionar estados administrativos no es definir campos obligatorios del maestro; solo comparten el módulo."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-012",
+    "title": "Roles de autoridades configurables por elección",
+    "commitment": "C-004",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-004 es un título general del alcance, sin funcionalidad concreta de roles de autoridades."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-012",
+    "title": "Roles de autoridades configurables por elección",
+    "commitment": "C-267",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-267 es una configuración genérica por elección (maestros, parámetros, etiquetas) y no se compromete con un panel de creación de roles de autoridades."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-013",
+    "title": "Integración por API con el TMS de LogiCorp para el seguimiento de notificaciones",
+    "commitment": "C-095",
+    "relation": "mismo",
+    "difference": "propuesta: API de seguimiento de envíos DMS; reunión: integración directa por API con el TMS de LogiCorp en lugar de archivos de tracking",
+    "reason": "Ambos piden integrar por API el seguimiento de envíos de notificaciones con LogiCorp."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-013",
+    "title": "Integración por API con el TMS de LogiCorp para el seguimiento de notificaciones",
+    "commitment": "C-113",
+    "relation": "mismo",
+    "difference": "propuesta: API de seguimiento DMS de LogiCorp; reunión: API del TMS de LogiCorp",
+    "reason": "Ambos piden integrar la API de seguimiento de LogiCorp para la trazabilidad de las notificaciones a autoridades."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-013",
+    "title": "Integración por API con el TMS de LogiCorp para el seguimiento de notificaciones",
+    "commitment": "C-119",
+    "relation": "mismo",
+    "difference": "propuesta: API de seguimiento DMS; reunión: API del TMS de LogiCorp",
+    "reason": "Ambos piden consumir la API de seguimiento de LogiCorp para obtener el estado de las notificaciones."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-014",
+    "title": "Consultar estado de notificación en el TMS por DNI y Número de Contrato",
+    "commitment": "C-119",
+    "relation": "mismo",
+    "difference": "propuesta: estado por pieza postal; reunión: consulta por DNI y Número de Contrato que devuelve número de envío y estado",
+    "reason": "Ambos piden consultar la API de seguimiento de LogiCorp para obtener el estado de cada notificación."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-014",
+    "title": "Consultar estado de notificación en el TMS por DNI y Número de Contrato",
+    "commitment": "C-093",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-093 es la consulta y exportación de estados por el usuario, no la consulta del sistema al TMS por DNI y contrato."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-014",
+    "title": "Consultar estado de notificación en el TMS por DNI y Número de Contrato",
+    "commitment": "C-112",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "Registrar la trazabilidad de la pieza no es consultar al TMS con claves DNI y contrato."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-015",
+    "title": "Actualización automática del estado de notificaciones dos veces al día",
+    "commitment": "C-119",
+    "relation": "mismo",
+    "difference": "propuesta: estado obtenido en tiempo real; reunión: actualización automática dos veces al día",
+    "reason": "Ambos piden obtener automáticamente el estado de las notificaciones desde la API de LogiCorp."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-015",
+    "title": "Actualización automática del estado de notificaciones dos veces al día",
+    "commitment": "C-094",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "El tablero de seguimiento es visualización, no la actualización automática periódica de estados."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-016",
+    "title": "Historial cronológico de estados de hasta 3 notificaciones por DNI",
+    "commitment": "C-093",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "Consultar y exportar estados es genérico y no es un historial cronológico por DNI."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-016",
+    "title": "Historial cronológico de estados de hasta 3 notificaciones por DNI",
+    "commitment": "C-094",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "El tablero de seguimiento no es el historial cronológico de estados por DNI."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-016",
+    "title": "Historial cronológico de estados de hasta 3 notificaciones por DNI",
+    "commitment": "C-112",
+    "relation": "mismo",
+    "difference": "propuesta: trazabilidad completa de la pieza; reunión: historial de estados de hasta 3 notificaciones por DNI",
+    "reason": "La trazabilidad completa de la pieza equivale al historial cronológico de estados de la notificación."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-016",
+    "title": "Historial cronológico de estados de hasta 3 notificaciones por DNI",
+    "commitment": "C-119",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "C-119 trata la obtención del estado vía API, no la visualización del historial por DNI."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-017",
+    "title": "Importación progresiva de autoridades por lotes aislados",
+    "commitment": "C-085",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "Cargar el total de electores no es la importación de autoridades por lotes aislados."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-017",
+    "title": "Importación progresiva de autoridades por lotes aislados",
+    "commitment": "C-087",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "Solo comparten la palabra 'lote': C-087 genera envíos DMS y es de otro módulo, no la importación de autoridades."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-018",
+    "title": "El sistema no calcula montos ni viáticos; el monto es informativo y lo provee el tribunal",
+    "commitment": "C-100",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "Consultar el estado de pago en el portal no trata el cálculo de montos ni viáticos."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-018",
+    "title": "El sistema no calcula montos ni viáticos; el monto es informativo y lo provee el tribunal",
+    "commitment": "C-300",
+    "relation": "mismo",
+    "difference": "propuesta: el cálculo y el pago quedan a cargo de Oracle HCM; reunión: el monto es informativo y lo provee el tribunal",
+    "reason": "Ambos excluyen que el sistema calcule los montos a pagar a las autoridades."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-019",
+    "title": "Carga masiva por Excel de órdenes de pago del tribunal con mapeo dinámico por elección",
+    "commitment": "C-059",
+    "relation": "mismo",
+    "difference": "propuesta: importar CSV/XLSX con estados de pago; reunión: carga masiva por Excel de órdenes de pago del tribunal con mapeo dinámico de campos por elección",
+    "reason": "Ambos son la importación de un archivo de pagos en el módulo de pagos a PA; la reunión agrega el mapeo dinámico por elección."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-019",
+    "title": "Carga masiva por Excel de órdenes de pago del tribunal con mapeo dinámico por elección",
+    "commitment": "C-302",
+    "relation": "mismo",
+    "difference": "propuesta: carga manual de CSV/XLSX para gestionar estados de pago; reunión: carga masiva de órdenes de pago por Excel con mapeo dinámico por elección",
+    "reason": "Es la misma carga de archivo de pagos de la gestión administrativa de PA, con un detalle distinto de mapeo y contenido."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-019",
+    "title": "Carga masiva por Excel de órdenes de pago del tribunal con mapeo dinámico por elección",
+    "commitment": "C-100",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "Consultar el estado de pago es una función del portal de autogestión, no la carga masiva de órdenes en el backoffice."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-020",
+    "title": "Carga masiva de comprobantes de pago en PDF desde archivo ZIP",
+    "commitment": "C-101",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "El requisito es subir comprobantes en un ZIP desde el backoffice; el compromiso es que la autoridad los vea y descargue en el portal."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-021",
+    "title": "Condicionar la notificación de pago a que el comprobante esté cargado y asociado",
+    "commitment": "C-110",
+    "relation": "mismo",
+    "difference": "propuesta: notificar pago rechazado o confirmado; reunión: notificar solo si el comprobante ya está cargado y asociado",
+    "reason": "Es la misma notificación de pago a la autoridad de mesa; la reunión le agrega una condición."
+  },
+  {
+    "kind": "requisito",
+    "target": "RQ-021",
+    "title": "Condicionar la notificación de pago a que el comprobante esté cargado y asociado",
+    "commitment": "C-101",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "La visualización de comprobantes en el portal no es la regla que condiciona el envío de la notificación."
+  },
+  {
+    "kind": "propuesta",
+    "target": "P-006",
+    "title": "Importación de Carta Marina con mapeo simple de columnas",
+    "commitment": "C-014",
+    "relation": "mismo",
+    "difference": "propuesta: importación masiva de nodos, rutas y recorridos; reunión: solo mapeo simple de columnas y persistencia de la Carta Marina, con limpieza y transformación a cargo de LogiCorp fuera del sistema",
+    "reason": "Es la misma importación masiva del maestro de nodos, con un alcance reducido."
+  },
+  {
+    "kind": "propuesta",
+    "target": "P-006",
+    "title": "Importación de Carta Marina con mapeo simple de columnas",
+    "commitment": "C-032",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "Solo comparten el mecanismo genérico de importar; el requisito no pide reglas de validación, sino un mapeo simple."
+  },
+  {
+    "kind": "propuesta",
+    "target": "P-017",
+    "title": "Campos obligatorios de números de contrato en el alta de elección",
+    "commitment": "C-266",
+    "relation": "mismo",
+    "difference": "propuesta: configurar una nueva elección; reunión: el alta de elección suma tres campos obligatorios de números de contrato (Notificaciones, Distribución de Urnas, Material Electoral)",
+    "reason": "Es el mismo alta o configuración de una nueva elección en Multielección, con campos adicionales."
+  },
+  {
+    "kind": "propuesta",
+    "target": "P-017",
+    "title": "Campos obligatorios de números de contrato en el alta de elección",
+    "commitment": "C-267",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "Es un compromiso genérico de configuración por elección; los campos de contrato corresponden al alta de la elección (C-266)."
+  },
+  {
+    "kind": "propuesta",
+    "target": "P-020",
+    "title": "Exclusión del MVP: plantillas de impresión, impresión centralizada y generación física de notificaciones",
+    "commitment": "C-089",
+    "relation": "mismo",
+    "difference": "propuesta: soporte a impresión en origen, nodo, sucursal u organismo; reunión: la impresión centralizada y la generación física quedan fuera del MVP",
+    "reason": "La exclusión recae sobre esta misma funcionalidad de impresión de la Notificación DMS."
+  },
+  {
+    "kind": "propuesta",
+    "target": "P-020",
+    "title": "Exclusión del MVP: plantillas de impresión, impresión centralizada y generación física de notificaciones",
+    "commitment": "C-091",
+    "relation": "mismo",
+    "difference": "propuesta: modelo de nota personalizable por elección/cliente; reunión: la edición de plantillas de impresión queda fuera del MVP",
+    "reason": "La exclusión afecta a la personalización de las notas de notificación del mismo módulo."
+  },
+  {
+    "kind": "propuesta",
+    "target": "P-020",
+    "title": "Exclusión del MVP: plantillas de impresión, impresión centralizada y generación física de notificaciones",
+    "commitment": "C-092",
+    "relation": "mismo",
+    "difference": "propuesta: plantilla con variables y branding básico; reunión: la edición de plantillas de impresión queda fuera del MVP",
+    "reason": "La exclusión recae sobre la configuración de plantillas de la Notificación DMS."
+  },
+  {
+    "kind": "propuesta",
+    "target": "P-020",
+    "title": "Exclusión del MVP: plantillas de impresión, impresión centralizada y generación física de notificaciones",
+    "commitment": "C-295",
+    "relation": "mismo",
+    "difference": "",
+    "reason": "Ambos dejan la impresión física fuera del sistema; son consistentes."
+  },
+  {
+    "kind": "propuesta",
+    "target": "P-026",
+    "title": "Notificación de pago por correo a autoridades con enlace al portal",
+    "commitment": "C-110",
+    "relation": "mismo",
+    "difference": "propuesta: notificar pago rechazado o confirmado; reunión: correo con enlace al portal de autogestión para ver y descargar el comprobante",
+    "reason": "Es la misma notificación de pago a la autoridad, con el detalle del enlace al portal."
+  },
+  {
+    "kind": "propuesta",
+    "target": "P-026",
+    "title": "Notificación de pago por correo a autoridades con enlace al portal",
+    "commitment": "C-101",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "El compromiso es la funcionalidad del portal; el requisito es el envío del correo, que solo enlaza al portal."
+  },
+  {
+    "kind": "propuesta",
+    "target": "P-026",
+    "title": "Notificación de pago por correo a autoridades con enlace al portal",
+    "commitment": "C-100",
+    "relation": "distinto",
+    "difference": "",
+    "reason": "Consultar el estado de pago en el portal es una función distinta del envío de correos de notificación."
+  },
+  {
+    "kind": "propuesta",
+    "target": "P-051",
+    "title": "Alta manual de Nodo con título, descripción, dirección y geolocalización",
+    "commitment": "C-013",
+    "relation": "mismo",
+    "difference": "propuesta: crear nodos sin detallar campos; reunión: alta con título, descripción, dirección física y geolocalización manual",
+    "reason": "Es el mismo alta de nodos del maestro de nodos."
+  },
+  {
+    "kind": "propuesta",
+    "target": "P-068",
+    "title": "Alcance MVP limitado a la lógica de Nodos",
+    "commitment": "C-013",
+    "relation": "mismo",
+    "difference": "propuesta: ABM de nodos, rutas y recorridos; reunión: en el MVP solo nodos, con rutas y recorridos pospuestos",
+    "reason": "Es el mismo compromiso del maestro, con el alcance reducido a nodos."
+  }
+]

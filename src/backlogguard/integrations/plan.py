@@ -175,7 +175,9 @@ class PublishService:
                 if twin:
                     plan_items.append(PlanItem(**base, action="omitir", remote_id=twin.id, expected_rev=twin.rev,
                                                reason=f"posible duplicado del work item #{twin.id} cargado a mano: revisar antes de crear"))
-                elif sibling := next((k for k in kept if k.kind is item.kind and similar_titles(item.title, k.title)), None):
+                elif sibling := next((k for k in kept if k.kind is item.kind and similar_titles(item.title, k.title)
+                                      and not (item.requirement_id and k.requirement_id and item.requirement_id != k.requirement_id)), None):
+                    # dos historias de requisitos aprobados por separado se publican las dos, aunque los títulos se parezcan
                     plan_items.append(PlanItem(**base, action="omitir",
                                                reason=f"posible duplicado del ítem {sibling.id} de este mismo plan: revisar antes de crear"))
                 else:

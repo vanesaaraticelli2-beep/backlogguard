@@ -1,0 +1,2716 @@
+{
+  "document_id": "propuesta_techpartner_proyecto_logicorp_dms_elecciones",
+  "fingerprint": "703c66e5c00660c4",
+  "model": "claude-opus-5-5",
+  "extracted_at": "2026-11-04T22:12:56+00:00",
+  "input_tokens": 29595,
+  "output_tokens": 62970,
+  "cost_usd": 1.37778,
+  "commitments": [
+    {
+      "id": "C-001",
+      "epic": "Contexto y supuestos",
+      "capability": "Operación mobile offline-first en establecimientos con conectividad limitada",
+      "scope": "condicion",
+      "page": 3,
+      "quote": "operación mobile offline-first en establecimientos con conectividad limitada"
+    },
+    {
+      "id": "C-002",
+      "epic": "Alcance general",
+      "capability": "Planificación end-to-end con maestro de nodos, rutas, recorridos y optimizador de flota",
+      "scope": "incluido",
+      "page": 5,
+      "quote": "Planificación end-to-end con maestro de nodos, rutas y recorridos, optimizador de"
+    },
+    {
+      "id": "C-003",
+      "epic": "Alcance general",
+      "capability": "Gestión completa de PA y TT con reclutamiento y asignación geolocalizada por IA",
+      "scope": "incluido",
+      "page": 5,
+      "quote": "Gestión completa de PA y TT: reclutamiento, asignación geolocalizada (IA),"
+    },
+    {
+      "id": "C-004",
+      "epic": "Alcance general",
+      "capability": "Coordinación del proceso electoral: maestro, padrón, notificaciones DMS y portal",
+      "scope": "incluido",
+      "page": 5,
+      "quote": "Coordinación del proceso electoral: maestro, padrón, notificaciones DMS, portal de"
+    },
+    {
+      "id": "C-005",
+      "epic": "Alcance general",
+      "capability": "Módulo de material electoral con trazabilidad, auditoría, armado y rendición",
+      "scope": "incluido",
+      "page": 5,
+      "quote": "Módulo de material electoral con trazabilidad, auditoría, armado/finishing y rendición."
+    },
+    {
+      "id": "C-006",
+      "epic": "Alcance general",
+      "capability": "Backoffice operativo con gestión de tareas y templates configurables",
+      "scope": "incluido",
+      "page": 5,
+      "quote": "Backoffice operativo con gestión de tareas y templates configurables."
+    },
+    {
+      "id": "C-007",
+      "epic": "Alcance general",
+      "capability": "Aplicación mobile offline-first para PA y TT con geolocalización y escaneo de DNI",
+      "scope": "incluido",
+      "page": 5,
+      "quote": "Aplicación Mobile offline-first para PA y TT con geolocalización y escaneo de DNI"
+    },
+    {
+      "id": "C-008",
+      "epic": "Alcance general",
+      "capability": "Digitalización de telegramas con OCR y transmisión a Juntas Electorales",
+      "scope": "incluido",
+      "page": 5,
+      "quote": "establecimientos (OCR) y banco digital en nodos, con transmisión a Juntas"
+    },
+    {
+      "id": "C-009",
+      "epic": "Alcance general",
+      "capability": "Escrutinio provisorio con IA y parseo automatizado de telegramas",
+      "scope": "incluido",
+      "page": 5,
+      "quote": "Módulo de escrutinio provisorio y contabilización con IA: parseo automatizado de"
+    },
+    {
+      "id": "C-010",
+      "epic": "Alcance general",
+      "capability": "Mesa de soporte y monitoreo con incidencias, tickets, alertas y reportes",
+      "scope": "incluido",
+      "page": 5,
+      "quote": "Mesa de soporte y monitoreo con gestión de incidencias, tickets, alertas y reportes"
+    },
+    {
+      "id": "C-011",
+      "epic": "Alcance general",
+      "capability": "Transversales: dashboards en tiempo real, seguridad, roles y auditoría",
+      "scope": "incluido",
+      "page": 5,
+      "quote": "Transversales: dashboards en tiempo real, seguridad y roles, auditoria, soporte"
+    },
+    {
+      "id": "C-012",
+      "epic": "Alcance general",
+      "capability": "Soporte multielección y entornos de prueba",
+      "scope": "incluido",
+      "page": 5,
+      "quote": "multielección y entornos de prueba."
+    },
+    {
+      "id": "C-013",
+      "epic": "Maestro de nodos, rutas y recorridos",
+      "capability": "Crear, editar y eliminar nodos, rutas y recorridos",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Crear, editar y eliminar nodos, rutas y recorridos"
+    },
+    {
+      "id": "C-014",
+      "epic": "Maestro de nodos, rutas y recorridos",
+      "capability": "Importar masivamente nodos, rutas y recorridos",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Importar masivamente nodos, rutas y recorridos"
+    },
+    {
+      "id": "C-015",
+      "epic": "Maestro de nodos, rutas y recorridos",
+      "capability": "Generar versión de maestros para nueva elección",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Generar versión de maestros para nueva elección"
+    },
+    {
+      "id": "C-016",
+      "epic": "Maestro de nodos, rutas y recorridos",
+      "capability": "Configurar parámetros independientes por elección",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Configurar parámetros independientes por elección"
+    },
+    {
+      "id": "C-017",
+      "epic": "Maestro de nodos, rutas y recorridos",
+      "capability": "Definir relaciones jerárquicas entre nodos, rutas y recorridos",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Definir relaciones jerárquicas entre nodos, rutas y recorridos"
+    },
+    {
+      "id": "C-018",
+      "epic": "Planificación de la expedición",
+      "capability": "Crear rutas de abastecimiento a nodo",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Crear rutas de abastecimiento a nodo"
+    },
+    {
+      "id": "C-019",
+      "epic": "Planificación de la expedición",
+      "capability": "Asociar recorridos, escuelas y transportistas por ruta",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Asociar recorridos, escuelas y transportistas por ruta"
+    },
+    {
+      "id": "C-020",
+      "epic": "Planificación de la expedición",
+      "capability": "Parametrizar medidas de pallet",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Parametrizar medidas de pallet (alto, ancho, largo, peso)"
+    },
+    {
+      "id": "C-021",
+      "epic": "Planificación de la expedición",
+      "capability": "Definir reglas configurables de armado de contenedor",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Definir reglas configurables de armado de contenedor"
+    },
+    {
+      "id": "C-022",
+      "epic": "Planificación de la expedición",
+      "capability": "Definir criterio de corte de pallet",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Definir criterio de corte de pallet"
+    },
+    {
+      "id": "C-023",
+      "epic": "Planificación de la expedición",
+      "capability": "Definir layout de zona de trabajo con sectores y posiciones",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Definir layout de zona de trabajo (sectores y posiciones)"
+    },
+    {
+      "id": "C-024",
+      "epic": "Planificación de la expedición",
+      "capability": "Crear y gestionar contenedores por ruta",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Crear y gestionar contenedores por ruta"
+    },
+    {
+      "id": "C-025",
+      "epic": "Planificación de la expedición",
+      "capability": "Generar tareas operativas de picking y armado",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Generar tareas operativas de picking y armado"
+    },
+    {
+      "id": "C-026",
+      "epic": "Planificación de la expedición",
+      "capability": "Controlar materiales nominados y no nominados por contenedor",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Controlar materiales nominados y no nominados por"
+    },
+    {
+      "id": "C-027",
+      "epic": "Planificación de la expedición",
+      "capability": "Ejecutar picking por escaneo QR, Code128 o manual",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Ejecutar picking por escaneo QR / Code128 o manual"
+    },
+    {
+      "id": "C-028",
+      "epic": "Planificación de la expedición",
+      "capability": "Ejecutar doble control al pickear material",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Ejecutar doble control al pickear material"
+    },
+    {
+      "id": "C-029",
+      "epic": "Planificación de la expedición",
+      "capability": "Confirmar armado de pallet o contenedor",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Confirmar armado de pallet o contenedor"
+    },
+    {
+      "id": "C-030",
+      "epic": "Optimizador de flota y recorridos (IA)",
+      "capability": "Solicitar optimización de flota y recorridos",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Solicitar optimización de flota y recorridos"
+    },
+    {
+      "id": "C-031",
+      "epic": "Optimizador de flota y recorridos (IA)",
+      "capability": "Integración con Google OR-Tools y Google Maps APIs",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "API Google OR tools/Google Maps APIs"
+    },
+    {
+      "id": "C-032",
+      "epic": "Maestro de nodos, rutas y recorridos",
+      "capability": "Aplicar reglas de validación al importar",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Aplicar reglas de validación al importar"
+    },
+    {
+      "id": "C-033",
+      "epic": "Maestro de nodos, rutas y recorridos",
+      "capability": "Registrar trazabilidad de cambios en maestros",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Registrar trazabilidad de cambios en maestros"
+    },
+    {
+      "id": "C-034",
+      "epic": "Planificación de la expedición",
+      "capability": "Calcular automáticamente necesidades de materiales por escuela o recorrido",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Calcular automáticamente necesidades de materiales por escuela/recorrido"
+    },
+    {
+      "id": "C-035",
+      "epic": "Planificación de la expedición",
+      "capability": "Generar automáticamente tareas de abastecimiento",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Generar automáticamente tareas de abastecimiento"
+    },
+    {
+      "id": "C-036",
+      "epic": "Planificación de la expedición",
+      "capability": "Priorizar tareas por fecha/hora límite y criticidad",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Priorizar tareas por fecha/hora límite y criticidad"
+    },
+    {
+      "id": "C-037",
+      "epic": "Optimizador de flota y recorridos (IA)",
+      "capability": "Calcular carga y capacidad por recorrido",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Calcular carga y capacidad por recorrido"
+    },
+    {
+      "id": "C-038",
+      "epic": "Optimizador de flota y recorridos (IA)",
+      "capability": "Analizar caminos y accesibilidad geográfica",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Analizar caminos y accesibilidad geográfica"
+    },
+    {
+      "id": "C-039",
+      "epic": "Optimizador de flota y recorridos (IA)",
+      "capability": "Proponer combinación óptima de unidades de transporte con IA",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Proponer combinación óptima de unidades de transporte (optimizador IA)"
+    },
+    {
+      "id": "C-040",
+      "epic": "Optimizador de flota y recorridos (IA)",
+      "capability": "Recomendar tipo de unidad de transporte por recorrido",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Recomendar tipo de unidad de transporte por recorrido"
+    },
+    {
+      "id": "C-041",
+      "epic": "Optimizador de flota y recorridos (IA)",
+      "capability": "LLM traduce salidas del algoritmo VRP en recomendaciones operativas",
+      "scope": "incluido",
+      "page": 8,
+      "quote": "traducir las salidas matemáticas del algoritmo VRP en recomendaciones operativas comprensibles"
+    },
+    {
+      "id": "C-042",
+      "epic": "Reclutamiento de PA",
+      "capability": "Visualizar y filtrar candidatos por edad, celular, domicilio y disponibilidad",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Visualizar y filtrar candidatos por edad, celular, domicilio"
+    },
+    {
+      "id": "C-043",
+      "epic": "Reclutamiento de PA",
+      "capability": "Registrar notas de screening telefónico o mecanismo alternativo",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Registrar notas screening telefónico o mecanismo"
+    },
+    {
+      "id": "C-044",
+      "epic": "Reclutamiento de PA",
+      "capability": "Dar de alta manualmente a candidato PA",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Dar de alta manualmente a candidato PA"
+    },
+    {
+      "id": "C-045",
+      "epic": "Reclutamiento de PA",
+      "capability": "Identificar y gestionar candidatos con doble rol PA y TT",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Identificar y gestionar candidatos con doble rol (PA + TT)"
+    },
+    {
+      "id": "C-046",
+      "epic": "Reclutamiento de PA",
+      "capability": "Asociar candidato preseleccionado a un nodo",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Asociar candidato preseleccionado a un nodo"
+    },
+    {
+      "id": "C-047",
+      "epic": "Reclutamiento de PA",
+      "capability": "Registrar postulación digital del candidato PA",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Registrar postulación digital (onboarding)"
+    },
+    {
+      "id": "C-048",
+      "epic": "Reclutamiento de PA",
+      "capability": "Candidato PA interactúa con chatbot",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Interactuar con chatbot"
+    },
+    {
+      "id": "C-049",
+      "epic": "Asignación de PA",
+      "capability": "Asignar o modificar asignación de PA a cada colegio",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Asignar o modificar asignación de PA a cada colegio"
+    },
+    {
+      "id": "C-050",
+      "epic": "Asignación de PA",
+      "capability": "Visualizar en mapa colegios, nodos y domicilios",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Visualizar en mapa colegios, nodos y domicilio de"
+    },
+    {
+      "id": "C-051",
+      "epic": "Asignación de PA",
+      "capability": "Segregar candidatos con y sin movilidad propia",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Segregar candidatos con y sin movilidad propia"
+    },
+    {
+      "id": "C-052",
+      "epic": "Asignación de PA",
+      "capability": "Generar y visualizar sugerencia automática por IA de asignación de PA",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Generar y visualizar sugerencia automática por IA"
+    },
+    {
+      "id": "C-053",
+      "epic": "Asignación de PA",
+      "capability": "Visualizar medios de transporte sugeridos para PA",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Visualizar medios de transporte sugeridos para PA"
+    },
+    {
+      "id": "C-054",
+      "epic": "Asignación de PA",
+      "capability": "Visualizar personas con doble rol en el mapa",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Visualizar personas con doble rol en el mapa"
+    },
+    {
+      "id": "C-055",
+      "epic": "Gestión administrativa de PA",
+      "capability": "Visualizar seguimiento de capacitación presencial",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Visualizar seguimiento de capacitación presencial"
+    },
+    {
+      "id": "C-056",
+      "epic": "Pagos a PA",
+      "capability": "PA modifica datos de su cuenta bancaria propia",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Modificar datos de cuenta bancaria"
+    },
+    {
+      "id": "C-057",
+      "epic": "Pagos a PA",
+      "capability": "Registrar manualmente confirmación de pago",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Registrar manualmente confirmación"
+    },
+    {
+      "id": "C-058",
+      "epic": "Pagos a PA",
+      "capability": "Confirmar suplencias y dobles asignaciones para pago",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Confirmar suplencias y dobles"
+    },
+    {
+      "id": "C-059",
+      "epic": "Pagos a PA",
+      "capability": "Importar archivo CSV/XLSX con estados de pago",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Importar archivo CSV/XLSX con"
+    },
+    {
+      "id": "C-060",
+      "epic": "Pagos a PA",
+      "capability": "Consultar estado de pago de cada PA",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Consultar estado de pago de cada"
+    },
+    {
+      "id": "C-061",
+      "epic": "Gestión de TT",
+      "capability": "Registrar posiciones de transportistas necesarias",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Registrar posiciones de transportistas"
+    },
+    {
+      "id": "C-062",
+      "epic": "Gestión de TT",
+      "capability": "Verificar documentación de TT",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Verificar documentación de TT"
+    },
+    {
+      "id": "C-063",
+      "epic": "Gestión de TT",
+      "capability": "Vincular transportista a recorrido planificado",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Vincular transportista a recorrido"
+    },
+    {
+      "id": "C-064",
+      "epic": "Gestión de TT",
+      "capability": "Adaptar liquidación de TT para esquema de pago electoral",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Adaptar liquidación de TT para"
+    },
+    {
+      "id": "C-065",
+      "epic": "Personal interno",
+      "capability": "Aprobar o rechazar candidato de personal interno",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Aprobar / Rechazar candidato"
+    },
+    {
+      "id": "C-066",
+      "epic": "Personal interno",
+      "capability": "Registrar evaluación de desempeño",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Registrar evaluación de desempeño"
+    },
+    {
+      "id": "C-067",
+      "epic": "Personal interno",
+      "capability": "Registrar pago por servicio",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Registrar pago por servicio"
+    },
+    {
+      "id": "C-068",
+      "epic": "Reclutamiento de PA",
+      "capability": "Bot de WhatsApp (Twilio) para interacción, validación, screening y disponibilidad",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Ejecutar bot de WhatsApp (Twilio) para interacción inicial, validación de datos,"
+    },
+    {
+      "id": "C-069",
+      "epic": "Asignación de PA",
+      "capability": "Proponer PA más adecuados por colegio mediante IA geolocalizada",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Proponer PA más adecuados para cada colegio mediante IA geolocalizada"
+    },
+    {
+      "id": "C-070",
+      "epic": "Asignación de PA",
+      "capability": "Calcular tiempo de viaje entre domicilio del PA y colegio",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Calcular tiempo de viaje entre domicilio del PA y colegio"
+    },
+    {
+      "id": "C-071",
+      "epic": "Asignación de PA",
+      "capability": "Restringir que cada nodo modifique solo sus candidatos",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Restringir que cada nodo modifique solo sus candidatos"
+    },
+    {
+      "id": "C-072",
+      "epic": "Gestión administrativa de PA",
+      "capability": "Disparar alta en AFIP desde foto de DNI usando servicio de LogiCorp",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Disparar alta en AFIP a partir de foto de DNI (utilizando Servicio de LogiCorp)"
+    },
+    {
+      "id": "C-073",
+      "epic": "Gestión administrativa de PA",
+      "capability": "Enviar carátula y formularios al PA por WhatsApp o mail",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Enviar carátula y formularios al PA por WhatsApp o mail"
+    },
+    {
+      "id": "C-074",
+      "epic": "Gestión administrativa de PA",
+      "capability": "Actualizar resultado de examen de capacitación vía API",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Actualizar resultado de examen de capacitación vía API"
+    },
+    {
+      "id": "C-075",
+      "epic": "Gestión administrativa de PA",
+      "capability": "Generar baja de alta temprana el día de la elección por no presentación",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Generar baja de alta temprana durante el día de la elección en caso de no"
+    },
+    {
+      "id": "C-076",
+      "epic": "Pagos a PA",
+      "capability": "Monitorear estados de pago con alertas automáticas ante demoras o inconsistencias",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "rechazado) y enviar alertas automáticas ante demoras o inconsistencias"
+    },
+    {
+      "id": "C-077",
+      "epic": "Personal interno",
+      "capability": "Enviar aviso al candidato seleccionado",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Enviar aviso al candidato seleccionado"
+    },
+    {
+      "id": "C-078",
+      "epic": "Optimizador de flota y recorridos (IA)",
+      "capability": "OR-Tools calcula distribución óptima de flota y recorridos",
+      "scope": "incluido",
+      "page": 11,
+      "quote": "provee el motor de optimización combinatoria para calcular la distribución óptima"
+    },
+    {
+      "id": "C-079",
+      "epic": "Reclutamiento de PA",
+      "capability": "Envío de notificaciones a candidatos PA e interfaz de chatbot vía CPaaS",
+      "scope": "incluido",
+      "page": 11,
+      "quote": "El sistema envía mensajes de notificaciones a Candidatos PA y utilización de"
+    },
+    {
+      "id": "C-080",
+      "epic": "Asignación de PA",
+      "capability": "LLM genera propuesta de asignación revisable por RRHH",
+      "scope": "incluido",
+      "page": 11,
+      "quote": "genera una propuesta de asignación optimizada que un operador de RRHH puede"
+    },
+    {
+      "id": "C-081",
+      "epic": "Gestión administrativa de PA",
+      "capability": "El alta de PA depende de la integración existente de AFIP/ARCA de LogiCorp",
+      "scope": "condicion",
+      "page": 11,
+      "quote": "El sistema envía los datos del PA a la integración existente de AFIP/ARCA con"
+    },
+    {
+      "id": "C-082",
+      "epic": "Pagos a PA",
+      "capability": "Integración con módulo de liquidación de pagos existente de LogiCorp para PA",
+      "scope": "condicion",
+      "page": 12,
+      "quote": "El sistema se integra con la API del módulo de liquidación de pagos existente de LogiCorp"
+    },
+    {
+      "id": "C-083",
+      "epic": "Gestión de TT",
+      "capability": "Integración con módulo de liquidación de transportistas existente de LogiCorp",
+      "scope": "condicion",
+      "page": 12,
+      "quote": "El sistema se integra con la API del módulo de liquidación de transportistas existente de LogiCorp"
+    },
+    {
+      "id": "C-084",
+      "epic": "Gestión de autoridades de mesa",
+      "capability": "Gestionar estados administrativos de autoridades",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Gestionar estados administrativos de autoridades"
+    },
+    {
+      "id": "C-085",
+      "epic": "Gestión de autoridades de mesa",
+      "capability": "Cargar total de electores por elección",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Cargar total de electores por elección"
+    },
+    {
+      "id": "C-086",
+      "epic": "Gestión de autoridades de mesa",
+      "capability": "Consultar padrón con filtros avanzados",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Consultar padrón con filtros avanzados"
+    },
+    {
+      "id": "C-087",
+      "epic": "Notificación DMS",
+      "capability": "Generar envíos DMS por lote asociados a elección y autoridad",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Generar envíos DMS por lote asociados a elección y autoridad"
+    },
+    {
+      "id": "C-088",
+      "epic": "Notificación DMS",
+      "capability": "Generar envío DMS individual para autoridad",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Generar envío DMS individual para autoridad"
+    },
+    {
+      "id": "C-089",
+      "epic": "Notificación DMS",
+      "capability": "Soporte a impresión en origen, nodo, sucursal destino u organismo",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Soporte a impresión en origen, en nodo, en sucursal destino o por"
+    },
+    {
+      "id": "C-090",
+      "epic": "Notificación DMS",
+      "capability": "Usar código de barras del cliente en la pieza/etiqueta",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Usar código de barras del cliente en la pieza/etiqueta"
+    },
+    {
+      "id": "C-091",
+      "epic": "Notificación DMS",
+      "capability": "Configurar modelo de nota personalizable por elección/cliente",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Configurar modelo de nota personalizable por elección/cliente"
+    },
+    {
+      "id": "C-092",
+      "epic": "Notificación DMS",
+      "capability": "Configurar plantilla con variables y branding básico",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Configurar plantilla con variables y branding básico"
+    },
+    {
+      "id": "C-093",
+      "epic": "Notificación DMS",
+      "capability": "Consultar y exportar estados de envíos",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Consultar y exportar estados de envíos"
+    },
+    {
+      "id": "C-094",
+      "epic": "Notificación DMS",
+      "capability": "Visualizar tablero de seguimiento de envíos",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Visualizar tablero de seguimiento de envíos"
+    },
+    {
+      "id": "C-095",
+      "epic": "Notificación DMS",
+      "capability": "Integración con API de seguimiento de envíos DMS",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "API de seguimiento de envios DMS"
+    },
+    {
+      "id": "C-096",
+      "epic": "Portal de autogestión",
+      "capability": "Recuperar contraseña con validación por e-mail OTP",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Recuperar contraseña con validación por e-mail (OTP)"
+    },
+    {
+      "id": "C-097",
+      "epic": "Portal de autogestión",
+      "capability": "Cargar y actualizar datos personales, domicilio y contacto",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Cargar y actualizar datos personales, domicilio y contacto"
+    },
+    {
+      "id": "C-098",
+      "epic": "Portal de autogestión",
+      "capability": "Cargar y actualizar datos bancarios: CBU, Alias, CUIT/CUIL, titularidad",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Cargar y actualizar datos bancarios: CBU, Alias, CUIT/CUIL, titularidad"
+    },
+    {
+      "id": "C-099",
+      "epic": "Portal de autogestión",
+      "capability": "Carga de datos de autoridad por terceros autorizados",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Cargar y actualizar datos personales y bancarios de autoridad por terceros autorizados"
+    },
+    {
+      "id": "C-100",
+      "epic": "Portal de autogestión",
+      "capability": "Consultar estado de pago",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Consultar estado de pago"
+    },
+    {
+      "id": "C-101",
+      "epic": "Portal de autogestión",
+      "capability": "Visualizar y descargar comprobantes de pago",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Visualizar y descargar comprobantes de pago"
+    },
+    {
+      "id": "C-102",
+      "epic": "Portal de autogestión",
+      "capability": "Backoffice busca y edita datos de autoridad",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Buscar y editar datos de autoridad"
+    },
+    {
+      "id": "C-103",
+      "epic": "Portal de autogestión",
+      "capability": "Visualizar auditoría completa de acciones",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Visualizar auditoría completa de acciones"
+    },
+    {
+      "id": "C-104",
+      "epic": "Portal de autogestión",
+      "capability": "Integración con API Índice de Domicilios",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "API Índice de Domicilios"
+    },
+    {
+      "id": "C-105",
+      "epic": "Voluntarios",
+      "capability": "Registrar voluntario por canal presencial",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Registrar voluntario por"
+    },
+    {
+      "id": "C-106",
+      "epic": "Gestión de Autoridades de Mesa",
+      "capability": "Registrar historial completo de acciones sobre cada autoridad en el maestro",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Registrar historial completo de acciones sobre cada autoridad"
+    },
+    {
+      "id": "C-107",
+      "epic": "Gestión de Autoridades de Mesa",
+      "capability": "Validar formato y consistencia de CBU/Alias/CUIT en el portal de autogestión",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Validar formato y consistencia de CBU/Alias/CUIT"
+    },
+    {
+      "id": "C-108",
+      "epic": "Gestión de Autoridades de Mesa",
+      "capability": "No se valida CBU/Alias/CUIT contra un servicio externo",
+      "scope": "excluido",
+      "page": 14,
+      "quote": "Sin validación contra servicio externo"
+    },
+    {
+      "id": "C-109",
+      "epic": "Gestión de Autoridades de Mesa",
+      "capability": "Validar con OTP por e-mail o teléfono en el portal de autogestión",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "OTP de e-mail/teléfono"
+    },
+    {
+      "id": "C-110",
+      "epic": "Gestión de Autoridades de Mesa",
+      "capability": "Notificar a la autoridad de mesa si el pago fue rechazado o confirmado",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Notificar pago rechazado o confirmado a la autoridad de mesa"
+    },
+    {
+      "id": "C-111",
+      "epic": "Gestión de Autoridades de Mesa",
+      "capability": "Registrar auditoría completa de acciones en el portal de autogestión",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Registrar auditoría completa de acciones"
+    },
+    {
+      "id": "C-112",
+      "epic": "Gestión de Autoridades de Mesa",
+      "capability": "Registrar la trazabilidad completa de la pieza de notificación DMS",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Registrar trazabilidad completa de la pieza"
+    },
+    {
+      "id": "C-113",
+      "epic": "Gestión de Autoridades de Mesa",
+      "capability": "Integrar la API de seguimiento de envíos DMS de LogiCorp para la trazabilidad",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "integrando API de seguimiento de envios DMS de LogiCorp"
+    },
+    {
+      "id": "C-114",
+      "epic": "Gestión de Autoridades de Mesa",
+      "capability": "Integrar la API del índice de domicilio en el envío",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Integrar API índice de domicilio en el envío"
+    },
+    {
+      "id": "C-115",
+      "epic": "Gestión de Autoridades de Mesa",
+      "capability": "Validar la elegibilidad del voluntario contra el padrón electoral",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Validar elegibilidad del voluntario contra padrón electoral"
+    },
+    {
+      "id": "C-116",
+      "epic": "Gestión de Autoridades de Mesa",
+      "capability": "Registrar la trazabilidad completa de la inscripción del voluntario",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Registrar trazabilidad completa de inscripción del voluntario"
+    },
+    {
+      "id": "C-117",
+      "epic": "Integraciones DMS LogiCorp",
+      "capability": "Consumir la API del Índice de Domicilios para validar y normalizar direcciones de autoridades",
+      "scope": "incluido",
+      "page": 15,
+      "quote": "consume la API del Índice de Domicilios de LogiCorp para validar, normalizar y precisar las direcciones"
+    },
+    {
+      "id": "C-118",
+      "epic": "Integraciones DMS LogiCorp",
+      "capability": "Usar la API de alta de envíos DMS para registrar cada pieza postal",
+      "scope": "incluido",
+      "page": 15,
+      "quote": "utiliza la API de alta de envíos del servicio DMS de LogiCorp para registrar formalmente cada pieza postal"
+    },
+    {
+      "id": "C-119",
+      "epic": "Integraciones DMS LogiCorp",
+      "capability": "Consumir la API de seguimiento DMS para obtener en tiempo real el estado de cada pieza",
+      "scope": "incluido",
+      "page": 15,
+      "quote": "consume la API de seguimiento del servicio DMS de LogiCorp para obtener en tiempo real el estado de cada pieza postal"
+    },
+    {
+      "id": "C-120",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Crear un catálogo de tipos de materiales por elección",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Crear catálogo de tipos de materiales por elección"
+    },
+    {
+      "id": "C-121",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Definir el árbol de materiales",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Definir árbol de materiales"
+    },
+    {
+      "id": "C-122",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Dar de alta materiales e insumos en forma masiva",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Dar de alta masiva de materiales e insumos"
+    },
+    {
+      "id": "C-123",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Dar de alta materiales en forma individual con identificación unívoca",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Dar de alta individual de material con identificación unívoca"
+    },
+    {
+      "id": "C-124",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Cargar los datos logísticos del material (dimensiones, peso, serie/ID)",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Cargar datos logísticos del material (dimensiones, peso, serie/ID)"
+    },
+    {
+      "id": "C-125",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Vincular un material a un contenedor",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Vincular material a contenedor"
+    },
+    {
+      "id": "C-126",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Configurar un etiquetado flexible por tipo de material y elección",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Configurar etiquetado flexible por tipo de material y elección"
+    },
+    {
+      "id": "C-127",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Configurar ciclos de vida y estados por tipo de material",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Configurar ciclos de vida y estados por tipo de material"
+    },
+    {
+      "id": "C-128",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Reimprimir etiquetas con control y auditoría",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Reimprimir etiqueta con control y auditoría"
+    },
+    {
+      "id": "C-129",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Consultar reportes de stock, faltantes, observados y reimpresiones",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Consultar reportes de stock, faltantes, observados y reimpresiones"
+    },
+    {
+      "id": "C-130",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Gestionar materiales consumibles y no consumibles",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Gestionar materiales consumibles y no consumibles"
+    },
+    {
+      "id": "C-131",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Visualizar datos de auditoría parcial durante la preparación",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Visualizar datos de auditoría durante la preparación (parcial)"
+    },
+    {
+      "id": "C-132",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Visualizar datos de auditoría final previa a la expedición o entrega",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Visualizar datos de auditoría final previa a expedición/entrega"
+    },
+    {
+      "id": "C-133",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Escanear y observar artículos parametrizados desde el maestro",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Escanear y observar artículos parametrizados desde maestro"
+    },
+    {
+      "id": "C-134",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Visualizar la imagen de referencia del elemento controlado",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Visualizar imagen de referencia del elemento controlado"
+    },
+    {
+      "id": "C-135",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Habilitar tareas por material logístico para materiales críticos",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Habilitar tareas por material logístico para materiales críticos"
+    },
+    {
+      "id": "C-136",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Consultar el informe de avance y desvíos del material observable",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Consultar informe de avance y desvíos para material observable"
+    },
+    {
+      "id": "C-137",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Registrar la rendición de materiales por nodo",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Registrar rendición materiales por nodo"
+    },
+    {
+      "id": "C-138",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Rendir distintos tipos de materiales y documentación",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Rendir distintos tipos de materiales"
+    },
+    {
+      "id": "C-139",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Cargar las incidencias del material rendido",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Cargar incidencias del material rendido"
+    },
+    {
+      "id": "C-140",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Recepcionar materiales en el centro de acopio identificando receptor y timestamp",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Recepcionar materiales en centro de"
+    },
+    {
+      "id": "C-141",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Agrupar la rendición por sección u otro criterio definido por el Tribunal",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Agrupar por sección u otro criterio"
+    },
+    {
+      "id": "C-142",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Configurar reglas de rendición específicas por elección o Tribunal electoral",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "rendición por elección/Tribunal electoral"
+    },
+    {
+      "id": "C-143",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Configurar por elección qué contiene cada material",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Configurar por elección qué contiene cada"
+    },
+    {
+      "id": "C-144",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Gestionar ingresos de materiales e insumos",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Gestionar ingresos de materiales e insumos"
+    },
+    {
+      "id": "C-145",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Consultar lo recibido vs. lo pendiente con fechas límite",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Consultar visibilidad de recibido vs. pendiente con"
+    },
+    {
+      "id": "C-146",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Confirmar la recepción en nodo: recibido vs. expedido vs. pendiente",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Confirmar recepción en nodo (recibido vs."
+    },
+    {
+      "id": "C-147",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Distinguir entre productos nomenclados y genéricos",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Distinguir entre productos nomenclados y"
+    },
+    {
+      "id": "C-148",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Ejecutar la preparación o armado parcial registrando el avance",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Ejecutar preparación/armado parcial registrando"
+    },
+    {
+      "id": "C-149",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Registrar evidencia fotográfica del stock",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Registrar evidencia fotográfica de stock"
+    },
+    {
+      "id": "C-150",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Gestionar el retorno de consumibles y no consumibles",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Gestionar retorno de consumibles y no"
+    },
+    {
+      "id": "C-151",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Aplicar cambios de materiales, cantidades y sustitutos",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Aplicar cambios de materiales, cantidades y"
+    },
+    {
+      "id": "C-152",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Consultar un dashboard de recibido, faltante y completitud",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Consultar dashboard de recibido, faltante y"
+    },
+    {
+      "id": "C-153",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Preparar material manualmente por pantalla o por importación",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Preparar material manualmente por pantalla o"
+    },
+    {
+      "id": "C-154",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Registrar seguimiento de ubicación, responsable, timestamp y movimientos del material",
+      "scope": "incluido",
+      "page": 17,
+      "quote": "Registrar seguimiento de ubicación, responsable, timestamp y movimientos"
+    },
+    {
+      "id": "C-155",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Generar alertas por inconsistencias de stock o de trazabilidad",
+      "scope": "incluido",
+      "page": 17,
+      "quote": "Generar alertas por inconsistencias de stock o trazabilidad"
+    },
+    {
+      "id": "C-156",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Registrar el usuario que realizó cada control, con timestamp",
+      "scope": "incluido",
+      "page": 17,
+      "quote": "Registrar usuario que realizó cada control con Timestamp"
+    },
+    {
+      "id": "C-157",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Comparar los materiales recibidos contra lo esperado según el despliegue",
+      "scope": "incluido",
+      "page": 17,
+      "quote": "Comparar materiales recibidos contra lo esperado según despliegue"
+    },
+    {
+      "id": "C-158",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Validar secuencia y duplicados en la rendición cuando aplique",
+      "scope": "incluido",
+      "page": 17,
+      "quote": "Validar secuencia y duplicados cuando aplique"
+    },
+    {
+      "id": "C-159",
+      "epic": "Material electoral y trazabilidad",
+      "capability": "Registrar la trazabilidad completa de movimientos y estados en la rendición",
+      "scope": "incluido",
+      "page": 17,
+      "quote": "Registrar trazabilidad completa de movimientos y estados"
+    },
+    {
+      "id": "C-160",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Crear un catálogo de templates con nombre, descripción y tipo",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Crear catálogo de templates con nombre, descripción y tipo"
+    },
+    {
+      "id": "C-161",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Configurar el workflow o ciclo de vida del template",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Configurar workflow/ciclo de vida del template"
+    },
+    {
+      "id": "C-162",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Definir los metadatos del template, con estados y transiciones permitidas",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Definir metadatos del template"
+    },
+    {
+      "id": "C-163",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Definir los campos del formulario, obligatorios u opcionales",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Definir campos a completar (formulario con obligatorios/opcionales),"
+    },
+    {
+      "id": "C-164",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Definir adjuntos obligatorios y si la tarea requiere revisión o aprobación posterior",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "adjuntos obligatorios y si requiere revisión/aprobación posterior"
+    },
+    {
+      "id": "C-165",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Definir condiciones operativas como geo, foto y aprobación",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Definir condiciones operativas (geo, foto, aprobación, etc.)"
+    },
+    {
+      "id": "C-166",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Definir ventanas horarias de visibilidad y ejecutabilidad",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Definir ventanas horarias de visibilidad y ejecutabilidad"
+    },
+    {
+      "id": "C-167",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Bloquear la visibilidad y ejecución de la tarea fuera de la ventana horaria",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Bloquear visibilidad y ejecución de tarea fuera de la ventana horaria"
+    },
+    {
+      "id": "C-168",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Definir reglas de visibilidad por rol y proceso electoral",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Definir reglas de visibilidad por rol y proceso electoral"
+    },
+    {
+      "id": "C-169",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Crear nuevos templates",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Crear nuevos templates"
+    },
+    {
+      "id": "C-170",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Asignar tareas por rol, nodo, escuela, mesa o usuario individual",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Asignar tareas por rol, nodo, escuela, mesa o usuario individual"
+    },
+    {
+      "id": "C-171",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Definir el orden secuencial de las tareas",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Definir orden secuencial de tareas"
+    },
+    {
+      "id": "C-172",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Definir días y horarios específicos de ejecución",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Definir días y horarios específicos de ejecución"
+    },
+    {
+      "id": "C-173",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Controlar estados por plantilla y por tarea",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Controlar estados por plantilla y por tarea"
+    },
+    {
+      "id": "C-174",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Configurar reglas de SLA, prioridad, recordatorios y alertas",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Configurar reglas de SLA, prioridad, recordatorios y alertas"
+    },
+    {
+      "id": "C-175",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Ejecutar rollback o actualizar un template ya enviado",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Ejecutar rollback o actualizar template ya enviado"
+    },
+    {
+      "id": "C-176",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Completar o editar manualmente una tarea ante contingencias",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Completar o editar manualmente tarea"
+    },
+    {
+      "id": "C-177",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Revisar el histórico de estados de tareas y templates",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Revisar histórico de estados de tareas y"
+    },
+    {
+      "id": "C-178",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Enviar tareas dinámicamente",
+      "scope": "incluido",
+      "page": 18,
+      "quote": "Enviar tareas dinámicamente"
+    },
+    {
+      "id": "C-179",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Gestionar los estados de cada instancia de tarea con historial, responsable y tiempos",
+      "scope": "incluido",
+      "page": 19,
+      "quote": "Gestionar estados de instancia de tarea: asignada, pendiente, en ejecución,"
+    },
+    {
+      "id": "C-180",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Enviar tareas por push online y por cola offline según reglas",
+      "scope": "incluido",
+      "page": 19,
+      "quote": "Enviar tareas por push online y cola offline según reglas"
+    },
+    {
+      "id": "C-181",
+      "epic": "Aplicación Mobile - Backoffice",
+      "capability": "Aplicar permisos y roles para las intervenciones manuales",
+      "scope": "incluido",
+      "page": 19,
+      "quote": "Aplicar manejo de permisos y roles para intervenciones"
+    },
+    {
+      "id": "C-182",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Login en la aplicación mobile para PA y TT",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Login"
+    },
+    {
+      "id": "C-183",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Completar módulo de capacitación desde la app",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Completar módulo de capacitación"
+    },
+    {
+      "id": "C-184",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Completar prueba posterior a la capacitación",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Completar prueba posterior a capacitación"
+    },
+    {
+      "id": "C-185",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Practicar en entorno de simulación para capacitaciones presenciales",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Practicar en entorno de simulación para capacitaciones"
+    },
+    {
+      "id": "C-186",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Dashboard de tareas completadas por contingencia con autor, fecha y esquema de aprobación",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Visualizar tareas completadas por contingencia con dashboard"
+    },
+    {
+      "id": "C-187",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Soporte offline-first y canales alternativos de comunicación durante la jornada electoral",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "jornada electoral, incluyendo soporte offline-first y canales alternativos de comunicación."
+    },
+    {
+      "id": "C-188",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Ejecutar tarea asignada en la app",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Ejecutar tarea asignada en la app"
+    },
+    {
+      "id": "C-189",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Recibir tareas específicas pusheadas durante la elección",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Recibir tareas específicas pusheadas durante elección"
+    },
+    {
+      "id": "C-190",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Capturar imagen como evidencia de tarea",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Capturar imagen como evidencia de tarea"
+    },
+    {
+      "id": "C-191",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Escanear DNI para tomar datos externos de la autoridad",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Escanear DNI para toma de datos externos de autoridad"
+    },
+    {
+      "id": "C-192",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Verificar si la autoridad ya cargó datos en el portal web",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Verificar si la autoridad ya cargó datos en el portal web"
+    },
+    {
+      "id": "C-193",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Crear incidencia y marcar su resolución",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Crear incidencia y marcar su resolución"
+    },
+    {
+      "id": "C-194",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Registrar tarea completada por contingencia",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Registrar tarea completada por contingencia"
+    },
+    {
+      "id": "C-195",
+      "epic": "Digitalización en establecimientos",
+      "capability": "Capturar imagen optimizada del telegrama en el establecimiento",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Capturar imagen optimizada del telegrama en el establecimiento"
+    },
+    {
+      "id": "C-196",
+      "epic": "Digitalización en establecimientos",
+      "capability": "Reintentar la captura si falla la validación de calidad de imagen",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Reintentar captura si la validación de calidad de imagen falla"
+    },
+    {
+      "id": "C-197",
+      "epic": "Digitalización en establecimientos",
+      "capability": "Flujo específico de comunicación si no se logra calidad tras varios intentos",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Ejecutar flujo específico de comunicación si no se logra calidad"
+    },
+    {
+      "id": "C-198",
+      "epic": "Digitalización en establecimientos",
+      "capability": "Transmitir la imagen capturada online u offline",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Transmitir imagen capturada (online u offline)"
+    },
+    {
+      "id": "C-199",
+      "epic": "Digitalización y telegramas en nodos - Banco Digital",
+      "capability": "Iniciar digitalización masiva de telegramas al cierre o arribo del TT",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Iniciar digitalización masiva de telegramas al cierre"
+    },
+    {
+      "id": "C-200",
+      "epic": "Digitalización y telegramas en nodos - Banco Digital",
+      "capability": "Visualizar semáforos de calidad por imagen",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Visualizar semáforos de calidad por imagen"
+    },
+    {
+      "id": "C-201",
+      "epic": "Digitalización y telegramas en nodos - Banco Digital",
+      "capability": "Re-escanear telegrama con guía del panel",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Re-escanear telegrama con guía del panel"
+    },
+    {
+      "id": "C-202",
+      "epic": "Digitalización y telegramas en nodos - Banco Digital",
+      "capability": "Visualizar progreso, faltantes y calidad desde el panel de escaneo",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Visualizar progreso, faltantes y calidad desde panel"
+    },
+    {
+      "id": "C-203",
+      "epic": "Digitalización y telegramas en nodos - Banco Digital",
+      "capability": "Publicar telegramas de forma controlada para el Tribunal",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Publicar telegramas de forma controlada para el"
+    },
+    {
+      "id": "C-204",
+      "epic": "Digitalización y telegramas en nodos - Banco Digital",
+      "capability": "Consultar histórico de tareas geolocalizadas ejecutadas",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Consultar histórico de tareas geolocalizadas ejecutadas"
+    },
+    {
+      "id": "C-205",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Registrar automáticamente la visualización de capacitación completada",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Registrar visualización de capacitación completada"
+    },
+    {
+      "id": "C-206",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Sincronizar automáticamente al recuperar conectividad",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Sincronizar automáticamente al recuperar conectividad"
+    },
+    {
+      "id": "C-207",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Enviar cola de eventos pendientes al servidor y recibir actualizaciones de tareas",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "La app detecta conectividad, envía la cola de eventos pendientes al"
+    },
+    {
+      "id": "C-208",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Geolocalizar la tarea ejecutada",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Geolocalizar tarea ejecutada"
+    },
+    {
+      "id": "C-209",
+      "epic": "Aplicación Mobile para PA y TT",
+      "capability": "Controlar y alertar tareas realizadas fuera del establecimiento",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Controlar y alertar tarea realizada fuera del establecimiento"
+    },
+    {
+      "id": "C-210",
+      "epic": "Digitalización en establecimientos",
+      "capability": "Aplicar auto-recorte, centrado y eliminación de bordes",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Aplicar auto-recorte, centrado y eliminación de bordes"
+    },
+    {
+      "id": "C-211",
+      "epic": "Digitalización en establecimientos",
+      "capability": "Validar el telegrama capturado por OCR de número y palabras clave",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Validar telegrama capturado por OCR de número y palabras clave"
+    },
+    {
+      "id": "C-212",
+      "epic": "Digitalización en establecimientos",
+      "capability": "Avisar en línea si la imagen debe retomarse",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Avisar en línea si la imagen debe retomarse"
+    },
+    {
+      "id": "C-213",
+      "epic": "Digitalización en establecimientos",
+      "capability": "Protocolo de seguridad para todo el proceso de captura",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Aplicar protocolo de seguridad para todo el proceso de captura"
+    },
+    {
+      "id": "C-214",
+      "epic": "Digitalización y telegramas en nodos - Banco Digital",
+      "capability": "Aplicar formato optimizado para calidad, velocidad y trazabilidad",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Aplicar formato optimizado para calidad, velocidad y trazabilidad"
+    },
+    {
+      "id": "C-215",
+      "epic": "Digitalización y telegramas en nodos - Banco Digital",
+      "capability": "Registrar estados de procesamiento de cada telegrama",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Registrar estados de procesamiento de cada telegrama"
+    },
+    {
+      "id": "C-216",
+      "epic": "Digitalización y telegramas en nodos - Banco Digital",
+      "capability": "Indexar automáticamente por elección, distrito, nodo, centro y mesa",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Indexar automáticamente por elección, distrito, nodo, centro y mesa"
+    },
+    {
+      "id": "C-217",
+      "epic": "Digitalización y telegramas en nodos - Banco Digital",
+      "capability": "Validaciones automáticas de calidad: skew, blur, sombras, recorte, contraste y auto-rotación",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Aplicar validaciones automáticas de calidad (skew, blur, sombras, recorte"
+    },
+    {
+      "id": "C-218",
+      "epic": "Digitalización y telegramas en nodos - Banco Digital",
+      "capability": "Generar auditoría por hash, timestamp y operador/estación",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Generar auditoría por hash, timestamp y operador/estación"
+    },
+    {
+      "id": "C-219",
+      "epic": "Integración API de envío de telegramas - Juntas Electorales",
+      "capability": "Enviar telegramas digitalizados con imagen, metadatos y hash de integridad",
+      "scope": "incluido",
+      "page": 22,
+      "quote": "Telegramas digitalizados — imagen, metadatos, hash de integridad"
+    },
+    {
+      "id": "C-220",
+      "epic": "Integración API de envío de telegramas - Juntas Electorales",
+      "capability": "Transmitir telegramas a cada Junta con un cliente configurable por Junta y por elección",
+      "scope": "incluido",
+      "page": 22,
+      "quote": "El sistema transmite los telegramas digitalizados a cada Junta Electoral mediante un cliente de integración configurable por Junta y por"
+    },
+    {
+      "id": "C-221",
+      "epic": "Integración API de envío de telegramas - Juntas Electorales",
+      "capability": "Integridad del envío con validaciones criptográficas y mecanismo robusto de reintentos",
+      "scope": "incluido",
+      "page": 22,
+      "quote": "garantizando la integridad del envío mediante validaciones criptográficas y un mecanismo robusto de reintentos."
+    },
+    {
+      "id": "C-222",
+      "epic": "Parseo de votos y disponibilización (IA)",
+      "capability": "Tablero con resultados parciales y mapa geográfico por elección",
+      "scope": "incluido",
+      "page": 23,
+      "quote": "Visualizar tablero con resultados parciales y mapa geográfico por Elección"
+    },
+    {
+      "id": "C-223",
+      "epic": "Parseo de votos y disponibilización (IA)",
+      "capability": "Revisar anomalías detectadas en el tablero de escrutinio provisorio",
+      "scope": "incluido",
+      "page": 23,
+      "quote": "Revisar anomalías detectadas en el tablero de escrutinio provisorio"
+    },
+    {
+      "id": "C-224",
+      "epic": "Parseo de votos y disponibilización (IA)",
+      "capability": "Validar y corregir la precarga de resultados ante anomalía",
+      "scope": "incluido",
+      "page": 23,
+      "quote": "Validar y corregir precarga de resultados ante anomalía"
+    },
+    {
+      "id": "C-225",
+      "epic": "Parseo de votos y disponibilización (IA)",
+      "capability": "Exportar resultados consolidados finales",
+      "scope": "incluido",
+      "page": 23,
+      "quote": "Exportar resultados consolidados finales"
+    },
+    {
+      "id": "C-226",
+      "epic": "Parseo de votos y disponibilización (IA)",
+      "capability": "Leer automáticamente datos numéricos y marcas en telegramas y actas",
+      "scope": "incluido",
+      "page": 24,
+      "quote": "Leer automáticamente datos numéricos y marcas en telegramas/actas"
+    },
+    {
+      "id": "C-227",
+      "epic": "Parseo de votos y disponibilización (IA)",
+      "capability": "Precargar automáticamente resultados para reducir el error humano",
+      "scope": "incluido",
+      "page": 24,
+      "quote": "Precargar automáticamente resultados para reducir error humano"
+    },
+    {
+      "id": "C-228",
+      "epic": "Parseo de votos y disponibilización (IA)",
+      "capability": "Detectar anomalías matemáticas o patrones sospechosos",
+      "scope": "incluido",
+      "page": 24,
+      "quote": "Detectar anomalías matemáticas o patrones sospechosos"
+    },
+    {
+      "id": "C-229",
+      "epic": "Parseo de votos y disponibilización (IA)",
+      "capability": "Consolidar resultados parciales en tiempo real",
+      "scope": "incluido",
+      "page": 24,
+      "quote": "Consolidar resultados parciales en tiempo real"
+    },
+    {
+      "id": "C-230",
+      "epic": "Parseo de votos y disponibilización (IA)",
+      "capability": "Aislar datos de cada elección en paralelo, sin cruce",
+      "scope": "incluido",
+      "page": 24,
+      "quote": "Aislar datos de cada elección en paralelo sin cruce"
+    },
+    {
+      "id": "C-231",
+      "epic": "Parseo de votos y disponibilización (IA)",
+      "capability": "Disponibilizar la precarga de resultados por API a clientes",
+      "scope": "incluido",
+      "page": 24,
+      "quote": "Disponibilizar precarga de resultados por API a clientes"
+    },
+    {
+      "id": "C-232",
+      "epic": "Integración API de precarga de resultados para clientes",
+      "capability": "API para clientes externos: Juntas Electorales, organismos gubernamentales u otros sistemas autorizados",
+      "scope": "incluido",
+      "page": 25,
+      "quote": "El sistema expone una API que permite a los clientes externos (Juntas Electorales, organismos gubernamentales u otros sistemas autorizados)"
+    },
+    {
+      "id": "C-233",
+      "epic": "Integración API de precarga de resultados para clientes",
+      "capability": "Consumir en tiempo real los resultados parciales del escrutinio provisorio a medida que se procesan",
+      "scope": "incluido",
+      "page": 25,
+      "quote": "consumir en tiempo real los resultados parciales del escrutinio provisorio a medida que son procesados"
+    },
+    {
+      "id": "C-234",
+      "epic": "Integración API de precarga de resultados para clientes",
+      "capability": "Eliminar la intermediación manual y garantizar el aislamiento entre elecciones simultáneas",
+      "scope": "incluido",
+      "page": 25,
+      "quote": "eliminando la intermediación manual y garantizando el aislamiento entre"
+    },
+    {
+      "id": "C-235",
+      "epic": "Integración API LLM",
+      "capability": "Usar una API LLM combinada con OCR para interpretar telegramas digitalizados",
+      "scope": "incluido",
+      "page": 25,
+      "quote": "El sistema utiliza una API de modelo de lenguaje de gran escala (LLM) combinada con capacidades de OCR"
+    },
+    {
+      "id": "C-236",
+      "epic": "Integración API LLM",
+      "capability": "Extraer automáticamente votos, marcas y firmas de cada acta",
+      "scope": "incluido",
+      "page": 25,
+      "quote": "extrayendo automáticamente los datos numéricos de votos, marcas y firmas de cada acta"
+    },
+    {
+      "id": "C-237",
+      "epic": "Integración API LLM",
+      "capability": "Resultados por mesa disponibles en minutos, sin carga manual de operadores",
+      "scope": "incluido",
+      "page": 25,
+      "quote": "disponibles en el sistema en minutos desde la recepción del telegrama digitalizado, sin requerir carga manual por parte de operadores."
+    },
+    {
+      "id": "C-238",
+      "epic": "Integración API LLM",
+      "capability": "Resolver ambigüedades de lectura: números tachados, escritura ilegible y campos incompletos",
+      "scope": "incluido",
+      "page": 25,
+      "quote": "resolviendo ambigüedades en la lectura"
+    },
+    {
+      "id": "C-239",
+      "epic": "Integración API LLM",
+      "capability": "Detectar inconsistencias matemáticas antes de cargar los datos al sistema",
+      "scope": "incluido",
+      "page": 25,
+      "quote": "detectando inconsistencias matemáticas antes de que los datos sean cargados al sistema"
+    },
+    {
+      "id": "C-240",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Configurar workflows de tratamiento de tickets",
+      "scope": "incluido",
+      "page": 26,
+      "quote": "Configurar workflows de tratamiento de tickets"
+    },
+    {
+      "id": "C-241",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Gestionar reglas de alertas y prioridades",
+      "scope": "incluido",
+      "page": 26,
+      "quote": "Gestionar reglas de alertas y prioridades"
+    },
+    {
+      "id": "C-242",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Visualizar en tiempo real el estado de nodos, rutas, centros, mesas y materiales",
+      "scope": "incluido",
+      "page": 26,
+      "quote": "Visualizar en tiempo real estado de nodos, rutas, centros, mesas y materiales"
+    },
+    {
+      "id": "C-243",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Crear ticket de incidencia manualmente",
+      "scope": "incluido",
+      "page": 26,
+      "quote": "Crear ticket de incidencia manualmente"
+    },
+    {
+      "id": "C-244",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Asignar ticket a un responsable",
+      "scope": "incluido",
+      "page": 26,
+      "quote": "Asignar ticket a responsable"
+    },
+    {
+      "id": "C-245",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Disparar una tarea correctiva móvil desde un ticket",
+      "scope": "incluido",
+      "page": 26,
+      "quote": "Disparar tarea correctiva móvil desde un ticket"
+    },
+    {
+      "id": "C-246",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Crear tarea manual en tiempo real",
+      "scope": "incluido",
+      "page": 26,
+      "quote": "Crear tarea manual en tiempo real"
+    },
+    {
+      "id": "C-247",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Resolver y cerrar ticket de incidencia",
+      "scope": "incluido",
+      "page": 26,
+      "quote": "Resolver y cerrar ticket de incidencia"
+    },
+    {
+      "id": "C-248",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Monitorear KPIs de incidentes, tiempos de respuesta y volumen de tareas",
+      "scope": "incluido",
+      "page": 26,
+      "quote": "Monitorear KPIs de incidentes, tiempos de respuesta y volumen de tareas"
+    },
+    {
+      "id": "C-249",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Consultar histórico de tickets, acciones y tiempos de resolución",
+      "scope": "incluido",
+      "page": 26,
+      "quote": "Consultar histórico de tickets, acciones y tiempos de resolución"
+    },
+    {
+      "id": "C-250",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Generar reporte operativo diario y post-elección",
+      "scope": "incluido",
+      "page": 26,
+      "quote": "Generar reporte operativo diario y post-elección"
+    },
+    {
+      "id": "C-251",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Enviar documentación al Tribunal Electoral",
+      "scope": "incluido",
+      "page": 26,
+      "quote": "Enviar documentación al Tribunal Electoral"
+    },
+    {
+      "id": "C-252",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Generar alertas automáticas por eventos críticos",
+      "scope": "incluido",
+      "page": 27,
+      "quote": "Generar alertas automáticas por eventos críticos"
+    },
+    {
+      "id": "C-253",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Crear ticket automáticamente ante una alerta crítica",
+      "scope": "incluido",
+      "page": 27,
+      "quote": "Crear ticket automáticamente ante alerta crítica"
+    },
+    {
+      "id": "C-254",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Priorizar tickets automáticamente según reglas configuradas",
+      "scope": "incluido",
+      "page": 27,
+      "quote": "Priorizar automáticamente ticket por reglas configuradas"
+    },
+    {
+      "id": "C-255",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Reflejar tickets y resoluciones en apps móviles con integración bidireccional",
+      "scope": "incluido",
+      "page": 27,
+      "quote": "Reflejar tickets y resoluciones en apps móviles (integración bidireccional)"
+    },
+    {
+      "id": "C-256",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Crear tarea automáticamente en tiempo real",
+      "scope": "incluido",
+      "page": 27,
+      "quote": "Crear tarea automáticamente en tiempo real"
+    },
+    {
+      "id": "C-257",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "Enviar notificaciones push por rol, nodo, zona, dispositivo o elección",
+      "scope": "incluido",
+      "page": 27,
+      "quote": "Enviar notificaciones push por rol, nodo, zona, dispositivo o elección"
+    },
+    {
+      "id": "C-258",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "API de envío de documentación al Tribunal Electoral",
+      "scope": "incluido",
+      "page": 28,
+      "quote": "API envio documentación a Tribunal electoral"
+    },
+    {
+      "id": "C-259",
+      "epic": "Mesa de soporte y monitoreo",
+      "capability": "API para que clientes externos consuman en tiempo real los documentos de tickets de incidencias",
+      "scope": "incluido",
+      "page": 28,
+      "quote": "El sistema expone una API que permite a los clientes externos (Juntas Electorales, organismos gubernamentales, etc) consumir en tiempo real"
+    },
+    {
+      "id": "C-260",
+      "epic": "Tableros en tiempo real",
+      "capability": "Visualizar tableros por rol, interno o externo, en tiempo real basados en eventos",
+      "scope": "incluido",
+      "page": 29,
+      "quote": "Visualización de tableros relevantes por rol (interno o externo) en tiempo real basada en eventos"
+    },
+    {
+      "id": "C-261",
+      "epic": "Tableros en tiempo real",
+      "capability": "Aplicar filtros por elección, zona, nodo y estado en los tableros",
+      "scope": "incluido",
+      "page": 29,
+      "quote": "Aplicar filtros por elección, zona, nodo y estado en tableros"
+    },
+    {
+      "id": "C-262",
+      "epic": "Seguridad y roles",
+      "capability": "Crear y administrar roles funcionales",
+      "scope": "incluido",
+      "page": 29,
+      "quote": "Crear y administrar roles funcionales"
+    },
+    {
+      "id": "C-263",
+      "epic": "Seguridad y roles",
+      "capability": "Definir tareas y permisos por rol",
+      "scope": "incluido",
+      "page": 29,
+      "quote": "Definir tareas y permisos por rol"
+    },
+    {
+      "id": "C-264",
+      "epic": "Seguridad y roles",
+      "capability": "Configurar aprobaciones escalables para acciones sensibles",
+      "scope": "incluido",
+      "page": 29,
+      "quote": "Configurar aprobaciones escalables para acciones sensibles"
+    },
+    {
+      "id": "C-265",
+      "epic": "Seguridad y roles",
+      "capability": "Gestionar usuarios por tipo: LogiCorp, TT y colaboradores",
+      "scope": "incluido",
+      "page": 29,
+      "quote": "Gestionar usuarios por tipo (LogiCorp, TT, colaboradores)"
+    },
+    {
+      "id": "C-266",
+      "epic": "Multielección",
+      "capability": "Configurar una nueva elección como red independiente",
+      "scope": "incluido",
+      "page": 29,
+      "quote": "Configurar nueva elección como red independiente"
+    },
+    {
+      "id": "C-267",
+      "epic": "Multielección",
+      "capability": "Configurar unidades operativas, maestros, calendarios, parámetros, etiquetas y visualización por elección",
+      "scope": "incluido",
+      "page": 29,
+      "quote": "Configurar unidades operativas, maestros, calendarios, parámetros,"
+    },
+    {
+      "id": "C-268",
+      "epic": "Multielección",
+      "capability": "Visualizar dashboards y métricas particulares por elección",
+      "scope": "incluido",
+      "page": 29,
+      "quote": "Visualizar dashboards y métricas particulares por elección"
+    },
+    {
+      "id": "C-269",
+      "epic": "Entornos de prueba",
+      "capability": "Configurar un entorno aislado para simular el proceso electoral completo",
+      "scope": "incluido",
+      "page": 29,
+      "quote": "Configurar entorno aislado para simular proceso electoral completo"
+    },
+    {
+      "id": "C-270",
+      "epic": "Entornos de prueba",
+      "capability": "Configurar parámetros, calendarios y particularidades por proceso electoral",
+      "scope": "incluido",
+      "page": 29,
+      "quote": "Configurar parámetros, calendarios y particularidades por proceso"
+    },
+    {
+      "id": "C-271",
+      "epic": "Transmisión de telegramas",
+      "capability": "Configurar cliente de integración por Junta Electoral y elección",
+      "scope": "incluido",
+      "page": 29,
+      "quote": "Configurar cliente de integración por Junta Electoral y elección"
+    },
+    {
+      "id": "C-272",
+      "epic": "Transmisión de telegramas",
+      "capability": "Gestionar versiones de endpoints y contratos por Junta",
+      "scope": "incluido",
+      "page": 29,
+      "quote": "Gestionar versiones de endpoints y contratos por Junta"
+    },
+    {
+      "id": "C-273",
+      "epic": "Transmisión de telegramas",
+      "capability": "Reenviar un telegrama ante solicitud del cliente",
+      "scope": "incluido",
+      "page": 29,
+      "quote": "Reenviar telegrama"
+    },
+    {
+      "id": "C-274",
+      "epic": "Tableros en tiempo real",
+      "capability": "Actualizar tableros en tiempo real basados en eventos",
+      "scope": "incluido",
+      "page": 30,
+      "quote": "Actualizar tableros en tiempo real basados en eventos"
+    },
+    {
+      "id": "C-275",
+      "epic": "Tableros en tiempo real",
+      "capability": "Registrar trazabilidad de la fuente del evento, timestamp y usuario o máquina",
+      "scope": "incluido",
+      "page": 30,
+      "quote": "Registrar trazabilidad de fuente del evento, timestamp y usuario/máquina"
+    },
+    {
+      "id": "C-276",
+      "epic": "Transmisión de telegramas",
+      "capability": "Validar la integridad antes y después del envío (hash, checksum, tamaño, esquema)",
+      "scope": "incluido",
+      "page": 30,
+      "quote": "Validar integridad antes y después del envío (hash, checksum, tamaño, esquema)"
+    },
+    {
+      "id": "C-277",
+      "epic": "Transmisión de telegramas",
+      "capability": "Validar la firma del telegrama si fuera requerida",
+      "scope": "incluido",
+      "page": 30,
+      "quote": "Validar firma del telegrama si fuera requerida"
+    },
+    {
+      "id": "C-278",
+      "epic": "Transmisión de telegramas",
+      "capability": "Gestionar cola de envíos con reintentos e idempotencia",
+      "scope": "incluido",
+      "page": 30,
+      "quote": "Gestionar cola de envíos con reintentos e idempotencia"
+    },
+    {
+      "id": "C-279",
+      "epic": "Transmisión de telegramas",
+      "capability": "Registrar acuse de recibo y evidencia de envío",
+      "scope": "incluido",
+      "page": 30,
+      "quote": "Registrar acuse de recibo y evidencia de envío"
+    },
+    {
+      "id": "C-280",
+      "epic": "Transmisión de telegramas",
+      "capability": "Monitorear y alertar ante fallas o discrepancias de integridad",
+      "scope": "incluido",
+      "page": 30,
+      "quote": "Monitorear y alertar ante fallas o discrepancias de integridad"
+    },
+    {
+      "id": "C-281",
+      "epic": "Transmisión de telegramas",
+      "capability": "Registrar una bitácora de auditoría completa de las transmisiones",
+      "scope": "incluido",
+      "page": 30,
+      "quote": "Registrar bitácora de auditoría completa de transmisiones"
+    },
+    {
+      "id": "C-282",
+      "epic": "Reclutamiento de personal: bot de WhatsApp",
+      "capability": "TechPartner implementa y configura la integración técnica con Twilio",
+      "scope": "incluido",
+      "page": 31,
+      "quote": "configura la integración técnica con Twilio"
+    },
+    {
+      "id": "C-283",
+      "epic": "Reclutamiento de personal: bot de WhatsApp",
+      "capability": "LogiCorp configura flujos, árboles de decisión y mensajes del chatbot en Twilio",
+      "scope": "condicion",
+      "page": 31,
+      "quote": "LogiCorp es responsable de configurar los flujos,"
+    },
+    {
+      "id": "C-284",
+      "epic": "Reclutamiento de personal: bot de WhatsApp",
+      "capability": "El desarrollo de los flujos conversacionales no lo hace TechPartner",
+      "scope": "excluido",
+      "page": 31,
+      "quote": "los flujos conversacionales queda fuera del alcance de TechPartner"
+    },
+    {
+      "id": "C-285",
+      "epic": "Reclutamiento de personal: bot de WhatsApp",
+      "capability": "El inicio requiere una cuenta Twilio de LogiCorp activa con WhatsApp Business API",
+      "scope": "condicion",
+      "page": 31,
+      "quote": "tenga activa y configurada una cuenta Twilio con acceso a WhatsApp Business API."
+    },
+    {
+      "id": "C-286",
+      "epic": "Optimización de recorridos y asignación geolocalizada",
+      "capability": "Usar Google OR-Tools para la optimización combinatoria de rutas",
+      "scope": "incluido",
+      "page": 31,
+      "quote": "TechPartner utilizará Google OR-Tools para la optimización combinatoria de"
+    },
+    {
+      "id": "C-287",
+      "epic": "Optimización de recorridos y asignación geolocalizada",
+      "capability": "Usar Google Maps APIs para geolocalización, distancias y tiempos de viaje",
+      "scope": "incluido",
+      "page": 31,
+      "quote": "rutas y Google Maps APIs para geolocalización, cálculo de distancias y tiempos de viaje."
+    },
+    {
+      "id": "C-288",
+      "epic": "Optimización de recorridos y asignación geolocalizada",
+      "capability": "El costo de las APIs de Google corre por cuenta de LogiCorp",
+      "scope": "condicion",
+      "page": 31,
+      "quote": "costo de las APIs de Google es a cargo de LogiCorp"
+    },
+    {
+      "id": "C-289",
+      "epic": "Optimización de recorridos y asignación geolocalizada",
+      "capability": "LogiCorp provee credenciales y facturación de GCP antes de iniciar el desarrollo",
+      "scope": "condicion",
+      "page": 31,
+      "quote": "Google Cloud Platform antes del inicio del desarrollo de estos módulos."
+    },
+    {
+      "id": "C-290",
+      "epic": "Motor de IA para asignación de PA",
+      "capability": "Modelo de scoring: cumple 2, cumple parcialmente 1, no cumple 0 puntos",
+      "scope": "incluido",
+      "page": 31,
+      "quote": "esquema: Cumple = 2 puntos / Cumple parcialmente = 1 punto / No cumple = 0 puntos."
+    },
+    {
+      "id": "C-291",
+      "epic": "Motor de IA para asignación de PA",
+      "capability": "RRHH configura parámetros, ponderaciones y excluyentes desde el backoffice sin intervención técnica",
+      "scope": "incluido",
+      "page": 31,
+      "quote": "desde el backoffice por el área de RRHH, sin necesidad de intervención técnica."
+    },
+    {
+      "id": "C-292",
+      "epic": "Motor de IA para asignación de PA",
+      "capability": "Las variables, ponderaciones y criterios excluyentes todavía no están definidos",
+      "scope": "condicion",
+      "page": 31,
+      "quote": "los criterios excluyentes no han sido definidos al momento de esta propuesta."
+    },
+    {
+      "id": "C-293",
+      "epic": "Motor de IA para asignación de PA",
+      "capability": "Las reglas de negocio requieren una sesión de relevamiento funcional previa con LogiCorp",
+      "scope": "condicion",
+      "page": 31,
+      "quote": "queda sujeto a una sesión de relevamiento funcional específica con LogiCorp antes del inicio"
+    },
+    {
+      "id": "C-294",
+      "epic": "Notificación DMS",
+      "capability": "Las altas de envíos DMS se hacen vía API del servicio DMS actual",
+      "scope": "incluido",
+      "page": 31,
+      "quote": "Las altas de envíos DMS se realizarán vía API del servicio"
+    },
+    {
+      "id": "C-295",
+      "epic": "Notificación DMS",
+      "capability": "La impresión de las piezas la hace manualmente LogiCorp",
+      "scope": "excluido",
+      "page": 31,
+      "quote": "La impresión de las piezas se realizará de forma manual"
+    },
+    {
+      "id": "C-296",
+      "epic": "Notificación DMS",
+      "capability": "La distribución física es manual, con la logística de LogiCorp",
+      "scope": "excluido",
+      "page": 31,
+      "quote": "La distribución física también se realizará de forma manual a"
+    },
+    {
+      "id": "C-297",
+      "epic": "Entornos de prueba",
+      "capability": "Las pruebas de envío de telegramas en QA forman parte del plan de pruebas, no son un entregable separado",
+      "scope": "condicion",
+      "page": 32,
+      "quote": "Las pruebas de envío de telegramas en ambiente QA quedarán"
+    },
+    {
+      "id": "C-298",
+      "epic": "Gestión administrativa de PA: pagos",
+      "capability": "La confirmación de pagos desde nodos se registra manualmente en pantalla",
+      "scope": "incluido",
+      "page": 32,
+      "quote": "Confirmación de pagos desde nodos: El registro de confirmación de pago (fecha, monto,"
+    },
+    {
+      "id": "C-299",
+      "epic": "Gestión administrativa de PA: pagos",
+      "capability": "Integración vía API con Oracle HCM para la liquidación de pagos al PA",
+      "scope": "incluido",
+      "page": 32,
+      "quote": "El sistema se integrará vía API con el módulo Oracle HCM para la liquidación de pagos al"
+    },
+    {
+      "id": "C-300",
+      "epic": "Gestión administrativa de PA: pagos",
+      "capability": "El cálculo final de haberes y la ejecución del pago quedan a cargo de Oracle HCM",
+      "scope": "excluido",
+      "page": 32,
+      "quote": "El cálculo final de los haberes y la ejecución del pago quedan bajo"
+    },
+    {
+      "id": "C-301",
+      "epic": "Gestión administrativa de PA: pagos",
+      "capability": "Registro y seguimiento manual de medios de pago alternativos",
+      "scope": "incluido",
+      "page": 32,
+      "quote": "Gestión de medios de pago alternativos: El registro y seguimiento de medios de pago"
+    },
+    {
+      "id": "C-302",
+      "epic": "Gestión administrativa de PA: pagos",
+      "capability": "Estados de pago gestionados con carga manual de un archivo CSV o XLSX",
+      "scope": "incluido",
+      "page": 32,
+      "quote": "pagado, rechazado) se gestionarán mediante la carga manual de un archivo CSV o XLSX"
+    },
+    {
+      "id": "C-303",
+      "epic": "Gestión administrativa de PA: pagos",
+      "capability": "Validar estados y enviar alertas ante demoras o inconsistencias",
+      "scope": "incluido",
+      "page": 32,
+      "quote": "archivo, validará los estados y enviará las alertas correspondientes ante demoras o"
+    },
+    {
+      "id": "C-304",
+      "epic": "Gestión administrativa de PA: pagos",
+      "capability": "Sin integración con sistemas de pago externos",
+      "scope": "excluido",
+      "page": 32,
+      "quote": "No existe integración con ningún sistema de pago externo."
+    },
+    {
+      "id": "C-305",
+      "epic": "Portal de autogestión",
+      "capability": "Login de autoridades de mesa con e-mail y DNI del archivo de la Junta Electoral",
+      "scope": "incluido",
+      "page": 32,
+      "quote": "su e-mail y número de DNI, ambos incluidos en el archivo de autoridades de mesa provisto por"
+    },
+    {
+      "id": "C-306",
+      "epic": "Portal de autogestión",
+      "capability": "La autoridad de mesa genera su propio usuario y contraseña tras validarse",
+      "scope": "incluido",
+      "page": 32,
+      "quote": "estos datos contra el archivo, la autoridad de mesa podrá generar su propio usuario y contraseña"
+    },
+    {
+      "id": "C-307",
+      "epic": "Portal de autogestión",
+      "capability": "Sin sistema de identidad externo (SSO, OAuth social) para autoridades de mesa",
+      "scope": "excluido",
+      "page": 32,
+      "quote": "No se implementará un sistema de identidad externo (SSO, OAuth social)"
+    },
+    {
+      "id": "C-308",
+      "epic": "Portal de autogestión",
+      "capability": "Integración del portal con medios de pago externos fuera de alcance",
+      "scope": "excluido",
+      "page": 32,
+      "quote": "Fuera de alcance de esta propuesta. La integración del portal de autogestión con medios de pago"
+    },
+    {
+      "id": "C-309",
+      "epic": "Motor de IA para asignación de PA",
+      "capability": "Definir variables, ponderaciones y criterios excluyentes condiciona el módulo 5.2.2",
+      "scope": "condicion",
+      "page": 33,
+      "quote": "Definición de variables, ponderaciones y criterios excluyentes del motor de IA — condiciona"
+    },
+    {
+      "id": "C-310",
+      "epic": "Notificación DMS",
+      "capability": "Resolver el template DMS y el tipo de documento condiciona el módulo 5.3.3",
+      "scope": "condicion",
+      "page": 33,
+      "quote": "Resolución sobre template DMS (propio) y tipo de documento (formulario vs. telegrama)"
+    },
+    {
+      "id": "C-311",
+      "epic": "Portal de autogestión",
+      "capability": "Contar con el archivo de autoridades de mesa con e-mail y DNI para pruebas condiciona el módulo 5.3.6",
+      "scope": "condicion",
+      "page": 33,
+      "quote": "Provisión del archivo de autoridades de mesa con e-mail y DNI para pruebas"
+    },
+    {
+      "id": "C-312",
+      "epic": "Portal de autogestión",
+      "capability": "El archivo de la Junta Electoral tendrá al menos e-mail y DNI validados por elección",
+      "scope": "condicion",
+      "page": 33,
+      "quote": "El archivo de autoridades de mesa provisto por la Junta Electoral para el login del portal"
+    },
+    {
+      "id": "C-313",
+      "epic": "Canales alternativos",
+      "capability": "Ante falla de la app, el PA envía datos por WhatsApp o SMS y el backoffice los registra",
+      "scope": "incluido",
+      "page": 33,
+      "quote": "mediante WhatsApp o SMS. El personal del backoffice recibirá estos mensajes y registrará"
+    },
+    {
+      "id": "C-314",
+      "epic": "Canales alternativos",
+      "capability": "Sin integración técnica con servicios externos de mensajería",
+      "scope": "excluido",
+      "page": 33,
+      "quote": "los datos manualmente en el sistema, sin integración técnica con ningún servicio externo"
+    },
+    {
+      "id": "C-315",
+      "epic": "Canales alternativos",
+      "capability": "Definir controles antifraude para el canal WhatsApp/SMS condiciona el módulo 5.6.2",
+      "scope": "condicion",
+      "page": 33,
+      "quote": "Definición de controles anti-fraude para canal alternativo WhatsApp/SMS — condiciona"
+    },
+    {
+      "id": "C-316",
+      "epic": "Exclusiones generales",
+      "capability": "Gestión de pasajes y hospedaje para personal interno excluida",
+      "scope": "excluido",
+      "page": 33,
+      "quote": "Gestión de pasajes y hospedaje para personal interno (excluido en sección 5.2.7 del pliego)"
+    },
+    {
+      "id": "C-317",
+      "epic": "Supuestos generales",
+      "capability": "El alta en AFIP se integra con una API existente, no es un desarrollo nuevo",
+      "scope": "condicion",
+      "page": 33,
+      "quote": "El proceso de alta en AFIP cuenta con una API ya existente al que se integrará, no un"
+    },
+    {
+      "id": "C-318",
+      "epic": "Supuestos generales",
+      "capability": "App mobile en React Native con bundles para Android e iOS",
+      "scope": "condicion",
+      "page": 33,
+      "quote": "Se asume que la app mobile será en React Native, se generarán blundes para Android &"
+    },
+    {
+      "id": "C-319",
+      "epic": "Supuestos generales",
+      "capability": "LogiCorp provee las APIs de las Juntas Electorales con documentación y ambiente de prueba",
+      "scope": "condicion",
+      "page": 33,
+      "quote": "Las APIs de las Juntas Electorales (Envio de telegramas y documentación) son provistas"
+    },
+    {
+      "id": "C-320",
+      "epic": "Supuestos generales",
+      "capability": "Las APIs de domicilios, liquidaciones y envíos DMS son integraciones existentes de LogiCorp",
+      "scope": "condicion",
+      "page": 33,
+      "quote": "La API índice de domicilios, API liquidación de pagos a transportistas, API liquidación de"
+    },
+    {
+      "id": "C-321",
+      "epic": "Supuestos generales",
+      "capability": "Los diseños en Figma se proveen antes del desarrollo de cada módulo",
+      "scope": "condicion",
+      "page": 33,
+      "quote": "Los diseños en Figma mencionados en la sección 6 (Entregables de diseño y validación)"
+    },
+    {
+      "id": "C-322",
+      "epic": "Integración con LLM",
+      "capability": "Proveedor y modelo de LLM sin definir; deben resolverse antes del diseño de arquitectura de los módulos.",
+      "scope": "condicion",
+      "page": 34,
+      "quote": "Deberá resolverse antes del inicio del diseño de arquitectura de los módulos correspondientes."
+    },
+    {
+      "id": "C-323",
+      "epic": "Integración con LLM",
+      "capability": "LogiCorp asume el costo operativo variable de consumo de la API de LLM.",
+      "scope": "condicion",
+      "page": 34,
+      "quote": "LogiCorp asume el costo operativo de la API"
+    },
+    {
+      "id": "C-324",
+      "epic": "Integración con LLM",
+      "capability": "Debe evaluarse si enviar datos personales de candidatos al LLM es compatible con la política de privacidad.",
+      "scope": "condicion",
+      "page": 34,
+      "quote": "Deberá evaluarse si esto es compatible con la política de privacidad de datos de LogiCorp"
+    },
+    {
+      "id": "C-325",
+      "epic": "Integración con LLM",
+      "capability": "Los módulos con LLM dependen de la disponibilidad de un servicio externo de terceros.",
+      "scope": "condicion",
+      "page": 34,
+      "quote": "Los módulos que consumen LLM dependen de la disponibilidad de un servicio externo."
+    },
+    {
+      "id": "C-326",
+      "epic": "Integración con LLM",
+      "capability": "Toda recomendación del LLM en flota y asignación de PA requiere confirmación de un operador humano.",
+      "scope": "incluido",
+      "page": 34,
+      "quote": "deberá ser revisada y confirmada por un operador humano antes de aplicarse al sistema"
+    },
+    {
+      "id": "C-327",
+      "epic": "Integración con LLM",
+      "capability": "El LLM funciona solo como asistente de decisión, nunca como decisor autónomo.",
+      "scope": "incluido",
+      "page": 34,
+      "quote": "El LLM actúa como asistente de decisión, no como decisor autónomo."
+    },
+    {
+      "id": "C-328",
+      "epic": "Integración con LLM",
+      "capability": "TechPartner realiza el diseño inicial de los prompts para los módulos con LLM.",
+      "scope": "incluido",
+      "page": 34,
+      "quote": "TechPartner asume la responsabilidad del diseño inicial de los prompts para ambos módulos"
+    },
+    {
+      "id": "C-329",
+      "epic": "Integración con LLM",
+      "capability": "Debe establecerse un proceso formal de revisión y ajuste de prompts durante QA.",
+      "scope": "condicion",
+      "page": 34,
+      "quote": "deberá establecerse un proceso formal de revisión y ajuste de prompts durante las fases de QA"
+    },
+    {
+      "id": "C-330",
+      "epic": "Integración con LLM",
+      "capability": "Uso de LLM limitado exclusivamente a los módulos identificados en la propuesta.",
+      "scope": "incluido",
+      "page": 34,
+      "quote": "El uso de LLM en esta propuesta se limita exclusivamente a los dos módulos identificados"
+    },
+    {
+      "id": "C-331",
+      "epic": "Integración con LLM",
+      "capability": "LLM como asistencia al optimizador de flota y recorridos (módulo 5.1.2).",
+      "scope": "incluido",
+      "page": 34,
+      "quote": "asistencia al optimizador de flota y recorridos (5.1.2)"
+    },
+    {
+      "id": "C-332",
+      "epic": "Integración con LLM",
+      "capability": "LLM en el motor de asignación automática de PA (módulo 5.2.2).",
+      "scope": "incluido",
+      "page": 34,
+      "quote": "motor de asignación de PA (5.2.2)"
+    },
+    {
+      "id": "C-333",
+      "epic": "Integración con LLM",
+      "capability": "LLM en el parseo de votos y disponibilización (módulo 5.7.1).",
+      "scope": "incluido",
+      "page": 34,
+      "quote": "Parseo de votos y disponibilización (5.7.1)"
+    },
+    {
+      "id": "C-334",
+      "epic": "Integración con LLM",
+      "capability": "Extender el uso de LLM a otros módulos queda fuera; requiere nueva definición y estimación.",
+      "scope": "excluido",
+      "page": 34,
+      "quote": "Cualquier extensión del uso de LLM a otros módulos de la plataforma requerirá una definición funcional específica"
+    }
+  ],
+  "discarded": [],
+  "uncovered_pages": [],
+  "seconds": 247.6,
+  "windows": [
+    {
+      "pages": "3-13",
+      "seconds": 88.3,
+      "input_tokens": 7254,
+      "output_tokens": 13167,
+      "calls": 1
+    },
+    {
+      "pages": "14-25",
+      "seconds": 247.6,
+      "input_tokens": 14278,
+      "output_tokens": 34603,
+      "calls": 3
+    },
+    {
+      "pages": "26-33",
+      "seconds": 89.5,
+      "input_tokens": 6233,
+      "output_tokens": 12731,
+      "calls": 1
+    },
+    {
+      "pages": "34",
+      "seconds": 20.7,
+      "input_tokens": 1830,
+      "output_tokens": 2469,
+      "calls": 1
+    }
+  ]
+}

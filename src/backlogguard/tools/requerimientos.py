@@ -36,6 +36,7 @@ def is_gherkin(text: str) -> bool:
 
 
 DocumentId = Annotated[str, StringConstraints(pattern=r"^[a-z0-9_-]{1,60}$")]
+MAX_INHERITED_CHARS = 700  # hasta este largo, la historia hereda el fragmento completo de la reunión
 
 
 class _Args(BaseModel):
@@ -211,8 +212,10 @@ class RequirementsToolkit:
             requirement, problem = self._requirement(args["requirement_id"])
             if problem:
                 return problem
+            inherited = self._inherited(requirement.current.evidence)
+            whole = {c.fragment_id for c in inherited if c.source_type in EVIDENCE_TYPES}  # el fragmento completo reemplaza una frase suelta del mismo fragmento
             known = {(c.fragment_id, c.quote) for c in citations}
-            citations += [c for c in self._inherited(requirement.current.evidence) if (c.fragment_id, c.quote) not in known]
+            citations = [c for c in citations if c.fragment_id not in whole] + [c for c in inherited if c.fragment_id in whole or (c.fragment_id, c.quote) not in known]
         if not any(citation.source_type in EVIDENCE_TYPES for citation in citations):
             return _fail(
                 "La preventa dice lo que se vendió, no lo que se acordó: citá al menos un fragmento de una reunión o minuta "
@@ -268,12 +271,19 @@ class RequirementsToolkit:
         """Las evidencias del catálogo pasan al ítem como citas del tablero, apuntando a un fragmento que existe.
 
         Una evidencia de la preventa guardada con el id del compromiso (C-nnn) no es verificable: se busca el fragmento
-        que contiene la cita, y si no aparece no se hereda, en vez de dejar una cita que el Crítico va a objetar."""
+        que contiene la cita, y si no aparece no se hereda, en vez de dejar una cita que el Crítico va a objetar.
+
+        De una reunión o minuta se hereda el fragmento completo y no solo la frase que guardó el catálogo: el requisito
+        aprobado suele resumir todo el fragmento (por ejemplo, la lista de campos), y así el Crítico ve el mismo respaldo
+        que el productor. Un fragmento muy largo se deja como estaba."""
         citations = []
         for e in evidence:
             fragment = self.retriever.get(e.fragment_id) or self._fragment_with(e)
             if fragment is not None:
-                citations.append(Citation(**{**{name: getattr(e, name) for name in Citation.model_fields}, "fragment_id": fragment.chunk_id}))
+                quote = e.quote
+                if e.source_type in EVIDENCE_TYPES and len(fragment.text.strip()) <= MAX_INHERITED_CHARS:
+                    quote = fragment.text.strip()
+                citations.append(Citation(**{**{name: getattr(e, name) for name in Citation.model_fields}, "fragment_id": fragment.chunk_id, "quote": quote}))
         return citations
 
     def _fragment_with(self, e):

@@ -22,5 +22,7 @@ Los tres controles ya vienen ejecutados por el sistema y figuran en las observac
 
 ## Cómo objetar
 - Objetá solo con evidencia concreta, y escribí cada objeción de forma que el autor pueda corregirla: qué está mal y qué fuente lo muestra.
-- Si el ítem ya tiene objeciones previas, verificá si la corrección las resolvió.
+- **Segunda ronda** (el ítem ya tiene objeciones previas): verificá solo si la corrección las resolvió. No agregues objeciones nuevas, salvo que un control automático falle o que haya contraevidencia más reciente. Lo que no objetaste en la primera ronda ya no es motivo para trabar el ítem.
+- Por eso, en la **primera ronda** objetá todo lo que encuentres de una vez, para que el autor pueda corregirlo en una sola pasada.
 - Un duplicado no se corrige: señalá de cuál ítem es duplicado y el sistema lo excluye.
+- Dos ítems que salen de requisitos aprobados distintos (cada uno con su `requirement_id`) no son duplicados aunque se parezcan: una persona los aprobó por separado y el control no los marca. No objetes por eso.

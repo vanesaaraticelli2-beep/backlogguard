@@ -22,6 +22,8 @@ GOAL = (
     "las validaciones y las reglas. Al menos uno va como Dado/Cuando/Entonces; los demás pueden ser una regla verificable en una frase. "
     "Para eso leé el contexto de cada requisito (lo que se dijo antes y después de la cita) y, si hace falta, buscá más en las fuentes. "
     "La historia hereda las citas verificadas del requisito; no cambies su alcance ni inventes escenarios que no figuran. "
+    "Antes de entregar cada historia repasá la lista «Antes de entregar cada historia» de tu skill: cada promesa tiene su criterio, cada dato figura en una frase citada "
+    "(si no, agregá esa cita en `citations` o sacá el dato) y están los casos de error, reemplazo y quién puede hacerlo. "
     "Si algo es ambiguo o falta información, mencionalo en tu respuesta final."
 )
 

@@ -3,14 +3,18 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .env
-*.sqlite
-*.sqlite3
-*.db
 arquitectura-implementada.md
-Curso ITBA/
-data/
-data_*/
 
-# Documentos reales del usuario (no se versionan)
+# Bases SQLite: se versionan las de data/, data_real/ y sus copias (corridas, catálogo, memoria y publicaciones),
+# pero no sus archivos temporales de escritura.
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+
+# Documentos reales SIN anonimizar (identifican al cliente y a las personas): no se versionan.
+# Se comparten por otro canal. Lo anonimizado (data_real/, evals/real/*.anonimo.md) sí se versiona.
 entrada/
-evals/real/
+evals/real/anonimizacion.yaml
+evals/real/esperados_cruces_preventa_minutas.md
+evals/real/esperados_minuta_2026-08-24.md
+evals/real/limpieza_preventa_andreani.md

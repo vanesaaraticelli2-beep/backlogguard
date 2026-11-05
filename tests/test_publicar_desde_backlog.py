@@ -146,3 +146,10 @@ def test_el_aviso_distingue_publicado_rechazado_y_en_curso():
     assert "ya se publicó" in plan_view.no_pending_plan_text("publicada", False)
     assert "rechazado" in plan_view.no_pending_plan_text("plan_rechazado", False)
     assert "sigue trabajando" in plan_view.no_pending_plan_text("en_curso", True)
+
+
+def test_volver_a_armar_el_plan_pide_una_version_nueva_con_las_mismas_exclusiones():
+    at = run()
+    at.button(key="plan-rearmar").click().run()
+    assert calls(at) == [("edit", 1, [])]
+    assert not at.exception and "pub-R-plan-v2-EP-1" in {c.key for c in at.checkbox}  # se muestra la versión nueva

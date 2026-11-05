@@ -347,3 +347,15 @@ def test_el_tope_de_rondas_no_se_puede_superar(world):
     for rounds in (0, 3):
         with pytest.raises(ValueError):
             negotiate_item("HU-1", board=board, retriever=retriever, review=lambda i: None, revise=lambda *a: None, max_rounds=rounds)
+
+
+def test_dor_invest_no_marca_duplicado_entre_requisitos_aprobados_distintos(world):
+    retriever, board = world
+    citation = citation_for(retriever, "reunion_03_refinamiento", "SSO falla mensaje")
+    add_item(board, citation, item_id="HU-1", title="Autenticación mediante SSO corporativo", requirement_id="RQ-001")
+    add_item(board, citation, item_id="HU-2", title="Autenticación en el portal mediante SSO corporativo", requirement_id="RQ-002")
+    report = json.loads(run_tool(critic_registry(retriever, board), "evaluar_dor_invest", item_id="HU-2").content)
+    assert next(c for c in report["controles"] if c["nombre"] == "sin_duplicados")["ok"] is True
+    twin = add_item(board, citation, item_id="HU-3", title="Autenticación en el portal mediante SSO corporativo")  # sin requisito: sigue valiendo
+    report = json.loads(run_tool(critic_registry(retriever, board), "evaluar_dor_invest", item_id=twin.id).content)
+    assert next(c for c in report["controles"] if c["nombre"] == "sin_duplicados")["ok"] is False

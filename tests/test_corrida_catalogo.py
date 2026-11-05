@@ -82,7 +82,8 @@ def test_la_historia_nace_del_requisito_aprobado_con_su_identidad_y_sus_citas(wo
     state = run_once(world, "t1", producer=[write(), final("Listo.")], critic=[verdict_of(ITEM)])
     item = Board.model_validate(state["board"]).items[ITEM]
     assert (item.requirement_id, item.requirement_version) == (RID, 1)
-    assert [c.quote for c in item.citations] == [EMAIL[1]]  # la cita verificada del catálogo, sin que el modelo la repita
+    whole = world.chunk(*EMAIL).text.strip()
+    assert [c.quote for c in item.citations] == [whole] and EMAIL[1] in whole  # el fragmento completo de la cita del catálogo, sin que el modelo la repita
     prompt = world.providers.requerimientos.prompts[0]
     assert RID in prompt and TITLE in prompt and "C-001" in prompt
     assert any(t["detail"].startswith("Tanda 1 de 1 (RQ-001)") for t in state["tasks"])
@@ -175,7 +176,7 @@ def test_la_evidencia_de_la_preventa_guardada_con_el_id_del_compromiso_se_resuel
     args = {"kind": "historia", "title": TITLE, "description": STORY, "acceptance_criteria": [GHERKIN], "citations": [], "requirement_id": rid}
     assert toolkit.redactar_historia(args).ok
     citations = board.items[ITEM].citations
-    assert sorted(c.quote for c in citations) == sorted([EMAIL[1], PREVENTA[1]])  # la que no se puede ubicar no se hereda
+    assert sorted(c.quote for c in citations) == sorted([world.chunk(*EMAIL).text.strip(), PREVENTA[1]])  # de la reunión, el fragmento completo; la que no se puede ubicar no se hereda
     assert all(world.retriever.get(c.fragment_id) is not None for c in citations) and "C-067" not in {c.fragment_id for c in citations}
 
 
@@ -244,3 +245,15 @@ def test_solo_se_listan_para_publicar_los_requisitos_activos_sin_publicar_o_con_
         evidence=[evidence_of(world, EMAIL, "fp3")],
     )))
     assert [r.id for r in world.catalog.to_publish()] == [first, second]
+
+
+def test_la_historia_hereda_el_fragmento_completo_y_reemplaza_la_frase_suelta_del_mismo_fragmento(world):
+    rid = approve_requirement(world)
+    board = Board()
+    toolkit = RequirementsToolkit(world.deps.library, world.retriever, board, world.catalog)
+    chunk = world.chunk(*EMAIL)
+    partial = {"chunk_id": chunk.chunk_id, "quote": EMAIL[1]}  # el productor cita la misma frase corta
+    args = {"kind": "historia", "title": TITLE, "description": STORY, "acceptance_criteria": [GHERKIN], "citations": [partial], "requirement_id": rid}
+    assert toolkit.redactar_historia(args).ok
+    citations = board.items[ITEM].citations
+    assert [c.quote for c in citations] == [chunk.text.strip()]  # una sola cita, la del fragmento completo

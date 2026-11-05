@@ -1,0 +1,89 @@
+{
+  "next_id": 1006,
+  "items": [
+    {
+      "id": 1001,
+      "type": "User Story",
+      "title": "Documentar limitaciones de entrega en el documento de cierre",
+      "description": "Como responsable del proyecto quiero que el documento de cierre detalle las limitaciones que tuvimos durante el proyecto y cómo se le entrega el producto al cliente para que el cliente conozca con transparencia el alcance real de lo entregado, por ejemplo si una integración externa como la API Renaper no llega a estar disponible.",
+      "acceptance_criteria": [
+        "Dado que existieron limitaciones durante el proyecto (por ejemplo, que la API Renaper no sea entregada), Cuando se elabora el documento de cierre, Entonces el documento incluye esas limitaciones y cómo se le está entregando el producto al cliente"
+      ],
+      "tags": [
+        "bg-item:HU-RQ-001",
+        "bg-key:b777b66d652df1f0"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1002,
+      "type": "User Story",
+      "title": "Bloquear cambios de productos y asesores en alianzas inactivas",
+      "description": "Como administrador del portal quiero que una alianza en estado inactiva no permita habilitar productos ni asignar asesores para evitar que se modifique la configuración comercial de una alianza que no está operativa.",
+      "acceptance_criteria": [
+        "Dado una alianza en estado inactiva, Cuando el administrador intenta habilitar productos en esa alianza, Entonces el sistema no lo permite.",
+        "Dado una alianza en estado inactiva, Cuando el administrador intenta asignar asesores a esa alianza, Entonces el sistema no lo permite."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-002",
+        "bg-key:4abb5c8e9faea2c5"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1003,
+      "type": "User Story",
+      "title": "Un asesor solo puede pertenecer a una alianza",
+      "description": "Como administrador del portal quiero que el sistema no permita asignar un asesor que ya pertenece a una alianza a otra alianza distinta para evitar que un mismo asesor quede asociado a más de una alianza.",
+      "acceptance_criteria": [
+        "Dado un asesor que ya está asignado a una alianza, cuando intento asignarlo a otra alianza, entonces el sistema no permite la asignación."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-003",
+        "bg-key:e5dd8082ac710837"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1004,
+      "type": "User Story",
+      "title": "Rol Administrador seleccionado por defecto al crear un usuario",
+      "description": "Como administrador del portal quiero que el campo rol muestre Administrador seleccionado por defecto al crear un nuevo usuario para agilizar el alta de usuarios con el rol predeterminado.",
+      "acceptance_criteria": [
+        "Dado que el administrador abre el formulario de creación de usuario, Cuando se muestra el campo rol, Entonces Administrador aparece seleccionado por defecto"
+      ],
+      "tags": [
+        "bg-item:HU-RQ-004",
+        "bg-key:c10c83caf905f161"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1005,
+      "type": "User Story",
+      "title": "Entregar fuentes al cliente para mini UAT tras la demo",
+      "description": "Como equipo de proyecto quiero entregar los fuentes al cliente después de la demo para que realice un mini UAT, con la entrega de bugs, la corrección de temas críticos y la reentrega de los fuentes en los plazos hablados para que el cliente valide la plataforma antes de que el equipo termine su trabajo el lunes.",
+      "acceptance_criteria": [
+        "Dado que la demo se realiza el miércoles, Cuando termina la demo, Entonces se entregan los fuentes al cliente para que haga un mini UAT el jueves.",
+        "El cliente debe entregar los bugs a más tardar el viernes.",
+        "El equipo dispone del lunes para corregir los temas críticos.",
+        "Después de corregir los temas críticos, se vuelven a entregar los fuentes al cliente."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-005",
+        "bg-key:2dc8be006c53cd55"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    }
+  ]
+}

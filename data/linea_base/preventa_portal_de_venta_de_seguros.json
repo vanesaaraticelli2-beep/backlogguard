@@ -1,0 +1,828 @@
+{
+  "document_id": "preventa_portal_de_venta_de_seguros",
+  "fingerprint": "fda2433fa86631ec",
+  "model": "claude-opus-5-5",
+  "extracted_at": "2026-10-27T23:19:53+00:00",
+  "input_tokens": 40824,
+  "output_tokens": 26545,
+  "cost_usd": 0.694196,
+  "commitments": [
+    {
+      "id": "C-001",
+      "epic": "Autenticación y Acceso",
+      "capability": "Login de asesores y administradores con la cuenta Microsoft del tenant de Seguros Supervielle",
+      "scope": "incluido",
+      "page": 5,
+      "quote": "Autenticación segura mediante login con la cuenta Microsoft del tenant de Seguros Supervielle"
+    },
+    {
+      "id": "C-002",
+      "epic": "Integraciones",
+      "capability": "Backend propio (BFF) que centraliza las llamadas a APIs externas para no exponer API Keys",
+      "scope": "incluido",
+      "page": 5,
+      "quote": "Backend propio como capa de seguridad que centralice todas las llamadas a APIs externas"
+    },
+    {
+      "id": "C-003",
+      "epic": "Migración de datos",
+      "capability": "La migración de datos no está incluida",
+      "scope": "excluido",
+      "page": 6,
+      "quote": "No Incluido"
+    },
+    {
+      "id": "C-004",
+      "epic": "Autenticación y Acceso",
+      "capability": "Login con usuario y contraseña de Microsoft, solo para usuarios dados de alta en el tenant",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Login: el usuario ingresa usuario y contraseña de Microsoft."
+    },
+    {
+      "id": "C-005",
+      "epic": "Autenticación y Acceso",
+      "capability": "La opción 'Olvidé mi contraseña' redirige al reset de Microsoft, sin tratamiento dentro del portal",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "redirige al reset password de Microsoft."
+    },
+    {
+      "id": "C-006",
+      "epic": "Autenticación y Acceso",
+      "capability": "Al autenticarse, se resuelve el broker o canal del asesor para definir el look & feel y los productos habilitados",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "resolver el broker/canal del asesor para determinar look & feel"
+    },
+    {
+      "id": "C-007",
+      "epic": "Autenticación y Acceso",
+      "capability": "Acceso de clientes de Alianzas por QR o URL con código de alianza o cupón",
+      "scope": "incluido",
+      "page": 8,
+      "quote": "el cliente escanea un QR o ingresa a una URL"
+    },
+    {
+      "id": "C-008",
+      "epic": "Autenticación y Acceso",
+      "capability": "El BFF valida que la alianza exista y esté activa, y que el cupón esté vigente y dentro del límite de usos",
+      "scope": "incluido",
+      "page": 8,
+      "quote": "verifica que la alianza existe, está activa"
+    },
+    {
+      "id": "C-009",
+      "epic": "Autenticación y Acceso",
+      "capability": "Mensaje de error y bloqueo del acceso ante un código inválido, vencido o con usos agotados",
+      "scope": "incluido",
+      "page": 8,
+      "quote": "En caso de código inválido, vencido o con usos agotados: se muestra un"
+    },
+    {
+      "id": "C-010",
+      "epic": "Autenticación y Acceso",
+      "capability": "Sin pantalla de login con usuario y contraseña para clientes de Alianzas",
+      "scope": "excluido",
+      "page": 8,
+      "quote": "No existe pantalla de login con usuario y contraseña. El acceso es directo"
+    },
+    {
+      "id": "C-011",
+      "epic": "Autenticación y Acceso",
+      "capability": "Sin recuperación de credenciales para clientes de Alianzas",
+      "scope": "excluido",
+      "page": 8,
+      "quote": "No existe opción de \"Olvidé mi contraseña\" ni ningún mecanismo de"
+    },
+    {
+      "id": "C-012",
+      "epic": "Autenticación y Acceso",
+      "capability": "Inicio de una sesión de tipo alianza con configuración visual, productos habilitados y flag de emisión",
+      "scope": "incluido",
+      "page": 8,
+      "quote": "Iniciar sesión de tipo alianza con configuración visual, productos habilitados y"
+    },
+    {
+      "id": "C-013",
+      "epic": "Autenticación y Acceso",
+      "capability": "No se exige ninguna credencial al cliente final",
+      "scope": "incluido",
+      "page": 8,
+      "quote": "No requerir ningún tipo de credencial por parte del cliente final."
+    },
+    {
+      "id": "C-014",
+      "epic": "Portal Principal y Gestión del Cliente",
+      "capability": "Consulta del cliente por CUIL contra la API Tenencias y la API Oferta",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Formulario con campo CUIL. Consulta a API Tenencias y API Oferta"
+    },
+    {
+      "id": "C-015",
+      "epic": "Portal Principal y Gestión del Cliente",
+      "capability": "Botón 'No soy cliente' que saltea la validación de CUIL y habilita todos los productos del asesor",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Botón \"No soy cliente\": saltea validación de CUIL y habilita todos los"
+    },
+    {
+      "id": "C-016",
+      "epic": "Portal Principal y Gestión del Cliente",
+      "capability": "Visualización de la tenencia con envío de documentación al mail del cliente",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Mostrar tenencia del cliente con opción de envío de documentación al mail"
+    },
+    {
+      "id": "C-017",
+      "epic": "Portal Principal y Gestión del Cliente",
+      "capability": "Generación de link de pago para tenencias de aseguradora",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Generar link de pago cuando el cliente posee tenencias de aseguradora."
+    },
+    {
+      "id": "C-018",
+      "epic": "Portal Principal y Gestión del Cliente",
+      "capability": "Cards de productos diferenciadas por ramo, con Tecno y Celular separadas",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Cards diferenciadas por ramo: Tecno y Celular como cards separadas."
+    },
+    {
+      "id": "C-019",
+      "epic": "Portal Principal y Gestión del Cliente",
+      "capability": "El backend detecta el código de producto correcto por ramo",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "El backend debe detectar el código de producto correcto por ramo."
+    },
+    {
+      "id": "C-020",
+      "epic": "Limpieza de datos",
+      "capability": "Limpieza total del estado al regresar al Main",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Limpieza total del estado al regresar al Main en cualquier momento."
+    },
+    {
+      "id": "C-021",
+      "epic": "Portal Principal y Gestión del Cliente",
+      "capability": "CUIL opcional en el canal Alianzas para precargar datos vía API Persona",
+      "scope": "incluido",
+      "page": 12,
+      "quote": "Campo CUIL opcional. Si el cliente lo ingresa: consulta a API Persona para"
+    },
+    {
+      "id": "C-022",
+      "epic": "Portal Principal y Gestión del Cliente",
+      "capability": "Cards de productos habilitados para la alianza activa",
+      "scope": "incluido",
+      "page": 12,
+      "quote": "Mostrar cards de productos cotizables habilitados para la alianza activa."
+    },
+    {
+      "id": "C-023",
+      "epic": "Portal Principal y Gestión del Cliente",
+      "capability": "Sin acciones de tenencia ni link de pago en el canal Alianzas",
+      "scope": "excluido",
+      "page": 12,
+      "quote": "No existen acciones de tenencia ni generación de link de"
+    },
+    {
+      "id": "C-024",
+      "epic": "Portal Principal y Gestión del Cliente",
+      "capability": "La fuente de los productos por alianza (tabla y/o API Oferta) queda a definir en Inception",
+      "scope": "condicion",
+      "page": 12,
+      "quote": "base de datos y/o parámetro en API Oferta (a definir en Fase de Inception)"
+    },
+    {
+      "id": "C-025",
+      "epic": "Circuito de Cotización",
+      "capability": "Formulario precargado con datos de API Persona",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Formulario precargado con datos de API Persona: nombre, documento,"
+    },
+    {
+      "id": "C-026",
+      "epic": "Circuito de Cotización",
+      "capability": "Los campos nulos de API Persona se muestran como campos editables vacíos",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Pueden venir campos nulos; el formulario deberá manejarlos"
+    },
+    {
+      "id": "C-027",
+      "epic": "Circuito de Cotización",
+      "capability": "Integración del catálogo InfoAuto/Moto en la cotización",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Información adicional requerida se obtiene desde el catálogo de InfoAuto/Moto"
+    },
+    {
+      "id": "C-028",
+      "epic": "Circuito de Cotización",
+      "capability": "Medios de pago como campo seleccionable desde la API de medios de pago",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Integración con API de medios de pago como campo seleccionable. En caso de"
+    },
+    {
+      "id": "C-029",
+      "epic": "Circuito de Cotización",
+      "capability": "Coberturas broker con logos, compañías y condiciones provistos por la API Productos",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Coberturas broker: logos, compañías, detalles y condiciones provistos por la"
+    },
+    {
+      "id": "C-030",
+      "epic": "Circuito de Cotización",
+      "capability": "Coberturas de aseguradora con logo de la alianza (Marca Blanca) y T&C desde la base de datos",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Coberturas aseguradoras: logo de la alianza activa (vía Marca Blanca) +"
+    },
+    {
+      "id": "C-031",
+      "epic": "Circuito de Cotización",
+      "capability": "Recotizar volviendo al formulario sin perder la información",
+      "scope": "incluido",
+      "page": 14,
+      "quote": "Posibilidad de recotizar: el cliente puede volver al formulario sin perder la"
+    },
+    {
+      "id": "C-032",
+      "epic": "Circuito de Cotización",
+      "capability": "Ingreso manual de TC o CBU cuando la API de medios de pago no devuelve opciones",
+      "scope": "incluido",
+      "page": 15,
+      "quote": "habilitar ingreso manual de TC o CBU sin bloquear el flujo."
+    },
+    {
+      "id": "C-033",
+      "epic": "Circuito de Cotización",
+      "capability": "En Alianzas, enrutamiento automático post-cotización según el flag emision_habilitada",
+      "scope": "incluido",
+      "page": 15,
+      "quote": "el sistema evalúa el flag emision_habilitada de la alianza activa y enruta"
+    },
+    {
+      "id": "C-034",
+      "epic": "Circuito de Cotización",
+      "capability": "El beneficio comercial asociado al cupón queda pendiente de definición en Inception",
+      "scope": "condicion",
+      "page": 15,
+      "quote": "beneficio comercial aplicable durante la cotización (por ejemplo, un descuento"
+    },
+    {
+      "id": "C-035",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "Formulario de contacto obligatorio con nombre, apellido, email y teléfono",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "El formulario solicita los datos de contacto del cliente: nombre, apellido, email y"
+    },
+    {
+      "id": "C-036",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "Resumen no editable de ramo, cobertura y suma asegurada",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Ramo, cobertura elegida y suma asegurada se muestran como datos de"
+    },
+    {
+      "id": "C-037",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "Botón 'Solicitar contacto' en lugar de emitir",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "El botón de acción se presenta como \"Solicitar contacto\", dejando en claro que"
+    },
+    {
+      "id": "C-038",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "Grabado de la solicitud en base de datos con estado inicial PENDIENTE",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Al confirmar, grabar la solicitud de contacto en la tabla de base de datos con"
+    },
+    {
+      "id": "C-039",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "Pantalla de confirmación con el mensaje de contacto próximo",
+      "scope": "incluido",
+      "page": 16,
+      "quote": "Pantalla de confirmación: mensaje \"Nos comunicaremos a la brevedad\" con los"
+    },
+    {
+      "id": "C-040",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "Sin llamadas a APIs externas (emisión, mail ni notificación) en el circuito de solicitud",
+      "scope": "excluido",
+      "page": 16,
+      "quote": "No se dispara ninguna llamada a API externa: ni emisión, ni mail, ni notificación."
+    },
+    {
+      "id": "C-041",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "Listado de solicitudes para el asesor, filtrable por estado, alianza, ramo y fecha",
+      "scope": "incluido",
+      "page": 17,
+      "quote": "visualiza el listado de solicitudes de contacto generados por el canal de Alianzas, filtrable por"
+    },
+    {
+      "id": "C-042",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "Cambio de estado a EN GESTION registrando fecha, hora y usuario",
+      "scope": "incluido",
+      "page": 17,
+      "quote": "cambiando su estado a EN GESTION. Este cambio queda registrado con fecha, hora y el"
+    },
+    {
+      "id": "C-043",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "Botón 'Iniciar emisión' habilitado solo en estado EN GESTION",
+      "scope": "incluido",
+      "page": 17,
+      "quote": "Habilitar el botón \"Iniciar emisión\" únicamente sobre solicitudes de contacto en estado EN"
+    },
+    {
+      "id": "C-044",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "Cierre automático con CON CONVERSION y número de póliza si la emisión es exitosa",
+      "scope": "incluido",
+      "page": 17,
+      "quote": "Si la emisión es exitosa, la solicitud de contacto pasa automáticamente a estado CERRADO con"
+    },
+    {
+      "id": "C-045",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "Si la emisión falla, la solicitud sigue EN GESTION y se puede reintentar o cerrar",
+      "scope": "incluido",
+      "page": 17,
+      "quote": "Si la emisión falla, mantener la solicitud en estado EN GESTION. Permitir al asesor corregir y"
+    },
+    {
+      "id": "C-046",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "Cierre manual de la solicitud con motivo",
+      "scope": "incluido",
+      "page": 17,
+      "quote": "manualmente la solicitud seleccionando el motivo correspondiente."
+    },
+    {
+      "id": "C-047",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "Una solicitud cerrada no puede reabrirse",
+      "scope": "incluido",
+      "page": 17,
+      "quote": "Una solicitud de contacto cerrada no puede volver a un estado anterior."
+    },
+    {
+      "id": "C-048",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "Sin integración con CRM ni con sistemas externos de gestión de contacto",
+      "scope": "excluido",
+      "page": 17,
+      "quote": "No se integra ningún sistema externo de gestión de contacto, CRM ni canal de emisión externo."
+    },
+    {
+      "id": "C-049",
+      "epic": "Gestión de solicitud de contacto",
+      "capability": "El sistema o circuito de seguimiento externo del contacto queda a confirmar en Inception",
+      "scope": "condicion",
+      "page": 17,
+      "quote": "circuito a confirmar durante la etapa de Inception."
+    },
+    {
+      "id": "C-050",
+      "epic": "Circuito de Emisión",
+      "capability": "Datos personales bloqueados en emisión sin recotizar",
+      "scope": "incluido",
+      "page": 19,
+      "quote": "El usuario no puede modificar datos personales de cotización sin recotizar."
+    },
+    {
+      "id": "C-051",
+      "epic": "Circuito de Emisión",
+      "capability": "Ingreso de datos del bien asegurado según ramo",
+      "scope": "incluido",
+      "page": 19,
+      "quote": "Datos del bien asegurado: ingreso de datos según ramo, con posible"
+    },
+    {
+      "id": "C-052",
+      "epic": "Circuito de Emisión",
+      "capability": "Precarga de hasta 2 medios de pago bancarios sin paginación",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Precargar hasta 2 medios de pago bancarios del cliente (sin paginación)."
+    },
+    {
+      "id": "C-053",
+      "epic": "Circuito de Emisión",
+      "capability": "Validación de CBU nuevo mediante API Coelsa",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Validar CBU nuevo ingresado mediante API Coelsa"
+    },
+    {
+      "id": "C-054",
+      "epic": "Circuito de Emisión",
+      "capability": "Emisión vía API Productos con endpoint broker o aseguradora",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Emitir póliza vía API Productos (endpoint broker o aseguradora según tipo)."
+    },
+    {
+      "id": "C-055",
+      "epic": "Circuito de Emisión",
+      "capability": "Descarga de la póliza emitida vía API de descarga",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Descargar póliza emitida vía API de descarga (endpoint broker o aseguradora)."
+    },
+    {
+      "id": "C-056",
+      "epic": "Circuito de Emisión",
+      "capability": "Número de póliza en la pantalla de éxito",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "Mostrar número de póliza en pantalla de éxito."
+    },
+    {
+      "id": "C-057",
+      "epic": "Circuito de Emisión",
+      "capability": "Pantalla de error con respuesta de la API y corrección del bien o del medio de pago",
+      "scope": "incluido",
+      "page": 20,
+      "quote": "En error: mostrar respuesta de la API y permitir corrección de bien/medio de"
+    },
+    {
+      "id": "C-058",
+      "epic": "Circuito de Emisión",
+      "capability": "Sin integración de API de mail para la confirmación de emisión",
+      "scope": "excluido",
+      "page": 20,
+      "quote": "NO se integra API de envío de mail en ningún perfil ni circuito. El mail de"
+    },
+    {
+      "id": "C-059",
+      "epic": "Administración",
+      "capability": "ABMC de usuarios asesores",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Alta, Baja, Modificación y Consulta (ABMC) de usuarios asesores."
+    },
+    {
+      "id": "C-060",
+      "epic": "Administración",
+      "capability": "CRUD de usuarios con broker asignado, rol y estado",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "CRUD completo de usuarios con campos: nombre, usuario, email, broker"
+    },
+    {
+      "id": "C-061",
+      "epic": "Administración",
+      "capability": "Validación de unicidad de usuario",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Validación de unicidad de usuario."
+    },
+    {
+      "id": "C-062",
+      "epic": "Administración",
+      "capability": "Filtro y búsqueda de usuarios por nombre, broker y estado",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Filtro y búsqueda de usuarios por nombre, broker y estado."
+    },
+    {
+      "id": "C-063",
+      "epic": "Administración",
+      "capability": "Un usuario sin broker asignado no puede operar",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Un usuario sin broker asignado no puede operar el portal de ventas."
+    },
+    {
+      "id": "C-064",
+      "epic": "Administración",
+      "capability": "ABMC de roles",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Alta, Baja, Modificación y Consulta (ABMC) de roles."
+    },
+    {
+      "id": "C-065",
+      "epic": "Administración",
+      "capability": "Asignación y revocación de permisos por funcionalidad a cada rol",
+      "scope": "incluido",
+      "page": 21,
+      "quote": "Asignación/revocación de permisos por funcionalidad a cada rol."
+    },
+    {
+      "id": "C-066",
+      "epic": "Administración",
+      "capability": "Alta de alianza con todos sus campos de configuración",
+      "scope": "incluido",
+      "page": 22,
+      "quote": "Alta de alianza: creación de una nueva alianza con todos sus campos de configuración:"
+    },
+    {
+      "id": "C-067",
+      "epic": "Administración",
+      "capability": "Edición completa de alianzas existentes",
+      "scope": "incluido",
+      "page": 22,
+      "quote": "Permitir la edición completa de todos los campos de una alianza existente."
+    },
+    {
+      "id": "C-068",
+      "epic": "Administración",
+      "capability": "Activación y desactivación de alianzas con efecto inmediato",
+      "scope": "incluido",
+      "page": 22,
+      "quote": "Cambio de estado activo/inactivo con efecto inmediato. Una alianza inactiva bloquea el acceso"
+    },
+    {
+      "id": "C-069",
+      "epic": "Administración",
+      "capability": "Listado de alianzas con filtros e indicador de próximas a vencer",
+      "scope": "incluido",
+      "page": 22,
+      "quote": "Listar alianzas con filtros por nombre, estado y vigencia. Indicar visualmente alianzas próximas"
+    },
+    {
+      "id": "C-070",
+      "epic": "Administración",
+      "capability": "Generación de URL parametrizada y QR descargable por alianza",
+      "scope": "incluido",
+      "page": 22,
+      "quote": "Generar y mostrar la URL de acceso parametrizada por alianza. Permitir copiarla o descargar el"
+    },
+    {
+      "id": "C-071",
+      "epic": "Administración",
+      "capability": "Cancelación de solicitudes PENDIENTE al desactivar una alianza",
+      "scope": "incluido",
+      "page": 22,
+      "quote": "Cancelar solicitudes de contacto con estado PENDIENTE cuando se desactiva una alianza."
+    },
+    {
+      "id": "C-072",
+      "epic": "Administración",
+      "capability": "Carga inicial de alianzas vía script SQL",
+      "scope": "incluido",
+      "page": 22,
+      "quote": "La carga inicial de alianzas y su configuración visual se realiza vía script SQL. El módulo"
+    },
+    {
+      "id": "C-073",
+      "epic": "Administración",
+      "capability": "Supuesto: el cupón de cada alianza es multiusuario, no de uso único por persona",
+      "scope": "condicion",
+      "page": 22,
+      "quote": "Se asume que el cupón de cada alianza puede ser utilizado por distintos clientes (no es de uso único por"
+    },
+    {
+      "id": "C-074",
+      "epic": "Administración",
+      "capability": "Sin personalización del mensaje de error por alianza",
+      "scope": "excluido",
+      "page": 22,
+      "quote": "No se contempla personalización en el contenido del mensaje de error por alianza."
+    },
+    {
+      "id": "C-075",
+      "epic": "Look & Feel",
+      "capability": "Resolución dinámica del look & feel por broker o alianza",
+      "scope": "incluido",
+      "page": 23,
+      "quote": "Resolución dinámica del look & feel al iniciar sesión (asesor) o al validar el"
+    },
+    {
+      "id": "C-076",
+      "epic": "Look & Feel",
+      "capability": "Aplicación de estilos sin recarga de página",
+      "scope": "incluido",
+      "page": 23,
+      "quote": "El frontend aplica los estilos correspondientes al broker o alianza activo sin"
+    },
+    {
+      "id": "C-077",
+      "epic": "Look & Feel",
+      "capability": "Sin pantalla de administración de look & feel (carga por script)",
+      "scope": "excluido",
+      "page": 23,
+      "quote": "no existe pantalla de administración de look &"
+    },
+    {
+      "id": "C-078",
+      "epic": "Documentación de productos (T&C)",
+      "capability": "T&C diferenciados por ramo y cobertura",
+      "scope": "incluido",
+      "page": 24,
+      "quote": "Los T&C deben diferenciarse por ramo y cobertura."
+    },
+    {
+      "id": "C-079",
+      "epic": "Documentación de productos (T&C)",
+      "capability": "Sin pantalla de administración de contenido de T&C",
+      "scope": "excluido",
+      "page": 24,
+      "quote": "No existe pantalla de administración de contenido de T&C en el alcance de este proyecto."
+    },
+    {
+      "id": "C-080",
+      "epic": "Limpieza de datos",
+      "capability": "Ningún dato del cliente anterior queda visible ni accesible",
+      "scope": "incluido",
+      "page": 25,
+      "quote": "La limpieza debe ser total y sin excepciones: ningún dato del cliente anterior debe permanecer visible ni accesible al iniciar una"
+    },
+    {
+      "id": "C-081",
+      "epic": "Limpieza de datos",
+      "capability": "El flujo 'No soy cliente' también activa la limpieza",
+      "scope": "incluido",
+      "page": 25,
+      "quote": "El flujo \"No soy cliente\" también activa la misma limpieza al regresar al Main."
+    },
+    {
+      "id": "C-082",
+      "epic": "Limpieza de datos",
+      "capability": "Sin mecanismo de deshacer ni de recuperación del estado eliminado",
+      "scope": "excluido",
+      "page": 25,
+      "quote": "No existe mecanismo de \"deshacer\" ni recuperación del estado eliminado."
+    },
+    {
+      "id": "C-083",
+      "epic": "Integraciones",
+      "capability": "Validación de CBU sincrónica y bloqueante con Coelsa",
+      "scope": "incluido",
+      "page": 27,
+      "quote": "La validación es sincrónica y bloqueante: el flujo no avanza si el"
+    },
+    {
+      "id": "C-084",
+      "epic": "Integraciones",
+      "capability": "El portal no gestiona la pantalla de pago del botón de pago",
+      "scope": "excluido",
+      "page": 27,
+      "quote": "portal no gestiona la pantalla de pago en sí."
+    },
+    {
+      "id": "C-085",
+      "epic": "Integraciones",
+      "capability": "El cliente ya cuenta con la licencia de InfoAuto/InfoMoto",
+      "scope": "condicion",
+      "page": 28,
+      "quote": "El cliente ya cuenta con la licencia y suscripción a estos"
+    },
+    {
+      "id": "C-086",
+      "epic": "Integraciones",
+      "capability": "El template del mail de documentación lo define el cliente, a confirmar en Inception",
+      "scope": "condicion",
+      "page": 28,
+      "quote": "definido por el cliente. A confirmar en Fase inception."
+    },
+    {
+      "id": "C-087",
+      "epic": "Integraciones",
+      "capability": "El envío de documentación por mail aplica solo al canal Asesor",
+      "scope": "incluido",
+      "page": 28,
+      "quote": "Aplica únicamente en el canal Asesor. El canal Alianzas no"
+    },
+    {
+      "id": "C-088",
+      "epic": "Stack tecnológico",
+      "capability": "Frontend en Angular a pedido del cliente",
+      "scope": "incluido",
+      "page": 30,
+      "quote": "Angular se utilizará a pedido del cliente para el desarrollo del frontend"
+    },
+    {
+      "id": "C-089",
+      "epic": "Stack tecnológico",
+      "capability": "Backend en Node.js",
+      "scope": "incluido",
+      "page": 31,
+      "quote": "Node.js posee una arquitectura no bloqueante basada en eventos"
+    },
+    {
+      "id": "C-090",
+      "epic": "Stack tecnológico",
+      "capability": "Contenedores con Docker",
+      "scope": "incluido",
+      "page": 32,
+      "quote": "Docker se empleará para el despliegue y gestión de contenedores"
+    },
+    {
+      "id": "C-091",
+      "epic": "Entregables y plan",
+      "capability": "Plataforma desarrollada y funcionando en UAT",
+      "scope": "incluido",
+      "page": 34,
+      "quote": "Plataforma desarrollada y en funcionamiento en ambiente de UAT"
+    },
+    {
+      "id": "C-092",
+      "epic": "Entregables y plan",
+      "capability": "Entrega del código fuente",
+      "scope": "incluido",
+      "page": 34,
+      "quote": "Código fuente de plataforma implementada."
+    },
+    {
+      "id": "C-093",
+      "epic": "Entregables y plan",
+      "capability": "Entrega de la documentación técnica",
+      "scope": "incluido",
+      "page": 34,
+      "quote": "Documentación técnica."
+    },
+    {
+      "id": "C-094",
+      "epic": "Entregables y plan",
+      "capability": "Traspaso de conocimiento por Shadowing en UAT",
+      "scope": "incluido",
+      "page": 34,
+      "quote": "Traspaso del conocimiento al equipo de Cliente utilizando la técnica de"
+    },
+    {
+      "id": "C-095",
+      "epic": "Entregables y plan",
+      "capability": "Duración de 2,5 meses para la construcción",
+      "scope": "condicion",
+      "page": 34,
+      "quote": "2,5 meses"
+    },
+    {
+      "id": "C-096",
+      "epic": "Look & Feel",
+      "capability": "El look & feel se define entre CFOTech y el PO del cliente",
+      "scope": "condicion",
+      "page": 45,
+      "quote": "El Look & Feel será definido entre CFOTech y el PO del Cliente."
+    },
+    {
+      "id": "C-097",
+      "epic": "Integraciones",
+      "capability": "Se asume que las APIs de Supervielle contarán con los datos de Alianza y Cupón",
+      "scope": "condicion",
+      "page": 45,
+      "quote": "Asumimos que todas la Apis provistas por Supervielle, contaran con los datos de Alianza, y Cupón de"
+    },
+    {
+      "id": "C-098",
+      "epic": "Circuito de Emisión",
+      "capability": "Queda fuera de alcance la implementación de los endpoints de descarga de póliza (broker y aseguradora)",
+      "scope": "excluido",
+      "page": 46,
+      "quote": "Según se indico en la documentación del Cliente queda fuera de alcance la implementación de los"
+    },
+    {
+      "id": "C-099",
+      "epic": "Integraciones",
+      "capability": "No se dispone de la documentación técnica de las APIs; la estimación se basa en supuestos",
+      "scope": "condicion",
+      "page": 46,
+      "quote": "no se dispone de la documentación técnica de las APIs."
+    },
+    {
+      "id": "C-100",
+      "epic": "Integraciones",
+      "capability": "Si se requiere un servicio de email, se usa uno del cliente",
+      "scope": "condicion",
+      "page": 46,
+      "quote": "En caso de tener que utilizar algún servicio de email en la aplicación se utilizará un servicio que tenga el"
+    },
+    {
+      "id": "C-101",
+      "epic": "Stack tecnológico",
+      "capability": "Seguridad alineada con OWASP",
+      "scope": "incluido",
+      "page": 46,
+      "quote": "La seguridad de la Solución estará alineada con los estándares de WASP (https://owasp.org/)"
+    },
+    {
+      "id": "C-102",
+      "epic": "Stack tecnológico",
+      "capability": "La licencia de SonarQube, si se usa, la abona el cliente",
+      "scope": "condicion",
+      "page": 46,
+      "quote": "En caso de utilizarse SonarQube para análisis de código o cualquiera de sus funcionalidades la licencia"
+    }
+  ],
+  "discarded": []
+}

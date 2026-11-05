@@ -1,0 +1,620 @@
+{
+  "document_id": "propuesta_techpartner_proyecto_logicorp_dms_elecciones",
+  "fingerprint": "703c66e5c00660c4",
+  "model": "claude-opus-5-5",
+  "extracted_at": "2026-11-04T21:31:02+00:00",
+  "input_tokens": 29075,
+  "output_tokens": 22691,
+  "cost_usd": 0.57012,
+  "commitments": [
+    {
+      "id": "C-001",
+      "epic": "Planificación",
+      "capability": "ABM de nodos, rutas y recorridos",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Crear, editar y eliminar nodos, rutas y recorridos"
+    },
+    {
+      "id": "C-002",
+      "epic": "Planificación",
+      "capability": "Importación masiva de nodos, rutas y recorridos",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Importar masivamente nodos, rutas y recorridos"
+    },
+    {
+      "id": "C-003",
+      "epic": "Planificación",
+      "capability": "Versionado de maestros para cada nueva elección",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Generar versión de maestros para nueva elección"
+    },
+    {
+      "id": "C-004",
+      "epic": "Planificación",
+      "capability": "Parámetros independientes por elección",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Configurar parámetros independientes por elección"
+    },
+    {
+      "id": "C-005",
+      "epic": "Planificación",
+      "capability": "Relaciones jerárquicas entre nodos, rutas y recorridos",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Definir relaciones jerárquicas entre nodos, rutas y recorridos"
+    },
+    {
+      "id": "C-006",
+      "epic": "Planificación",
+      "capability": "Creación de rutas de abastecimiento a nodo",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Crear rutas de abastecimiento a nodo"
+    },
+    {
+      "id": "C-007",
+      "epic": "Planificación",
+      "capability": "Asociación de recorridos, escuelas y transportistas por ruta",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Asociar recorridos, escuelas y transportistas por ruta"
+    },
+    {
+      "id": "C-008",
+      "epic": "Planificación",
+      "capability": "Parametrización de medidas de pallet",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Parametrizar medidas de pallet (alto, ancho, largo, peso)"
+    },
+    {
+      "id": "C-009",
+      "epic": "Planificación",
+      "capability": "Reglas configurables de armado de contenedor",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Definir reglas configurables de armado de contenedor"
+    },
+    {
+      "id": "C-010",
+      "epic": "Planificación",
+      "capability": "Criterio de corte de pallet",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Definir criterio de corte de pallet"
+    },
+    {
+      "id": "C-011",
+      "epic": "Planificación",
+      "capability": "Layout de zona de trabajo",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Definir layout de zona de trabajo (sectores y posiciones)"
+    },
+    {
+      "id": "C-012",
+      "epic": "Planificación",
+      "capability": "Gestión de contenedores por ruta",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Crear y gestionar contenedores por ruta"
+    },
+    {
+      "id": "C-013",
+      "epic": "Planificación",
+      "capability": "Generación de tareas operativas de picking y armado",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Generar tareas operativas de picking y armado"
+    },
+    {
+      "id": "C-014",
+      "epic": "Planificación",
+      "capability": "Solicitud de optimización de flota y recorridos",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Solicitar optimización de flota y recorridos"
+    },
+    {
+      "id": "C-015",
+      "epic": "Planificación",
+      "capability": "Picking por escaneo QR/Code128 o manual",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Ejecutar picking por escaneo QR / Code128 o manual"
+    },
+    {
+      "id": "C-016",
+      "epic": "Planificación",
+      "capability": "Doble control al pickear material",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Ejecutar doble control al pickear material"
+    },
+    {
+      "id": "C-017",
+      "epic": "Planificación",
+      "capability": "Confirmación de armado de pallet o contenedor",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "Confirmar armado de pallet o contenedor"
+    },
+    {
+      "id": "C-018",
+      "epic": "Planificación",
+      "capability": "Integración con Google OR-Tools / Google Maps APIs",
+      "scope": "incluido",
+      "page": 6,
+      "quote": "API Google OR tools/Google Maps APIs"
+    },
+    {
+      "id": "C-019",
+      "epic": "Planificación",
+      "capability": "Validaciones automáticas al importar maestros",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Aplicar reglas de validación al importar"
+    },
+    {
+      "id": "C-020",
+      "epic": "Planificación",
+      "capability": "Trazabilidad de cambios en maestros",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Registrar trazabilidad de cambios en maestros"
+    },
+    {
+      "id": "C-021",
+      "epic": "Planificación",
+      "capability": "Cálculo de carga y capacidad por recorrido",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Calcular carga y capacidad por recorrido"
+    },
+    {
+      "id": "C-022",
+      "epic": "Planificación",
+      "capability": "Análisis de caminos y accesibilidad geográfica",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Analizar caminos y accesibilidad geográfica"
+    },
+    {
+      "id": "C-023",
+      "epic": "Planificación",
+      "capability": "Propuesta de combinación óptima de unidades de transporte con IA",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Proponer combinación óptima de unidades de transporte (optimizador IA)"
+    },
+    {
+      "id": "C-024",
+      "epic": "Planificación",
+      "capability": "Recomendación de tipo de unidad por recorrido",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Recomendar tipo de unidad de transporte por recorrido"
+    },
+    {
+      "id": "C-025",
+      "epic": "Planificación",
+      "capability": "Cálculo automático de necesidades de materiales por escuela/recorrido",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Calcular automáticamente necesidades de materiales por escuela/recorrido"
+    },
+    {
+      "id": "C-026",
+      "epic": "Planificación",
+      "capability": "Generación automática de tareas de abastecimiento",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Generar automáticamente tareas de abastecimiento"
+    },
+    {
+      "id": "C-027",
+      "epic": "Planificación",
+      "capability": "Priorización de tareas por fecha/hora límite y criticidad",
+      "scope": "incluido",
+      "page": 7,
+      "quote": "Priorizar tareas por fecha/hora límite y criticidad"
+    },
+    {
+      "id": "C-028",
+      "epic": "Planificación",
+      "capability": "LLM como capa de interpretación de resultados del optimizador",
+      "scope": "incluido",
+      "page": 8,
+      "quote": "El sistema utiliza una API de modelo de lenguaje de gran escala (LLM) como capa de razonamiento e interpretación sobre los resultados del"
+    },
+    {
+      "id": "C-029",
+      "epic": "Gestión de PA y TT",
+      "capability": "Filtrado de candidatos PA por edad, celular y domicilio",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Visualizar y filtrar candidatos por edad, celular, domicilio"
+    },
+    {
+      "id": "C-030",
+      "epic": "Gestión de PA y TT",
+      "capability": "Alta manual de candidato PA",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Dar de alta manualmente a candidato PA"
+    },
+    {
+      "id": "C-031",
+      "epic": "Gestión de PA y TT",
+      "capability": "Gestión de candidatos con doble rol PA + TT",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Identificar y gestionar candidatos con doble rol (PA + TT)"
+    },
+    {
+      "id": "C-032",
+      "epic": "Gestión de PA y TT",
+      "capability": "Asociación de candidato preseleccionado a nodo",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Asociar candidato preseleccionado a un nodo"
+    },
+    {
+      "id": "C-033",
+      "epic": "Gestión de PA y TT",
+      "capability": "Seguimiento de capacitación presencial",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Visualizar seguimiento de capacitación presencial"
+    },
+    {
+      "id": "C-034",
+      "epic": "Gestión de PA y TT",
+      "capability": "Registro de posiciones de transportistas",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Registrar posiciones de transportistas"
+    },
+    {
+      "id": "C-035",
+      "epic": "Gestión de PA y TT",
+      "capability": "Verificación de documentación de TT",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Verificar documentación de TT"
+    },
+    {
+      "id": "C-036",
+      "epic": "Gestión de PA y TT",
+      "capability": "Vinculación de transportista a recorrido",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Vincular transportista a recorrido"
+    },
+    {
+      "id": "C-037",
+      "epic": "Gestión de PA y TT",
+      "capability": "Adaptación de liquidación de TT",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Adaptar liquidación de TT para"
+    },
+    {
+      "id": "C-038",
+      "epic": "Gestión de PA y TT",
+      "capability": "Asignación o modificación de PA a colegio",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Asignar o modificar asignación de PA a cada colegio"
+    },
+    {
+      "id": "C-039",
+      "epic": "Gestión de PA y TT",
+      "capability": "Mapa de colegios, nodos y domicilios",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Visualizar en mapa colegios, nodos y domicilio de"
+    },
+    {
+      "id": "C-040",
+      "epic": "Gestión de PA y TT",
+      "capability": "Segregación de candidatos con y sin movilidad propia",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Segregar candidatos con y sin movilidad propia"
+    },
+    {
+      "id": "C-041",
+      "epic": "Gestión de PA y TT",
+      "capability": "Sugerencia automática por IA de asignación de PA",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Generar y visualizar sugerencia automática por IA"
+    },
+    {
+      "id": "C-042",
+      "epic": "Gestión de PA y TT",
+      "capability": "Medios de transporte sugeridos para PA",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Visualizar medios de transporte sugeridos para PA"
+    },
+    {
+      "id": "C-043",
+      "epic": "Gestión de PA y TT",
+      "capability": "Visualización en mapa de personas con doble rol",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Visualizar personas con doble rol en el mapa"
+    },
+    {
+      "id": "C-044",
+      "epic": "Gestión de PA y TT",
+      "capability": "Postulación digital (onboarding) del candidato",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Registrar postulación digital (onboarding)"
+    },
+    {
+      "id": "C-045",
+      "epic": "Gestión de PA y TT",
+      "capability": "Interacción del candidato con chatbot",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Interactuar con chatbot"
+    },
+    {
+      "id": "C-046",
+      "epic": "Gestión de PA y TT",
+      "capability": "Aprobación o rechazo de candidato",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Aprobar / Rechazar candidato"
+    },
+    {
+      "id": "C-047",
+      "epic": "Gestión de PA y TT",
+      "capability": "Modificación de datos de cuenta bancaria",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Modificar datos de cuenta bancaria"
+    },
+    {
+      "id": "C-048",
+      "epic": "Gestión de PA y TT",
+      "capability": "Registro manual de confirmación de pago",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Registrar manualmente confirmación"
+    },
+    {
+      "id": "C-049",
+      "epic": "Gestión de PA y TT",
+      "capability": "Confirmación de suplencias y dobles asignaciones",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Confirmar suplencias y dobles"
+    },
+    {
+      "id": "C-050",
+      "epic": "Gestión de PA y TT",
+      "capability": "Importación de archivo CSV/XLSX con estados de pago",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Importar archivo CSV/XLSX con"
+    },
+    {
+      "id": "C-051",
+      "epic": "Gestión de PA y TT",
+      "capability": "Consulta de estado de pago de cada PA",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Consultar estado de pago de cada"
+    },
+    {
+      "id": "C-052",
+      "epic": "Gestión de PA y TT",
+      "capability": "Envío del detalle de orden de pago final",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Enviar detalle de orden de pago final"
+    },
+    {
+      "id": "C-053",
+      "epic": "Gestión de PA y TT",
+      "capability": "Evaluación de desempeño",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Registrar evaluación de desempeño"
+    },
+    {
+      "id": "C-054",
+      "epic": "Gestión de PA y TT",
+      "capability": "Registro de pago por servicio",
+      "scope": "incluido",
+      "page": 9,
+      "quote": "Registrar pago por servicio"
+    },
+    {
+      "id": "C-055",
+      "epic": "Gestión de PA y TT",
+      "capability": "Bot de WhatsApp (Twilio) para interacción inicial y validación de datos",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Ejecutar bot de WhatsApp (Twilio) para interacción inicial, validación de datos,"
+    },
+    {
+      "id": "C-056",
+      "epic": "Gestión de PA y TT",
+      "capability": "Propuesta de PA por colegio mediante IA geolocalizada",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Proponer PA más adecuados para cada colegio mediante IA geolocalizada"
+    },
+    {
+      "id": "C-057",
+      "epic": "Gestión de PA y TT",
+      "capability": "Cálculo de tiempo de viaje domicilio-colegio",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Calcular tiempo de viaje entre domicilio del PA y colegio"
+    },
+    {
+      "id": "C-058",
+      "epic": "Gestión de PA y TT",
+      "capability": "Restricción de edición de candidatos por nodo",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Restringir que cada nodo modifique solo sus candidatos"
+    },
+    {
+      "id": "C-059",
+      "epic": "Gestión de PA y TT",
+      "capability": "Alta en AFIP a partir de foto de DNI usando servicio de LogiCorp",
+      "scope": "condicion",
+      "page": 10,
+      "quote": "Disparar alta en AFIP a partir de foto de DNI (utilizando Servicio de LogiCorp)"
+    },
+    {
+      "id": "C-060",
+      "epic": "Gestión de PA y TT",
+      "capability": "Envío de carátula y formularios por WhatsApp o mail",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Enviar carátula y formularios al PA por WhatsApp o mail"
+    },
+    {
+      "id": "C-061",
+      "epic": "Gestión de PA y TT",
+      "capability": "Actualización de resultado de examen de capacitación vía API",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Actualizar resultado de examen de capacitación vía API"
+    },
+    {
+      "id": "C-062",
+      "epic": "Gestión de PA y TT",
+      "capability": "Baja de alta temprana el día de la elección",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Generar baja de alta temprana durante el día de la elección en caso de no"
+    },
+    {
+      "id": "C-063",
+      "epic": "Gestión de PA y TT",
+      "capability": "Aviso al candidato seleccionado",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Enviar aviso al candidato seleccionado"
+    },
+    {
+      "id": "C-064",
+      "epic": "Gestión de PA y TT",
+      "capability": "Monitoreo de estados de pago",
+      "scope": "incluido",
+      "page": 10,
+      "quote": "Monitorear estados de pago (pendiente, en proceso, aprobado, pagado,"
+    },
+    {
+      "id": "C-065",
+      "epic": "Gestión de PA y TT",
+      "capability": "Uso de la integración existente de AFIP/ARCA para alta de PA",
+      "scope": "condicion",
+      "page": 11,
+      "quote": "El sistema envía los datos del PA a la integración existente de AFIP/ARCA con"
+    },
+    {
+      "id": "C-066",
+      "epic": "Gestión de PA y TT",
+      "capability": "Motor de optimización combinatoria para distribución óptima",
+      "scope": "incluido",
+      "page": 11,
+      "quote": "provee el motor de optimización combinatoria para calcular la distribución óptima"
+    },
+    {
+      "id": "C-067",
+      "epic": "Gestión de PA y TT",
+      "capability": "Sugerencia de asignación de PA a colegios mediante IA geolocalizada",
+      "scope": "incluido",
+      "page": 11,
+      "quote": "Generar sugerencia de asignación de PA a cada colegio mediante IA geolocalizada"
+    },
+    {
+      "id": "C-068",
+      "epic": "Gestión de PA y TT",
+      "capability": "Integración de mensajería para notificaciones a candidatos",
+      "scope": "incluido",
+      "page": 11,
+      "quote": "El sistema envía mensajes de notificaciones a Candidatos PA y utilización de"
+    },
+    {
+      "id": "C-069",
+      "epic": "Gestión de PA y TT",
+      "capability": "Envío de novedades para liquidación de pagos a transportistas",
+      "scope": "incluido",
+      "page": 12,
+      "quote": "Enviar información y novedades para realizar liquidación de pagos a transportistas"
+    },
+    {
+      "id": "C-070",
+      "epic": "Gestión de PA y TT",
+      "capability": "Envío de novedades para liquidación de pagos a PA",
+      "scope": "incluido",
+      "page": 12,
+      "quote": "Enviar información y novedades para realizar liquidación de pagos a PA"
+    },
+    {
+      "id": "C-071",
+      "epic": "Autoridades de mesa",
+      "capability": "Gestión de estados administrativos de autoridades",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Gestionar estados administrativos de autoridades"
+    },
+    {
+      "id": "C-072",
+      "epic": "Autoridades de mesa",
+      "capability": "Carga del total de electores por elección",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Cargar total de electores por elección"
+    },
+    {
+      "id": "C-073",
+      "epic": "Autoridades de mesa",
+      "capability": "Consulta del padrón con filtros avanzados",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Consultar padrón con filtros avanzados"
+    },
+    {
+      "id": "C-074",
+      "epic": "Autoridades de mesa",
+      "capability": "Envíos DMS por lote por elección y autoridad",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Generar envíos DMS por lote asociados a elección y autoridad"
+    },
+    {
+      "id": "C-075",
+      "epic": "Autoridades de mesa",
+      "capability": "Envío DMS individual",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Generar envío DMS individual para autoridad"
+    },
+    {
+      "id": "C-076",
+      "epic": "Autoridades de mesa",
+      "capability": "Impresión en sucursal destino",
+      "scope": "incluido",
+      "page": 13,
+      "quote": "Imprimir en sucursal destino cuando corresponda"
+    }
+  ],
+  "discarded": []
+}

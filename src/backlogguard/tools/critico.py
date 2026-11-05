@@ -132,6 +132,7 @@ class CriticToolkit:
             other.id
             for other in self.board.items.values()
             if other.id != item.id and other.state is not ItemState.EXCLUIDO and repeats(item, other)
+            and not (item.requirement_id and other.requirement_id and item.requirement_id != other.requirement_id)  # dos requisitos aprobados por separado no son duplicados
         ]
         checks = [
             ("tiene_citas", bool(item.citations), f"{len(item.citations)} cita(s)"),
