@@ -91,6 +91,9 @@ class FakeProvider:
             "timeout": ProviderTimeoutError("timeout simulado por el provider"),
             "empty": InvalidProviderResponseError("respuesta simulada vacía"),
             "config": ProviderConfigurationError("credencial simulada inválida"),
+            "usage_limit": InvalidRequestError(
+                "Error code: 400 - You have reached your specified API usage limits. You will regain access on 2026-12-01 at 00:00 UTC."
+            ),
         }
         raise mapping[failure]
 

@@ -23,6 +23,7 @@ class RunState(TypedDict, total=False):
     plan: dict
     sources: list[dict]
     pending: list[str]
+    requirement_ids: list[str] | None  # si está, la corrida redacta solo esos requisitos aprobados
     coverage_scope: list[dict]  # requisitos aprobados que esta corrida debía dejar en una historia (id y título)
     not_drafted: dict[str, str]  # requisito → por qué no se redactó
     wave: list[str]  # ítems que se revisan a la vez en la ola actual (solo con revisión en paralelo)

@@ -238,3 +238,22 @@ def test_el_ingeniero_rechaza_la_publicacion_desde_el_backlog_simulado(screen):
     at.run()
     assert controller.state()["status"] == "plan_rechazado"
     assert [w.title for w in controller.deps.backlog.search()] == before  # no se publicó nada
+
+
+def test_elegir_todos_y_vaciar_la_seleccion_de_requisitos():
+    from streamlit.testing.v1 import AppTest
+
+    def page():
+        import streamlit as st
+
+        from backlogguard.ui.app import _set_requirements
+
+        st.button("todos", on_click=_set_requirements, args=(["RQ-001", "RQ-002"],))
+        st.button("ninguno", on_click=_set_requirements, args=([],))
+        st.multiselect("Requisitos", ["RQ-001", "RQ-002"], default=["RQ-001", "RQ-002"], key="corrida_requisitos")
+
+    at = AppTest.from_function(page, default_timeout=30).run()
+    at.button[1].click().run()
+    assert at.multiselect[0].value == []
+    at.button[0].click().run()
+    assert at.multiselect[0].value == ["RQ-001", "RQ-002"]

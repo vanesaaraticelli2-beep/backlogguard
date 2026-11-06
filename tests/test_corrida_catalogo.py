@@ -257,3 +257,27 @@ def test_la_historia_hereda_el_fragmento_completo_y_reemplaza_la_frase_suelta_de
     assert toolkit.redactar_historia(args).ok
     citations = board.items[ITEM].citations
     assert [c.quote for c in citations] == [chunk.text.strip()]  # una sola cita, la del fragmento completo
+
+
+def test_una_corrida_chica_redacta_solo_los_requisitos_elegidos(world):
+    from backlogguard.graph import run_pipeline
+
+    first = approve_requirement(world, "Notificación por email del nuevo estado", EMAIL, key="a")
+    second = approve_requirement(world, "Reporte mensual en PDF", PDF, key="b")
+    world.providers.supervisor.responses[:] = list(PLAN)
+    world.providers.requerimientos.responses[:] = [write(second, "Reporte mensual en PDF"), final("Listo.")]
+    world.providers.critico.responses[:] = [verdict_of(f"HU-{second}")]
+    world.providers.auditor.responses[:] = list(NO_FINDINGS)
+    state = run_pipeline(world.graph, "Armar el backlog", "chica", [second])
+    assert list(Board.model_validate(state["board"]).items) == [f"HU-{second}"]
+    assert [r["id"] for r in coverage_of(state)] == [second] and first not in world.providers.requerimientos.prompts[0]
+
+
+def test_si_la_cuenta_llega_a_su_limite_la_corrida_corta_enseguida_y_dice_por_que(world):
+    rids = five_requirements(world)
+    world.providers.requerimientos.failures[:] = ["usage_limit"]
+    state = run_once(world, "t1", producer=[final("no debería usarse")], critic=[])
+    assert state["stop_reason"] == "cuenta" and world.providers.critico.prompts == []  # ni el Crítico ni el Auditor gastan intentos
+    assert len([t for t in state["tasks"] if t["kind"] == "redactar"]) == 1  # sin reintento ni más tandas
+    missing = coverage_of(state)
+    assert [r["id"] for r in missing] == rids and all("límite de gasto" in r["reason"] and "2026-12-01" in r["reason"] for r in missing)

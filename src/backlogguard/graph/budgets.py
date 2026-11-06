@@ -7,6 +7,8 @@ from pathlib import Path
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
+from backlogguard.graph.failures import account_blocked
+
 
 class RunBudget(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -33,6 +35,8 @@ def over_budget(state: dict, budget: RunBudget, *, now: float | None = None, che
 
     `check_time=False` se usa después de las pausas humanas: esperar a una persona no gasta presupuesto.
     """
+    if any(account_blocked(str(error.get("error", ""))) for error in state.get("errors", [])):
+        return "cuenta"  # límite de gasto, saldo o clave: cada llamada siguiente fallaría igual
     if state.get("tokens", 0) >= budget.max_tokens:
         return "tokens"
     if len(state.get("reviewed", {})) >= budget.max_items_to_review and state.get("pending"):

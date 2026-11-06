@@ -98,10 +98,11 @@ def build_graph(deps: RunDeps, checkpointer: Any):
     return builder.compile(checkpointer=checkpointer)
 
 
-def initial_state(objective: str, run_id: str) -> RunState:
+def initial_state(objective: str, run_id: str, requirement_ids: list[str] | None = None) -> RunState:
     return {
         "run_id": run_id,
         "objective": objective,
+        "requirement_ids": list(requirement_ids) if requirement_ids else None,
         "board": Board().model_dump(mode="json"),
         "pending": [],
         "reviewed": {},
@@ -116,9 +117,11 @@ def initial_state(objective: str, run_id: str) -> RunState:
     }
 
 
-def run_pipeline(graph, objective: str, thread_id: str) -> RunState:
-    """Corre una corrida completa. El `thread_id` identifica la corrida en el checkpointer."""
-    return graph.invoke(initial_state(objective, thread_id), config={"configurable": {"thread_id": thread_id}})
+def run_pipeline(graph, objective: str, thread_id: str, requirement_ids: list[str] | None = None) -> RunState:
+    """Corre una corrida completa. El `thread_id` identifica la corrida en el checkpointer.
+
+    `requirement_ids` limita la corrida a esos requisitos aprobados (una corrida chica para medir); `None` = todos."""
+    return graph.invoke(initial_state(objective, thread_id, requirement_ids), config={"configurable": {"thread_id": thread_id}})
 
 
 def pending_request(graph, thread_id: str) -> dict | None:

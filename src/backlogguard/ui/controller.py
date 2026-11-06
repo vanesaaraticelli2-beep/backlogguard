@@ -87,7 +87,7 @@ class RunController:
         self.thread = threading.Thread(target=target, daemon=True)
         self.thread.start()
 
-    def start(self, objective: str = DEFAULT_OBJECTIVE, *, seed: bool = True) -> str:
+    def start(self, objective: str = DEFAULT_OBJECTIVE, *, seed: bool = True, requirement_ids: list[str] | None = None) -> str:
         if self.running:
             raise RuntimeError("Ya hay una corrida en curso.")
         own = has_user_sources(user_sources_dir(self.data_dir))
@@ -109,7 +109,7 @@ class RunController:
             self.reset_demo(seed=seed)
         self.thread_id = f"corrida-{uuid.uuid4().hex[:8]}"
         self.backlog_before = [w.model_dump() for w in self.deps.backlog.search()]
-        self._spawn(run_pipeline, self.graph, objective, self.thread_id)
+        self._spawn(run_pipeline, self.graph, objective, self.thread_id, requirement_ids)
         return self.thread_id
 
     def catalog_summary(self) -> dict:
@@ -221,6 +221,13 @@ class RunController:
         self.thread_id, self.read_only = thread_id, True
         self.events, self.backlog_before, self.error = [], [], None
         self.deps.backlog.reload()
+
+    def detach(self) -> None:
+        """Deja la corrida abierta como está (queda guardada, y se retoma después) para poder iniciar otra."""
+        if self.running:
+            raise RuntimeError("No se puede dejar la corrida mientras está en curso.")
+        self.thread_id, self.read_only = None, False
+        self.events, self.backlog_before, self.error = [], [], None
 
     def resume_run(self, thread_id: str) -> None:
         """Retoma una corrida guardada que quedó esperando una decisión (por ejemplo, si se reinició la aplicación)."""

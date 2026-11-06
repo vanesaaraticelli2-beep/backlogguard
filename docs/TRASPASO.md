@@ -32,6 +32,8 @@ Sin `BACKLOGGUARD_DATA` la pantalla abre `data/` (la demo). Con `LIVE_MODE=0` no
 - **`corrida-c398d612`**: 33 historias redactadas en 9 tandas y revisadas por el Crítico. Las 9 sin consenso las aprobó el product owner. El **plan de publicación (versión 2: 33 a crear, 0 omitidos) quedó pendiente a propósito**: todavía no se publica en Azure DevOps.
 - Para volver a ella: pestaña «Corrida» → corridas guardadas → `corrida-c398d612` → **«Retomar y decidir lo pendiente»**. No uses «Iniciar corrida»: arranca una corrida nueva y gasta modelos (la completa costó unos US$7).
 - `corrida-1a8cd2ef`, `corrida-54eb4db6` y `corrida-b0affae5` son corridas viejas o interrumpidas. Se pueden ignorar o borrar.
+- `corrida-e37d3bb6` es una corrida chica (los 9 requisitos que quedaron sin consenso) para medir las mejoras. Se cortó en la segunda tanda porque la cuenta de Anthropic llegó a su límite de gasto: tiene 4 historias redactadas y ninguna revisada. Hay que repetirla cuando haya cuota.
+- Para una corrida chica: en «Corrida», «Vaciar la selección», elegir los requisitos y confirmar el gasto. Para compararla con otra: `python scripts/comparar_corridas.py --datos data_real --requisitos RQ-003,RQ-004 corrida-c398d612 corrida-<nueva>`.
 
 ## Lo que NO está en el repositorio (se pide por otro canal)
 

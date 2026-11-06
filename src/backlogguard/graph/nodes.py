@@ -20,6 +20,7 @@ from backlogguard.board import AgentRole, BacklogItem, Board, ItemState
 from backlogguard.catalog import RequirementStatus
 from backlogguard.catalog.coverage import current_baseline
 from backlogguard.graph.budgets import over_budget
+from backlogguard.graph.failures import account_blocked, explain_llm_failure
 from backlogguard.graph.deps import Providers, RunDeps
 from backlogguard.graph.coverage import from_state as coverage_of, summary_line
 from backlogguard.graph.drafting import batches, goal_for
@@ -57,7 +58,7 @@ def _dump(board: Board) -> dict:
     return board.model_dump(mode="json")
 
 
-BUDGET_STOPS = {"tokens": "se agotó el presupuesto de tokens de la corrida", "tiempo": "se agotó el tiempo de la corrida", "items": "se alcanzó el máximo de ítems a revisar"}
+BUDGET_STOPS = {"cuenta": "la cuenta del proveedor de modelos no acepta más pedidos (límite de gasto, saldo o clave)", "tokens": "se agotó el presupuesto de tokens de la corrida", "tiempo": "se agotó el tiempo de la corrida", "items": "se alcanzó el máximo de ítems a revisar"}
 
 
 def _mark_published(catalog, board: Board, report) -> None:
@@ -126,6 +127,8 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
         scope_rows: list[dict] = []
         if from_catalog:  # parte de lo que una persona aprobó en «Revisión», no de las fuentes
             todo = deps.catalog.to_publish()
+            if chosen := state.get("requirement_ids"):  # corrida chica: solo los requisitos elegidos
+                todo = [r for r in todo if r.id in set(chosen)]
             if not todo:
                 log.add("supervisor", "requerimientos", "redactar", detail="Requisitos aprobados por redactar: 0. Ítems redactados: 0.")
                 return {"tasks": log.tasks, "pending": [], "audit_passes": 1, "trace": [{"node": "produce", "items": 0, "requisitos": 0}]}
@@ -136,9 +139,13 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
         else:
             scope = f"Fuentes: {', '.join(plan_data['sources'])}"
             runs = [(None, scope)]
-        spent, errors, not_drafted, last_stop = 0, [], {}, "final_answer"
+        spent, errors, not_drafted, last_stop, blocked = 0, [], {}, "final_answer", None
         for group, label in runs:
             missing = list(group) if group else []
+            if blocked:  # la cuenta no acepta más pedidos: no se intenta nada más
+                for requirement in missing:
+                    not_drafted[requirement.id] = f"No se redactó: {blocked}"
+                continue
             for attempt in (1, 2) if group else (1,):  # lo que una tanda no redactó se reintenta una vez, solo
                 if group and not missing:
                     break
@@ -178,6 +185,12 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
                 )
                 if outcome.get("error"):
                     errors.append({"node": "produce", "ref": None, "error": outcome["error"]})
+                    if account_blocked(outcome["error"]):
+                        blocked = explain_llm_failure(outcome["error"])
+                        for requirement in missing:
+                            not_drafted[requirement.id] = f"No se redactó: {blocked}"
+                        missing = []
+                        break
                 for requirement in missing if attempt == 2 else []:
                     not_drafted[requirement.id] = f"El productor no lo redactó ni en el reintento (terminó por «{outcome['stop_reason']}»)."
         pending = [item.id for item in board.items.values() if item.state is ItemState.BORRADOR]
@@ -188,6 +201,8 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             "tokens": state.get("tokens", 0) + spent,
             "trace": [{"node": "produce", "stop_reason": last_stop, "items": len(pending), "tandas": len(runs)}],
         }
+        if blocked:
+            update["stop_reason"] = "cuenta"
         if from_catalog:
             update["coverage_scope"] = scope_rows
             update["not_drafted"] = not_drafted

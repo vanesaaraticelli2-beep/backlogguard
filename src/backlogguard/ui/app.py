@@ -197,6 +197,18 @@ def decision_form(controller: RunController, who, payload: dict) -> None:
             st.rerun()
 
 
+COST_REFERENCE = {"date": "05-11-2026", "per_story": 0.22, "approved_first": 0.11, "objected": 0.24}  # corrida real de 33 historias
+
+
+def _set_requirements(ids: list[str]) -> None:
+    st.session_state["corrida_requisitos"] = list(ids)
+
+
+def run_cost_range(requirements: int) -> tuple[float, float]:
+    """Costo esperado de redactar y revisar `requirements` historias: todas aprobadas a la primera, o todas objetadas."""
+    return requirements * COST_REFERENCE["approved_first"], requirements * COST_REFERENCE["objected"]
+
+
 def tab_run(controller: RunController, who) -> None:
     live_conversation(controller)
     pending_decision(controller, who)
@@ -226,15 +238,34 @@ def tab_run(controller: RunController, who) -> None:
                 "Esta corrida usa modelos reales y **gasta tokens**. "
                 f"Tope por corrida: {controller.deps.budget.max_tokens:,} tokens. Los textos se envían a los proveedores de los modelos."
             )
+        options = {r.id: r.current.draft.title for r in controller.deps.catalog.to_publish()} if summary["active"] else {}
+        everything, nothing, _ = st.columns([1, 1, 3])
+        everything.button("Elegir todos", key="corrida_todos", on_click=_set_requirements, args=(list(options),), width="stretch")
+        nothing.button("Vaciar la selección", key="corrida_ninguno", on_click=_set_requirements, args=([],), width="stretch")
+        chosen = st.multiselect(
+            "Requisitos a redactar en esta corrida", list(options), default=list(options), key="corrida_requisitos",
+            format_func=lambda rid: f"{rid} · {options[rid]}",
+            help="Por defecto, todos los aprobados sin publicar. Elegí menos para una corrida chica (por ejemplo, para medir una mejora).",
+        )
+        low, high = run_cost_range(len(chosen))
+        st.markdown(f"**Costo estimado:** entre USD {low:.2f} y USD {high:.2f} para {len(chosen)} requisito(s)." if chosen else "Elegí al menos un requisito.")
+        st.caption(f"Referencia: la corrida del {COST_REFERENCE['date']} costó USD {COST_REFERENCE['per_story']:.2f} por historia. Suele variar.")
+        sure = st.checkbox("Confirmo el gasto", key="confirmar_corrida")
+        needs_models = needs_models or not chosen or not sure
+        requirement_ids = chosen if len(chosen) < len(options) else None
         seed = False
     else:
-        needs_models = False
+        needs_models, requirement_ids = False, None
         seed = st.checkbox("Cargar work items de ejemplo cargados a mano (sirven para ver un posible duplicado)", value=True, key="semilla")
     if st.button("Iniciar corrida", type="primary", key="iniciar", disabled=controller.running or waiting or needs_models):
-        controller.start(objective, seed=seed)
+        controller.start(objective, seed=seed, requirement_ids=requirement_ids)
+        st.session_state.pop("confirmar_corrida", None)  # cada corrida se confirma de nuevo
         st.rerun()
     if waiting:
         st.caption("La corrida está pausada: falta una decisión. Se responde arriba, en «Decisión pendiente».")
+        if st.button("Dejar esta corrida en pausa para iniciar otra (queda guardada y se retoma después)", key="dejar_corrida"):
+            controller.detach()
+            st.rerun()
     state = controller.state()
     if state.get("summary"):
         st.markdown("**Resumen del Supervisor**")
