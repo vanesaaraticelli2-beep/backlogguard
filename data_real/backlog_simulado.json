@@ -1,0 +1,626 @@
+{
+  "next_id": 1034,
+  "items": [
+    {
+      "id": 1001,
+      "type": "User Story",
+      "title": "Carga de ZIP con comprobantes de pago individuales en PDF",
+      "description": "Como administrador de LogiCorp quiero cargar al sistema un archivo ZIP con todos los comprobantes de pago individuales en PDF, tras las transferencias masivas hechas por el banco para que los comprobantes queden disponibles en el sistema para su asociación con los registros de pago de las autoridades.",
+      "acceptance_criteria": [
+        "Dado que se realizaron las transferencias masivas por el banco, Cuando el administrador carga un archivo ZIP con los comprobantes individuales en PDF, Entonces el sistema procesa el archivo comprimido con todos los PDF.",
+        "El cargador de comprobantes procesa un archivo comprimido de extensión ZIP que contiene los comprobantes de pago como PDF individuales.",
+        "Dado un ZIP cuyos PDF respetan la nomenclatura homogénea definida, Cuando el sistema lo procesa, Entonces cada PDF se asocia automáticamente a su registro de pago según esa regla.",
+        "Dado un ZIP con un PDF cuyo nombre no coincide con ningún registro, Cuando el sistema lo procesa, Entonces ese PDF no se asocia a ningún registro y queda identificado como no mapeado.",
+        "Dependencia: el mapeo automático depende de una regla de nomenclatura (ej. ID de transacción bancaria o número de DNI) pendiente de definición con Administración de LogiCorp; hasta que se defina, la asociación automática no es verificable."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-001",
+        "bg-key:13e84130bb944d2b"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1002,
+      "type": "User Story",
+      "title": "Edición continua de los datos paramétricos de la elección, sin candado temporal",
+      "description": "Como administrador del backoffice quiero poder modificar en cualquier momento los datos paramétricos de la elección, sin que se les aplique un bloqueo o candado temporal para responder a cambios de última hora decretados por la justicia electoral.",
+      "acceptance_criteria": [
+        "Dado que existen datos paramétricos de la elección cargados, cuando el Admin modifica uno de ellos en cualquier momento, incluso cerca de la fecha electoral, entonces el sistema guarda el cambio sin bloqueo ni candado temporal.",
+        "Los datos paramétricos de la elección no tienen candado ni bloqueo lógico y su edición permanece abierta hasta último momento.",
+        "Alcance: esta historia no cubre los módulos Carta Marina, Autoridades y Nodos, que quedan sujetos al candado de bloqueo por módulo acordado el 25-08-2026; su comportamiento (edición bloqueada en modo grisado/lectura y apertura o cierre solo por el Super Admin) corresponde a otra historia (HU-RQ-027)."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-002",
+        "bg-key:4abb5c8e9faea2c5"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1003,
+      "type": "User Story",
+      "title": "Carga masiva de Carta Marina exclusivamente mediante archivo Excel",
+      "description": "Como administrador del backoffice quiero cargar la Carta Marina de una elección de forma masiva mediante un archivo Excel, que es el único formato admitido para contar con los datos de circuito, sección, mesa, establecimiento y coordenadas de la elección sin cargarlos uno por uno.",
+      "acceptance_criteria": [
+        "Dado que cargo la Carta Marina de una elección, Cuando selecciono el archivo, Entonces el sistema acepta únicamente un archivo Excel como formato de carga masiva.",
+        "Dado que ya existe una Carta Marina cargada para la elección, Cuando importo un nuevo archivo de Carta Marina, Entonces el sistema borra por completo los registros previos de esa elección y escribe los datos del nuevo archivo sin solapamiento ni sobreescritura parcial.",
+        "El archivo Excel contiene los campos esenciales: circuito electoral, sección, número de mesa y datos del establecimiento/escuela.",
+        "El archivo Excel incluye la latitud y la longitud de cada establecimiento, que llegan precargadas desde la Carta Marina de la elección."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-003",
+        "bg-key:e5dd8082ac710837"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1004,
+      "type": "User Story",
+      "title": "Mapeo simple de columnas de la Carta Marina; limpieza a cargo de LogiCorp",
+      "description": "Como administrador del backoffice de Elecciones DMS quiero que el sistema solo mapee columnas simples y persista los datos de la Carta Marina del Excel ya limpio, y que la limpieza y transformación las haga LogiCorp fuera del sistema para cargar la Carta Marina de forma directa sin que el sistema transforme ni corrija datos.",
+      "acceptance_criteria": [
+        "Dado un archivo Excel de Carta Marina ya limpiado y preparado por LogiCorp, cuando el administrador lo carga, entonces el sistema mapea las columnas de forma simple y persiste los datos tal como vienen.",
+        "El sistema no abre rangos consolidados de mesas (por ejemplo, \"mesa 1 a 5\"): la apertura en registros individuales la hace LogiCorp antes de la carga.",
+        "El sistema no corrige geolocalizaciones erróneas (latitudes/longitudes invertidas): la corrección la hace LogiCorp antes de la carga.",
+        "Dado que ya existen datos de Carta Marina para la elección, cuando se realiza una nueva carga masiva, entonces el sistema borra por completo los datos previos de esa elección y escribe los nuevos sin solapamiento ni sobreescritura parcial.",
+        "La interfaz web incluye un botón o ícono de lápiz que permite editar campos individuales de la Carta Marina sin volver a subir todo el archivo.",
+        "Los campos esenciales de la Carta Marina son circuito electoral, sección, número de mesa y datos del establecimiento/escuela."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-004",
+        "bg-key:c10c83caf905f161"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1005,
+      "type": "User Story",
+      "title": "Validar duplicados Escuela-Mesa al importar Carta Marina e informar la fila del error",
+      "description": "Como operador que realiza la carga masiva de la Carta Marina quiero que el sistema bloquee la importación si detecta duplicados de ID de Escuela y Código de Mesa (Urna) e informe la fila del Excel con el error para corregir manualmente la inconsistencia en el archivo antes de volver a importar.",
+      "acceptance_criteria": [
+        "Dado un archivo Excel de Carta Marina que repite una combinación de ID de Escuela y Código de Mesa (Urna), Cuando el operador lo importa, Entonces el sistema bloquea la importación completa.",
+        "Dado un archivo Excel de Carta Marina con un duplicado, Cuando el sistema bloquea la importación, Entonces la UI de carga muestra una alerta que indica de manera explícita la fila del Excel que contiene la inconsistencia, para su corrección manual.",
+        "Dado un archivo Excel de Carta Marina sin combinaciones repetidas de ID de Escuela y Código de Mesa, Cuando el operador lo importa, Entonces la validación no bloquea la carga.",
+        "La validación de duplicados se ejecuta al momento de procesar la carga masiva.",
+        "La alerta de error es clara y detallada, y no se limita a un mensaje genérico de fallo."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-005",
+        "bg-key:2dc8be006c53cd55"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1006,
+      "type": "User Story",
+      "title": "Aviso en pantalla de duplicados indicando la fila del Excel",
+      "description": "Como operador que carga la Carta Marina quiero que, si la carga tiene duplicados, el sistema me avise en pantalla indicando de forma explícita la fila del Excel donde está la duplicidad para corregir manualmente la inconsistencia en el archivo y volver a cargarlo.",
+      "acceptance_criteria": [
+        "Dado un archivo Excel de Carta Marina con una combinación repetida de ID de Escuela y Código de Mesa (Urna), Cuando el operador lo importa, Entonces el sistema bloquea la carga y muestra en pantalla una alerta que indica la fila del Excel que presenta la duplicidad.",
+        "La alerta de error en la pantalla de carga es clara y detallada, e identifica de forma explícita la fila del Excel que contiene la inconsistencia."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-006",
+        "bg-key:573772a787131be7"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1007,
+      "type": "User Story",
+      "title": "DNI obligatorio y único en el maestro de autoridades",
+      "description": "Como integrante del equipo de backoffice de LogiCorp que opera el maestro de autoridades quiero que el DNI sea obligatorio y único en cada registro del maestro de autoridades, sin admitir duplicados para contar con una clave primaria de validación que identifique a cada autoridad de forma inequívoca.",
+      "acceptance_criteria": [
+        "Dado un maestro de autoridades con un DNI ya registrado, Cuando se intenta incorporar otra autoridad con ese mismo DNI, Entonces el sistema no admite el duplicado en el maestro.",
+        "Dado un registro de autoridad sin DNI, Cuando se intenta guardarlo en el maestro, Entonces el sistema lo rechaza porque el campo DNI es obligatorio.",
+        "El DNI es el identificador único (clave primaria de validación) de cada autoridad en el maestro."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-007",
+        "bg-key:a882d599714ac8da"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1008,
+      "type": "User Story",
+      "title": "Sin otros campos obligatorios en el maestro de autoridades además del DNI",
+      "description": "Como administrador de LogiCorp quiero que el maestro de autoridades solo exija el DNI como campo obligatorio y no bloquee registros por falta de nombre, apellido o domicilio para poder cargar el maestro provisto por el tribunal aunque sus datos de origen sean de baja calidad.",
+      "acceptance_criteria": [
+        "Dado un registro del maestro de autoridades con DNI válido y sin domicilio, Cuando se carga el maestro, Entonces el registro se acepta.",
+        "Dado un registro sin DNI, Cuando se carga el maestro, Entonces el registro se rechaza por falta del campo obligatorio DNI.",
+        "Dado un registro cuyo DNI ya existe en el maestro, Cuando se carga el maestro, Entonces el registro se rechaza por duplicado.",
+        "El DNI es el único campo obligatorio del maestro; nombre, apellido y domicilio no son obligatorios."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-008",
+        "bg-key:1a20afe7b2ed3492"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1009,
+      "type": "User Story",
+      "title": "Roles de autoridades configurables por elección en Datos de elección, con edición local y aislamiento",
+      "description": "Como planificador de la elección quiero definir, listar y modificar los roles de autoridades dentro de la pantalla Datos de elección de cada elección, en el scope local de esa elección para adaptar los roles al léxico de cada proceso electoral sin afectar a otras elecciones concurrentes ni a los templates globales.",
+      "acceptance_criteria": [
+        "Dado que el planificador está creando una elección en la pantalla \"Datos de elección\", cuando abre el panel de creación de roles de autoridades, entonces ve listados los roles de autoridades de esa elección.",
+        "Dado que el planificador está en el panel de roles de una elección, cuando agrega un rol nuevo (por ejemplo, vicepresidente o suplente), entonces el rol queda definido solo en esa elección.",
+        "Dado que existe un rol local en una elección, cuando el planificador modifica el texto de ese rol, entonces el cambio se guarda en el scope local de esa elección.",
+        "Dado que hay dos elecciones activas concurrentes, cuando se crea o modifica un rol en una de ellas, entonces los roles de la otra elección y los templates globales no cambian.",
+        "Los roles de autoridades se definen por elección y no son una lista fija del sistema."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-009",
+        "bg-key:5e256031f84b7a16"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1010,
+      "type": "User Story",
+      "title": "Integración por API con el TMS para el seguimiento de notificaciones",
+      "description": "Como administrador del proceso electoral quiero que el sistema consulte automáticamente las APIs del TMS de LogiCorp y actualice el estado de seguimiento de las notificaciones a las autoridades de mesa, dos veces por día para conocer el estado de cada notificación sin cargar manualmente archivos de tracking.",
+      "acceptance_criteria": [
+        "Dado que existen notificaciones con DNI y número de contrato, Cuando se ejecuta la actualización automática, Entonces el sistema consulta las APIs del TMS de LogiCorp y actualiza el estado de seguimiento de cada notificación sin intervención manual.",
+        "La consulta de estado al TMS usa la clave DNI + Contrato.",
+        "El sistema actualiza el estado de las notificaciones de manera automática dos veces al día.",
+        "No existe pantalla de carga manual de archivos con números de seguimiento de correspondencia; la integración con las APIs del TMS la reemplaza."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-010",
+        "bg-key:1f1ec4f2d6e85e05"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1011,
+      "type": "User Story",
+      "title": "Consulta al TMS por DNI y número de contrato para obtener el estado del envío",
+      "description": "Como operador de la elección quiero que el sistema consulte al TMS de LogiCorp usando el DNI del destinatario y el Número de Contrato, y obtenga el número de envío y el estado de la notificación para conocer el estado de cada notificación a las autoridades de mesa sin cargar archivos de seguimiento.",
+      "acceptance_criteria": [
+        "Dado una autoridad con DNI y un Número de Contrato de Notificaciones cargados, Cuando el sistema consulta al TMS con esa clave DNI + Contrato, Entonces recupera el número de envío y el estado de la notificación.",
+        "El estado de la notificación es uno de: enviada, entregada, no entregada, recibida, rechazada.",
+        "La clave de consulta al TMS es la combinación DNI del destinatario + Número de Contrato.",
+        "Dado que hay notificaciones en seguimiento, Cuando transcurre el ciclo automático, Entonces el sistema actualiza el estado de las notificaciones dos veces al día."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-011",
+        "bg-key:8b1a0fc70baa2da8"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1012,
+      "type": "User Story",
+      "title": "Campos obligatorios de números de contrato en el alta de elección",
+      "description": "Como administrador que da de alta una elección quiero registrar en el formulario de alta de la elección los números de los contratos de Notificaciones, Distribución de Urnas y Material Electoral para poder consultar al TMS por esos contratos.",
+      "acceptance_criteria": [
+        "Dado que estoy en el formulario de alta de una elección, Cuando lo completo sin informar alguno de los tres números de contrato, Entonces el sistema no permite crear la elección e indica que el campo es obligatorio.",
+        "Dado que estoy en el formulario de alta de una elección, Cuando completo los tres campos de contrato y los demás datos requeridos, Entonces la elección se crea con los tres números de contrato registrados.",
+        "El formulario de alta de una elección incluye tres campos paramétricos de texto: Contrato de Notificaciones, Contrato de Distribución de Urnas y Contrato de Material Electoral.",
+        "Los tres campos de contrato son obligatorios."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-012",
+        "bg-key:2c61296c14c7f470"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1013,
+      "type": "User Story",
+      "title": "Historial cronológico de estados de hasta 3 notificaciones por DNI",
+      "description": "Como usuario del backoffice que consulta notificaciones a autoridades quiero visualizar en la grilla de consulta de notificaciones el historial cronológico de hasta 3 intentos de notificación por autoridad para conocer el estado de cada intento de notificación sin cargar archivos de tracking manualmente.",
+      "acceptance_criteria": [
+        "Dado una autoridad con intentos de notificación registrados, Cuando el usuario abre la pantalla de consulta de notificaciones, Entonces ve el historial cronológico de los intentos de notificación de esa autoridad.",
+        "El historial muestra como máximo 3 intentos de notificación por autoridad.",
+        "El estado de las notificaciones se actualiza de forma automática dos veces al día mediante la integración por API con el TMS."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-013",
+        "bg-key:3267d0630c04d901"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1014,
+      "type": "User Story",
+      "title": "Gestión de autoridades por lotes con importación progresiva",
+      "description": "Como administrador de la elección quiero gestionar las autoridades por lotes, creando un lote durante la carga de autoridades y agregando o editando lotes de forma progresiva para incorporar nuevos conjuntos de autoridades o editar un lote específico sin borrar ni sobreescribir los registros de lotes cargados anteriormente.",
+      "acceptance_criteria": [
+        "Dado que existen lotes de autoridades previamente cargados, Cuando el usuario importa un nuevo lote o edita un lote específico, Entonces los registros de los demás lotes no se eliminan ni se sobreescriben",
+        "La interfaz reemplaza el campo estático \"Grupo 1\" por la lógica de \"Lotes\" (Batches)",
+        "La interfaz incorpora un botón \"Agregar o editar lote\" que permite la carga progresiva de bases de autoridades",
+        "El lote se puede crear durante el proceso de carga de autoridades",
+        "Las grillas y procesos de carga de autoridades se manejan mediante el concepto de \"Lotes\""
+      ],
+      "tags": [
+        "bg-item:HU-RQ-014",
+        "bg-key:e10818ccb18c9330"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1015,
+      "type": "User Story",
+      "title": "Monto informativo del tribunal, sin cálculo de montos ni viáticos",
+      "description": "Como administrador del backoffice de pagos quiero cargar el monto de cada pago como un dato informativo provisto por el tribunal electoral en su Excel, sin que el sistema lo calcule para evitar cálculos propios y reflejar exactamente el valor que define el tribunal.",
+      "acceptance_criteria": [
+        "Dado un Excel del tribunal electoral con el valor del pago, Cuando se carga en el sistema, Entonces el monto se registra tal como viene, como campo de texto plano informativo.",
+        "El sistema no calcula montos ni aplica fórmulas de viáticos.",
+        "El sistema no calcula montos por capacitación."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-015",
+        "bg-key:9df5e5b080a80e0b"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1016,
+      "type": "User Story",
+      "title": "Notificación de pago por correo a autoridades con enlace al comprobante",
+      "description": "Como administrador de la elección quiero enviar por correo electrónico a las autoridades una notificación de pago con un enlace de redirección al portal de autogestión web para visualizar y descargar el comprobante para que cada autoridad pueda consultar y descargar su comprobante de pago de forma autónoma.",
+      "acceptance_criteria": [
+        "Dado un registro de autoridad con el comprobante de pago cargado y asociado de forma exitosa en el sistema, Cuando se envía la notificación de pago, Entonces la autoridad recibe un correo electrónico con un enlace de redirección al portal de autogestión web.",
+        "Dado que la autoridad abre el enlace del correo, Cuando accede al portal de autogestión, Entonces puede visualizar y descargar el comprobante de pago.",
+        "Dado un registro de autoridad sin comprobante de pago cargado y asociado, Cuando se intenta enviar la notificación de pago, Entonces la funcionalidad de notificación no está habilitada y no se envía el correo.",
+        "El correo de notificación de pago contiene un enlace hacia el portal de autogestión."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-016",
+        "bg-key:0310bbf937a88734"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1017,
+      "type": "User Story",
+      "title": "Notificar el pago solo si el comprobante ya está cargado y asociado",
+      "description": "Como administrador de LogiCorp quiero que la notificación de pago por correo a las autoridades solo se habilite cuando el registro ya tenga su comprobante de pago cargado y asociado de forma exitosa para evitar enviar a las autoridades avisos de pago cuyo comprobante todavía no se puede visualizar ni descargar.",
+      "acceptance_criteria": [
+        "Dado un registro de autoridad con el comprobante de pago cargado y asociado de forma exitosa en el sistema, Cuando se usa la notificación por correo electrónico, Entonces la funcionalidad está habilitada y el correo se envía a la autoridad.",
+        "Dado un registro de autoridad sin comprobante de pago cargado y asociado de forma exitosa, Cuando se intenta usar la notificación por correo electrónico, Entonces la funcionalidad no está disponible y no se envía el correo.",
+        "El correo de notificación de pago contiene un enlace de redirección al portal de autogestión web para visualizar y descargar el comprobante."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-017",
+        "bg-key:a3c32b8398a82378"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1018,
+      "type": "User Story",
+      "title": "Precarga de coordenadas de establecimientos desde la Carta Marina",
+      "description": "Como administrador de la elección quiero que la latitud y la longitud de cada establecimiento vengan precargadas desde la Carta Marina de la elección para no tener que ingresar las coordenadas a mano y poder ubicar los establecimientos en el mapa.",
+      "acceptance_criteria": [
+        "Dado que la Carta Marina de la elección fue cargada con latitud y longitud por establecimiento, cuando el administrador consulta un establecimiento, entonces el sistema muestra la latitud y la longitud tomadas de la Carta Marina sin requerir ingreso manual.",
+        "Las coordenadas de cada establecimiento provienen de la Carta Marina de la elección."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-018",
+        "bg-key:cf2973d3ef20ec06"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1019,
+      "type": "User Story",
+      "title": "Alta manual de nodo con datos y geolocalización",
+      "description": "Como administrador quiero crear un nodo de forma manual completando un formulario con Título, Descripción, Dirección física y Geolocalización (coordenadas) para registrar la base del nodo con sus datos y ubicación.",
+      "acceptance_criteria": [
+        "Dado que el administrador abre el formulario de creación de Nodo, Cuando completa Título, Descripción, Dirección física y Geolocalización (coordenadas) de forma manual y guarda, Entonces el nodo queda creado con esos datos.",
+        "Los campos Título, Descripción, Dirección física y Geolocalización son obligatorios en el formulario de creación de Nodo.",
+        "La geolocalización se ingresa de forma manual como coordenadas."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-019",
+        "bg-key:ed8de4eb1347dca8"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1020,
+      "type": "User Story",
+      "title": "Indicadores informativos del nodo: establecimientos, urnas y radio de cobertura",
+      "description": "Como usuario que crea un Nodo de trabajo quiero ver calculados automáticamente la cantidad de establecimientos incluidos, la sumatoria de urnas asociadas de la Carta Marina y el radio de cobertura del nodo para conocer el alcance del nodo a nivel informativo al crearlo.",
+      "acceptance_criteria": [
+        "Dado que el usuario está en la interfaz de creación de Nodo con establecimientos asociados, Cuando la interfaz calcula los indicadores, Entonces muestra la cantidad de establecimientos incluidos, la sumatoria total de urnas asociadas de la Carta Marina y el Radio.",
+        "El Radio es la distancia lineal máxima del nodo al establecimiento más lejano.",
+        "Los indicadores (cantidad de establecimientos, sumatoria de urnas y Radio) se calculan automáticamente y se muestran a nivel informativo.",
+        "El radio calculado es un dato estrictamente informativo y no opera como una restricción lógica del sistema para impedir asignaciones."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-020",
+        "bg-key:3b745fd0a3d7acb1"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1021,
+      "type": "User Story",
+      "title": "Radio de cobertura del nodo solo informativo, sin restringir asignaciones",
+      "description": "Como administrador del backoffice que configura nodos de trabajo quiero que el radio de cobertura del nodo se muestre solo como dato informativo y no impida asignar establecimientos aunque estén a grandes distancias para poder asignar establecimientos al nodo según la necesidad operativa, sin que el sistema bloquee asignaciones por distancia.",
+      "acceptance_criteria": [
+        "Dado un nodo con un radio de cobertura calculado, cuando el administrador asigna un establecimiento que queda más lejos que ese radio, entonces el sistema permite la asignación sin bloquearla.",
+        "El radio de cobertura se muestra a nivel informativo como la distancia lineal máxima entre la geolocalización del nodo y el establecimiento asignado más lejano.",
+        "El radio calculado no opera como una restricción lógica del sistema para impedir asignaciones."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-021",
+        "bg-key:b54417feb2d6e628"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1022,
+      "type": "User Story",
+      "title": "Ver geolocalización del nodo desde la grilla con pin en el mapa",
+      "description": "Como operador quiero usar la acción \"Ver geolocalización\" en la grilla para que el mapa centre la vista y muestre con un pin la ubicación del nodo seleccionado para no perderme al navegar provincias extensas.",
+      "acceptance_criteria": [
+        "Dado que el operador está en la grilla con un nodo listado, Cuando hace clic en \"Ver geolocalización\", Entonces el mapa centra la vista y muestra con un marcador (\"pin\") la ubicación del nodo seleccionado.",
+        "La grilla incluye la función \"Ver geolocalización\"."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-022",
+        "bg-key:485b98b149be0cfc"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1023,
+      "type": "User Story",
+      "title": "Persistencia de cambios geográficos con botón \"Guardar y Confirmar\"",
+      "description": "Como usuario que configura el mapa de cobertura de nodos quiero persistir manualmente los cambios geográficos de la sesión pulsando un botón \"Guardar y Confirmar\" para evitar errores en la operación en caliente y pérdidas de sesión que puede inducir el autoguardado dinámico parcial.",
+      "acceptance_criteria": [
+        "Dado que realicé cambios geográficos en la sesión y no pulsé \"Guardar y Confirmar\", Cuando el navegador se cierra accidentalmente, Entonces los cambios no consolidados se pierden",
+        "Dado que realicé cambios de trazado y asignación en la sesión en curso, Cuando pulso \"Guardar y Confirmar\", Entonces los cambios se persisten",
+        "La pantalla de Configuración de Nodos de Trabajo (Mapa de Cobertura) incluye el botón \"Guardar y Confirmar\"",
+        "El sistema no realiza autoguardado dinámico parcial"
+      ],
+      "tags": [
+        "bg-item:HU-RQ-023",
+        "bg-key:a834774bdd3cb58d"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1024,
+      "type": "User Story",
+      "title": "Botón \"Limpiar\" con selección del polígono/nodo a borrar, sin \"Deshacer\"",
+      "description": "Como usuario que configura la cobertura de nodos de trabajo en el mapa quiero usar el botón \"Limpiar\" para elegir específicamente qué polígono o nodo borrar y poder rediseñarlo para ajustar y redibujar zonas sin perder el resto del trabajo consolidado.",
+      "acceptance_criteria": [
+        "Dado que hay varios polígonos/nodos trazados en el mapa, Cuando el usuario usa el botón \"Limpiar\" y selecciona un polígono o nodo específico, Entonces solo ese polígono o nodo se borra y puede rediseñarse, y el resto del trabajo se conserva.",
+        "El botón \"Limpiar\" no borra de forma masiva toda la pantalla.",
+        "El trazado de polígonos no incluye la función \"Deshacer última acción\"."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-024",
+        "bg-key:64ebfebb5e6b9dca"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1025,
+      "type": "User Story",
+      "title": "Maestro de personal LogiCorp con DNI obligatorio y único y campo Movilidad Propia",
+      "description": "Como administrador de LogiCorp que carga el personal quiero registrar el personal en un maestro con los campos definidos, con DNI obligatorio y único como clave de validación y el dato de si posee movilidad propia (SÍ/NO) para identificar sin duplicados a cada persona del personal y saber si cuenta con movilidad propia.",
+      "acceptance_criteria": [
+        "Dado que se carga una persona en el maestro de personal, cuando se intenta guardar sin DNI, entonces el sistema no permite guardarla porque el DNI es obligatorio.",
+        "Dado que ya existe en el maestro de personal una persona con un DNI, cuando se intenta cargar otra con el mismo DNI, entonces el sistema no admite el duplicado porque el DNI es la clave primaria de validación única.",
+        "El maestro de personal incluye los campos: Nombre, Apellido, DNI, mail, edad, tipo de celular, teléfono, dirección, disponibilidad, rol del domingo y Movilidad Propia.",
+        "El campo Movilidad Propia es lógico y admite solo los valores SÍ o NO.",
+        "La grilla y el formulario de la pantalla de Reclutamiento / Carga de Personal LogiCorp muestran los campos DNI y Movilidad Propia."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-025",
+        "bg-key:253e57fb9f37354d"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1026,
+      "type": "User Story",
+      "title": "Quitar la columna \"Estado\" de la grilla de personal",
+      "description": "Como administrador del backoffice de LogiCorp quiero que la grilla de personal no muestre la columna \"Estado\" (pendiente, contactado, preseleccionado) para ver únicamente la nómina final activa de trabajadores para el domingo de la elección, entendiendo que toda persona cargada representa una nómina activa confirmada.",
+      "acceptance_criteria": [
+        "Dado que el administrador ingresa a la grilla de personal en el backoffice, Cuando se muestra la grilla, Entonces no aparece la columna \"Estado\" (pendiente, contactado, preseleccionado).",
+        "Toda persona cargada en la grilla de personal se considera nómina activa y confirmada para operar el domingo de la elección.",
+        "El diseño de Figma de la grilla de personal se actualiza para no incluir la columna \"Estado\"."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-026",
+        "bg-key:1400f138fc9a4d30"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1027,
+      "type": "User Story",
+      "title": "Solo el Super Admin abre o cierra el candado de un módulo",
+      "description": "Como Super Admin de la plataforma quiero bloquear y reabrir la edición de cada módulo (Nodos, Carta Marina, Autoridades) mediante un candado accionado manualmente desde el backoffice para evitar que el gran volumen de usuarios altere accidentalmente los datos ya consolidados a medida que se acercan las fechas críticas de la elección.",
+      "acceptance_criteria": [
+        "Dado que el Super Admin está en el backoffice, cuando acciona manualmente el candado de un módulo, entonces el módulo completo queda en modo grisado / solo lectura de forma automática.",
+        "Dado que un módulo tiene el candado cerrado, cuando el Super Admin lo abre a demanda, entonces el módulo vuelve a permitir la edición.",
+        "El candado es configurable de forma independiente por cada módulo: Nodos, Carta Marina y Autoridades.",
+        "El Super Admin es el único perfil con permisos de sistema para abrir o cerrar el candado.",
+        "El candado se activa mediante una acción manual en el backoffice, no de forma automática por fecha."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-027",
+        "bg-key:b5b183d803ff59a5"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1028,
+      "type": "User Story",
+      "title": "Alta de categorías de tareas desde la lista desplegable",
+      "description": "Como administrador con rol jerárquico superior (Super Admin o Analista designado) del Backoffice quiero agregar una nueva categoría de tareas mediante un botón \"Agregar nueva\" dentro de la lista desplegable, escribiendo y registrando la categoría sobre la marcha para organizar las tareas por categorías y facilitar el filtrado al asignar tareas a usuarios o visualizar métricas de control.",
+      "acceptance_criteria": [
+        "Dado que un usuario con rol autorizado está creando o editando una tarea, cuando abre la lista desplegable de categorías, entonces ve el botón \"Agregar nueva\" dentro de la propia lista.",
+        "Dado que el usuario pulsa \"Agregar nueva\" en la lista desplegable, cuando escribe el nombre y lo registra, entonces la nueva categoría queda registrada sin derivar a pantallas de configuración externas.",
+        "Las categorías contempladas para organizar las tareas incluyen \"Transporte\", \"Digitalización\" y \"Supervisión\".",
+        "Las categorías se mantienen para facilitar el filtrado al asignar tareas a usuarios o visualizar métricas de control.",
+        "La creación y edición de tareas en el Backoffice se limita a un rol jerárquico superior (Super Admin o Analistas designados); un administrador local o de nodo no puede manipular la estructura global de las tareas.",
+        "Dado que un usuario con perfil no autorizado intenta acceder a la creación o edición de tareas, cuando ingresa al Backoffice, entonces el acceso le es bloqueado."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-028",
+        "bg-key:bd9409c6996e8706"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1029,
+      "type": "User Story",
+      "title": "Autocompletado por escaneo de DNI con campo editable para corregir OCR",
+      "description": "Como operador de la app móvil quiero escanear el DNI y que la app extraiga Nombre, Apellido y DNI y autocomplete los datos, con un campo editable para corregir errores del OCR para cargar los datos de la autoridad de forma rápida y poder corregir cualquier error de lectura.",
+      "acceptance_criteria": [
+        "Dado que el operador escanea un DNI, Cuando la app procesa la imagen, Entonces extrae Nombre, Apellido y DNI y autocompleta la información de forma inmediata",
+        "Dado que el OCR cometió un error en la lectura, Cuando el operador revisa los datos autocompletados, Entonces dispone de un campo editable para corregirlos",
+        "Los datos extraídos del DNI son Nombre, Apellido y DNI"
+      ],
+      "tags": [
+        "bg-item:HU-RQ-029",
+        "bg-key:18f0e1b7c40d936a"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1030,
+      "type": "User Story",
+      "title": "App offline-first con análisis local de DNI y sincronización en segundo plano",
+      "description": "Como usuario de la app móvil en campo quiero escanear el DNI y que se autocompleten Nombre, Apellido y DNI aunque no tenga conexión, pudiendo corregir manualmente los errores del OCR para poder trabajar con normalidad sin señal y que los datos se sincronicen solos cuando haya red.",
+      "acceptance_criteria": [
+        "Dado que el dispositivo no tiene conexión de red, Cuando el usuario escanea un DNI, Entonces la app extrae Nombre, Apellido y DNI y autocompleta la información de forma inmediata",
+        "Dado que el dispositivo no tiene conexión y el OCR extrajo mal algún dato, Cuando el usuario revisa los campos autocompletados, Entonces dispone de un campo editable para corregir manualmente el dato",
+        "Dado que hay datos guardados en el dispositivo sin sincronizar, Cuando el dispositivo recupera la señal de red, Entonces la app los sincroniza automáticamente en segundo plano",
+        "El análisis del DNI se realiza de forma local en el dispositivo",
+        "La app móvil funciona idénticamente con o sin conexión de red",
+        "Los datos del escaneo se guardan en el dispositivo hasta su sincronización"
+      ],
+      "tags": [
+        "bg-item:HU-RQ-030",
+        "bg-key:c9769be430459e77"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1031,
+      "type": "User Story",
+      "title": "Escaneo de DNI limitado a DNI argentino válido, incluidos extranjeros nacionalizados",
+      "description": "Como usuario que carga los datos de una persona mediante el escaneo de su DNI quiero que el escaneo contemple solo DNI argentinos válidos, con el mismo tratamiento para nativos y extranjeros nacionalizados para no tener que contemplar formatos de DNI extranjeros sin validez electoral argentina.",
+      "acceptance_criteria": [
+        "Dado un extranjero nacionalizado con DNI argentino válido, Cuando se escanea su DNI, Entonces el sistema lo procesa con el mismo formato que el de un ciudadano nativo.",
+        "El alcance del escaneo excluye los DNIs extranjeros sin validez electoral argentina."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-031",
+        "bg-key:359d8d359e014598"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1032,
+      "type": "User Story",
+      "title": "Template como estructura de formulario reutilizable entre tareas, con edición restringida a rol superior",
+      "description": "Como Super Admin o Analista designado del Backoffice quiero definir un template como estructura técnica del formulario y sus campos o acciones, para que las tareas de cada elección lo clonen y hereden su formulario para reutilizar un mismo template en varias tareas, simplificando la administración y evitando duplicar pantallas.",
+      "acceptance_criteria": [
+        "Dado que existe el template \"Confirmar Asistencia\", Cuando el operador de backoffice crea las tareas \"Asistencia de la Mañana\" y \"Asistencia de la Tarde\" a partir de él, Entonces ambas tareas heredan el formulario del mismo template reutilizable.",
+        "El template define la estructura técnica del formulario y el conjunto de campos o acciones requeridas de la actividad.",
+        "Cada tarea se asocia a un único template y hereda su formulario.",
+        "La lógica de asignación, ruteos y despacho a operadores se configura en la tarea y no en el template.",
+        "Dado un usuario con rol de administrador local o de nodo, Cuando intenta crear o editar una tarea en el Backoffice, Entonces el acceso se bloquea y no puede hacerlo.",
+        "Dado un usuario con rol Super Admin o Analista designado, Cuando crea o edita una tarea en el Backoffice, Entonces el sistema se lo permite."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-032",
+        "bg-key:fca1c7f250b73f4b"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    },
+    {
+      "id": 1033,
+      "type": "User Story",
+      "title": "Campos de formulario estándar en el MVP (texto corto, largo y numérico)",
+      "description": "Como administrador del backoffice quiero definir los formularios de los templates usando campos de entrada estándar (texto corto, texto largo y numérico) para evitar sobrecomplejizar el desarrollo inicial del backoffice y simplificar el MVP.",
+      "acceptance_criteria": [
+        "Dado que el administrador define un campo de formulario en un template, Cuando elige el tipo de campo, Entonces las opciones disponibles son texto corto, texto largo y numérico.",
+        "El MVP no incluye campos con validaciones complejas de audio o video."
+      ],
+      "tags": [
+        "bg-item:HU-RQ-033",
+        "bg-key:750e537af6b7f3c6"
+      ],
+      "parent_id": null,
+      "rev": 1,
+      "state": "New"
+    }
+  ]
+}
