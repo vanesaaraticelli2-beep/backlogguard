@@ -222,3 +222,20 @@ def test_la_tabla_compara_las_variantes():
     tabla = tabla_markdown([completo, vacio])
     assert "| perfecto | 6/6 (100%) | 0 | 4/4 (100%) | 0 | " in tabla
     assert "| agente_unico | 1/6 (17%) | 0 | 0/4 (0%) | 0 | " in tabla and "| 500 |" in tabla
+
+
+def test_salida_desde_el_catalogo_mide_las_propuestas_o_lo_aprobado(tmp_path):
+    from test_catalogo import approve_and_apply, draft, proposal
+
+    from backlogguard.catalog import Catalog, ProposalKind
+    from backlogguard.evaluation.outputs import salida_desde_catalogo
+
+    catalog = Catalog(tmp_path / "catalogo.sqlite")
+    kept = approve_and_apply(catalog, catalog.propose(proposal(key="a", drafts=[draft("Validar el CUIT")])))
+    rejected = catalog.propose(proposal(key="b", drafts=[draft("Algo que la persona descartó")]))
+    catalog.decide(rejected.id, approve=False, by="PO")
+    catalog.propose(proposal(ProposalKind.CONTRADICE, key="c", targets=kept.affected, drafts=[draft("Ahora se valida el CUIL")]))
+    antes = salida_desde_catalogo("propuestas", catalog, propuestas=True)
+    assert [e.id for e in antes.requisitos] == ["P-001", "P-002"] and [h.tipo for h in antes.hallazgos] == ["contradiccion"]
+    despues = salida_desde_catalogo("catalogo", catalog)
+    assert [e.id for e in despues.requisitos] == ["RQ-001"] and despues.hallazgos == []  # la contradicción no se aplicó

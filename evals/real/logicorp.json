@@ -1,0 +1,941 @@
+{
+ "nombre": "LogiCorp (real, anonimizado)",
+ "descripcion": "BORRADOR a validar por la product owner. Preventa de TechPartner y minutas del 24-08, 25-08 y 27-08-2026. Fuente: evals/real/esperados_*.anonimo.md y las minutas en data_real/fuentes.",
+ "nota_de_emparejamiento": "Un texto cumple un elemento si contiene todas las palabras de alguno de sus grupos (sin tildes ni mayúsculas). Regla determinística: no usa un modelo como juez.",
+ "requisitos": [
+  {
+   "id": "R01",
+   "texto": "Cada elección es un ambiente lógico aislado",
+   "grupos": [
+    [
+     "eleccion",
+     "aislad"
+    ],
+    [
+     "eleccion",
+     "independiente"
+    ]
+   ]
+  },
+  {
+   "id": "R02",
+   "texto": "Dos perfiles: Super Admin (vista consolidada) y Admin (una elección)",
+   "grupos": [
+    [
+     "super admin",
+     "consolidad"
+    ],
+    [
+     "perfil",
+     "super admin"
+    ]
+   ]
+  },
+  {
+   "id": "R03",
+   "texto": "El Admin puede crear una elección pero solo ve la que creó",
+   "grupos": [
+    [
+     "admin",
+     "crea",
+     "solo"
+    ],
+    [
+     "visibilidad",
+     "eleccion"
+    ]
+   ]
+  },
+  {
+   "id": "R04",
+   "texto": "Sin candado: los datos de la elección se editan hasta último momento",
+   "grupos": [
+    [
+     "sin",
+     "bloqueo",
+     "eleccion"
+    ],
+    [
+     "edicion",
+     "abierta"
+    ]
+   ]
+  },
+  {
+   "id": "R05",
+   "texto": "Carta Marina: carga masiva solo por Excel",
+   "grupos": [
+    [
+     "carta marina",
+     "excel",
+     "carga"
+    ]
+   ]
+  },
+  {
+   "id": "R06",
+   "texto": "Limpieza del Excel fuera del sistema; el sistema solo mapea columnas y persiste",
+   "grupos": [
+    [
+     "mapeo",
+     "simple"
+    ],
+    [
+     "limpieza",
+     "logicorp"
+    ]
+   ]
+  },
+  {
+   "id": "R07",
+   "texto": "Cada carga borra lo anterior de esa elección y escribe limpio",
+   "grupos": [
+    [
+     "borr",
+     "anterior"
+    ],
+    [
+     "reemplazo",
+     "total"
+    ],
+    [
+     "escritura",
+     "limpia"
+    ]
+   ]
+  },
+  {
+   "id": "R08",
+   "texto": "Ícono de lápiz para editar un campo sin volver a subir el Excel",
+   "grupos": [
+    [
+     "lapiz"
+    ]
+   ]
+  },
+  {
+   "id": "R09",
+   "texto": "Bloquear la carga si se repite ID de Escuela + Código de Mesa, indicando la fila",
+   "grupos": [
+    [
+     "duplicad",
+     "escuela",
+     "mesa"
+    ]
+   ]
+  },
+  {
+   "id": "R10",
+   "texto": "Maestro de autoridades: DNI obligatorio y único",
+   "grupos": [
+    [
+     "dni",
+     "autoridad",
+     "unico"
+    ],
+    [
+     "dni",
+     "autoridad",
+     "obligatori"
+    ]
+   ]
+  },
+  {
+   "id": "R11",
+   "texto": "Roles de autoridades configurables por elección",
+   "grupos": [
+    [
+     "roles",
+     "autoridad"
+    ],
+    [
+     "rol",
+     "configurable"
+    ]
+   ]
+  },
+  {
+   "id": "R12",
+   "texto": "Tres campos de contrato obligatorios en el alta de la elección",
+   "grupos": [
+    [
+     "contrato",
+     "obligatori"
+    ]
+   ]
+  },
+  {
+   "id": "R13",
+   "texto": "Integración por API con el TMS (DNI + Contrato)",
+   "grupos": [
+    [
+     "tms",
+     "api"
+    ]
+   ]
+  },
+  {
+   "id": "R14",
+   "texto": "Actualización automática de estados dos veces al día",
+   "grupos": [
+    [
+     "dos veces"
+    ]
+   ]
+  },
+  {
+   "id": "R15",
+   "texto": "Historial cronológico de hasta 3 notificaciones por DNI",
+   "grupos": [
+    [
+     "historial",
+     "notificacion"
+    ]
+   ]
+  },
+  {
+   "id": "R16",
+   "texto": "Autoridades por lotes (importación progresiva)",
+   "grupos": [
+    [
+     "lote"
+    ]
+   ]
+  },
+  {
+   "id": "R17",
+   "texto": "Pagos: carga masiva de órdenes del tribunal por Excel",
+   "grupos": [
+    [
+     "orden",
+     "pago",
+     "excel"
+    ],
+    [
+     "tribunal",
+     "excel"
+    ]
+   ]
+  },
+  {
+   "id": "R18",
+   "texto": "El monto es solo informativo; sin fórmulas de viáticos",
+   "grupos": [
+    [
+     "monto",
+     "informativo"
+    ],
+    [
+     "viatico"
+    ]
+   ]
+  },
+  {
+   "id": "R19",
+   "texto": "Conciliación: presentismo en tres cortes y autogestión QR, cruzado con las órdenes",
+   "grupos": [
+    [
+     "presentismo"
+    ]
+   ]
+  },
+  {
+   "id": "R20",
+   "texto": "Comprobantes: carga masiva de un ZIP con PDF individuales",
+   "grupos": [
+    [
+     "zip"
+    ]
+   ]
+  },
+  {
+   "id": "R21",
+   "texto": "Correo con enlace solo si la autoridad ya tiene su comprobante",
+   "grupos": [
+    [
+     "comprobante",
+     "correo"
+    ],
+    [
+     "notific",
+     "pago",
+     "comprobante"
+    ]
+   ]
+  },
+  {
+   "id": "R22",
+   "texto": "Mapa interactivo 2D de tráfico",
+   "grupos": [
+    [
+     "mapa",
+     "2d"
+    ]
+   ]
+  },
+  {
+   "id": "R23",
+   "texto": "Coordenadas precargadas desde la Carta Marina",
+   "grupos": [
+    [
+     "coordenada",
+     "carta marina"
+    ],
+    [
+     "latitud"
+    ]
+   ]
+  },
+  {
+   "id": "R24",
+   "texto": "Trazado de cobertura del nodo por polígono, con asociación automática",
+   "grupos": [
+    [
+     "poligono",
+     "nodo"
+    ]
+   ]
+  },
+  {
+   "id": "R25",
+   "texto": "Alta manual de nodo (título, descripción, dirección, geolocalización)",
+   "grupos": [
+    [
+     "alta",
+     "nodo"
+    ],
+    [
+     "formulario",
+     "nodo"
+    ],
+    [
+     "crear",
+     "nodo"
+    ]
+   ]
+  },
+  {
+   "id": "R26",
+   "texto": "Indicadores del nodo: establecimientos, urnas y radio",
+   "grupos": [
+    [
+     "urnas",
+     "nodo"
+    ],
+    [
+     "indicador",
+     "nodo"
+    ]
+   ]
+  },
+  {
+   "id": "R27",
+   "texto": "El radio de cobertura es solo informativo",
+   "grupos": [
+    [
+     "radio",
+     "informativo"
+    ]
+   ]
+  },
+  {
+   "id": "R28",
+   "texto": "«Ver geolocalización» centra el mapa con un pin",
+   "grupos": [
+    [
+     "pin"
+    ]
+   ]
+  },
+  {
+   "id": "R29",
+   "texto": "Asignación manual de establecimientos a nodos por desplegable",
+   "grupos": [
+    [
+     "desplegable",
+     "nodo"
+    ],
+    [
+     "asignacion manual",
+     "establecimiento"
+    ]
+   ]
+  },
+  {
+   "id": "R30",
+   "texto": "Botón «Guardar y Confirmar», sin autoguardado",
+   "grupos": [
+    [
+     "guardar y confirmar"
+    ],
+    [
+     "autoguardado"
+    ]
+   ]
+  },
+  {
+   "id": "R31",
+   "texto": "«Limpiar» borra solo el polígono elegido; sin «Deshacer»",
+   "grupos": [
+    [
+     "limpiar"
+    ]
+   ]
+  },
+  {
+   "id": "R32",
+   "texto": "Candados de bloqueo de edición por módulo, solo para el Super Admin",
+   "grupos": [
+    [
+     "candado"
+    ]
+   ]
+  },
+  {
+   "id": "R33",
+   "texto": "El backoffice solo recibe la nómina confirmada (reclutamiento externo)",
+   "grupos": [
+    [
+     "nomina"
+    ],
+    [
+     "receptor"
+    ]
+   ]
+  },
+  {
+   "id": "R34",
+   "texto": "Nómina por Excel de columnas fijas, sin mapeo dinámico",
+   "grupos": [
+    [
+     "columnas fijas"
+    ],
+    [
+     "estructura",
+     "fija"
+    ]
+   ]
+  },
+  {
+   "id": "R35",
+   "texto": "Maestro de personal con DNI único y movilidad propia (SÍ/NO)",
+   "grupos": [
+    [
+     "movilidad"
+    ]
+   ]
+  },
+  {
+   "id": "R36",
+   "texto": "Importación de personal acumulativa",
+   "grupos": [
+    [
+     "acumulativ"
+    ]
+   ]
+  },
+  {
+   "id": "R37",
+   "texto": "Bajas individuales manuales en la grilla",
+   "grupos": [
+    [
+     "baja",
+     "manual"
+    ]
+   ]
+  },
+  {
+   "id": "R38",
+   "texto": "Se quita la columna «Estado» de la grilla de personal",
+   "grupos": [
+    [
+     "columna",
+     "estado"
+    ]
+   ]
+  },
+  {
+   "id": "R39",
+   "texto": "Bloqueo de la importación de personal por DNI duplicado o error de formato",
+   "grupos": [
+    [
+     "dni",
+     "duplicad",
+     "formato"
+    ],
+    [
+     "dni",
+     "duplicad",
+     "personal"
+    ]
+   ]
+  },
+  {
+   "id": "R40",
+   "texto": "La tarea se compone de pasos secuenciales obligatorios",
+   "grupos": [
+    [
+     "paso",
+     "secuencial"
+    ]
+   ]
+  },
+  {
+   "id": "R41",
+   "texto": "Bloqueo por dependencias y franja horaria",
+   "grupos": [
+    [
+     "dependencia"
+    ],
+    [
+     "franja",
+     "horari"
+    ],
+    [
+     "tareas futuras"
+    ]
+   ]
+  },
+  {
+   "id": "R42",
+   "texto": "Categorías de tareas y alta de categoría desde la lista",
+   "grupos": [
+    [
+     "categori",
+     "tarea"
+    ]
+   ]
+  },
+  {
+   "id": "R43",
+   "texto": "El MVP se limita al personal de LogiCorp (sin transportistas)",
+   "grupos": [
+    [
+     "transportista"
+    ]
+   ]
+  },
+  {
+   "id": "R44",
+   "texto": "Solo un rol administrador superior crea y edita tareas y templates",
+   "grupos": [
+    [
+     "rol",
+     "jerarquic"
+    ],
+    [
+     "administrador",
+     "template"
+    ],
+    [
+     "restringid",
+     "rol"
+    ]
+   ]
+  },
+  {
+   "id": "R45",
+   "texto": "Campos estándar (texto corto, largo, numérico)",
+   "grupos": [
+    [
+     "texto corto"
+    ],
+    [
+     "campo",
+     "numerico"
+    ]
+   ]
+  },
+  {
+   "id": "R46",
+   "texto": "Escaneo de DNI local y offline con sincronización en segundo plano",
+   "grupos": [
+    [
+     "offline"
+    ],
+    [
+     "segundo plano"
+    ]
+   ]
+  },
+  {
+   "id": "R47",
+   "texto": "El template es la plantilla; la tarea es su instancia por elección",
+   "grupos": [
+    [
+     "template",
+     "instancia"
+    ],
+    [
+     "tarea",
+     "template",
+     "elecc"
+    ]
+   ]
+  },
+  {
+   "id": "R48",
+   "texto": "Repositorio global de templates y copia local por elección",
+   "grupos": [
+    [
+     "repositorio",
+     "global"
+    ],
+    [
+     "clon",
+     "template"
+    ]
+   ]
+  }
+ ],
+ "opcionales": [
+  {
+   "id": "O01",
+   "texto": "Autocompletado por escaneo de DNI con campo editable para corregir el OCR",
+   "grupos": [
+    [
+     "ocr"
+    ]
+   ]
+  },
+  {
+   "id": "O02",
+   "texto": "Escaneo limitado a DNI argentino válido",
+   "grupos": [
+    [
+     "dni argentino"
+    ],
+    [
+     "extranjero"
+    ]
+   ]
+  },
+  {
+   "id": "O03",
+   "texto": "Maestro de Materiales en standby (abierto, no firme)",
+   "grupos": [
+    [
+     "material"
+    ]
+   ]
+  },
+  {
+   "id": "O04",
+   "texto": "Pasarelas de pago o bancos a confirmar (abierto)",
+   "grupos": [
+    [
+     "pasarela"
+    ],
+    [
+     "banco"
+    ]
+   ]
+  },
+  {
+   "id": "O05",
+   "texto": "Nomenclatura de los PDF de comprobantes, pendiente",
+   "grupos": [
+    [
+     "nomenclatura"
+    ]
+   ]
+  },
+  {
+   "id": "O06",
+   "texto": "Alcance del MVP limitado a la operativa del domingo",
+   "grupos": [
+    [
+     "domingo",
+     "mvp"
+    ]
+   ]
+  }
+ ],
+ "hallazgos": [
+  {
+   "id": "A1",
+   "texto": "Rutas, recorridos y optimizador de flota vendidos; M2 los deja fuera del MVP",
+   "grupos": [
+    [
+     "ruta",
+     "recorrido"
+    ]
+   ],
+   "tipo": "cambio de alcance",
+   "tipos_aceptados": [
+    "cambio_de_alcance",
+    "vendido_no_tratado",
+    "tratado_no_vendido",
+    "decision_evolucionada",
+    "contradiccion"
+   ]
+  },
+  {
+   "id": "A2",
+   "texto": "Material electoral vendido; M1/M2 lo dejan en standby o fuera",
+   "grupos": [
+    [
+     "material"
+    ]
+   ],
+   "tipo": "cambio de alcance",
+   "tipos_aceptados": [
+    "cambio_de_alcance",
+    "vendido_no_tratado",
+    "tratado_no_vendido",
+    "decision_evolucionada",
+    "contradiccion"
+   ]
+  },
+  {
+   "id": "A3",
+   "texto": "Reclutamiento, bot y alta de PA vendidos; M2: reclutamiento externo, solo se recibe la nómina",
+   "grupos": [
+    [
+     "reclutamiento"
+    ],
+    [
+     "nomina"
+    ]
+   ],
+   "tipo": "cambio de alcance",
+   "tipos_aceptados": [
+    "cambio_de_alcance",
+    "vendido_no_tratado",
+    "tratado_no_vendido",
+    "decision_evolucionada",
+    "contradiccion"
+   ]
+  },
+  {
+   "id": "A4",
+   "texto": "Asignación de PA por IA vendida; M2 la deja para otra tarjeta, solo manual",
+   "grupos": [
+    [
+     "asignacion",
+     "ia"
+    ],
+    [
+     "asignacion automatica"
+    ]
+   ],
+   "tipo": "cambio de alcance",
+   "tipos_aceptados": [
+    "cambio_de_alcance",
+    "vendido_no_tratado",
+    "tratado_no_vendido",
+    "decision_evolucionada",
+    "contradiccion"
+   ]
+  },
+  {
+   "id": "A5",
+   "texto": "Comprobantes: vendida la carga individual; M1 la reemplaza por un ZIP masivo",
+   "grupos": [
+    [
+     "zip"
+    ],
+    [
+     "comprobante",
+     "individual"
+    ]
+   ],
+   "tipo": "cambio de alcance",
+   "tipos_aceptados": [
+    "cambio_de_alcance",
+    "vendido_no_tratado",
+    "tratado_no_vendido",
+    "decision_evolucionada",
+    "contradiccion"
+   ]
+  },
+  {
+   "id": "A6",
+   "texto": "Impresión y emisión de piezas vendidas; M1 las excluye del MVP",
+   "grupos": [
+    [
+     "impresion"
+    ]
+   ],
+   "tipo": "cambio de alcance",
+   "tipos_aceptados": [
+    "cambio_de_alcance",
+    "vendido_no_tratado",
+    "tratado_no_vendido",
+    "decision_evolucionada",
+    "contradiccion"
+   ]
+  },
+  {
+   "id": "A7",
+   "texto": "Seguimiento DMS con 8 estados en tiempo real vendido; M1: 5 estados, dos veces al día, clave DNI + contrato",
+   "grupos": [
+    [
+     "dos veces"
+    ],
+    [
+     "tiempo real",
+     "estado"
+    ]
+   ],
+   "tipo": "cambio de alcance",
+   "tipos_aceptados": [
+    "cambio_de_alcance",
+    "vendido_no_tratado",
+    "tratado_no_vendido",
+    "decision_evolucionada",
+    "contradiccion"
+   ]
+  },
+  {
+   "id": "B1",
+   "texto": "La preventa ofrece replicar maestros para una nueva elección; M1 dice que cada elección se diseña desde cero",
+   "grupos": [
+    [
+     "replic"
+    ]
+   ],
+   "tipo": "contradicción",
+   "tipos_aceptados": [
+    "contradiccion",
+    "decision_evolucionada",
+    "cambio_de_alcance"
+   ]
+  },
+  {
+   "id": "B2",
+   "texto": "M1: sin candados, edición abierta. M2: candados por módulo del Super Admin",
+   "grupos": [
+    [
+     "candado"
+    ]
+   ],
+   "tipo": "contradicción",
+   "tipos_aceptados": [
+    "contradiccion",
+    "decision_evolucionada",
+    "cambio_de_alcance"
+   ]
+  },
+  {
+   "id": "B4",
+   "texto": "La preventa calcula la liquidación con Oracle HCM; M1: el sistema no calcula montos",
+   "grupos": [
+    [
+     "oracle"
+    ],
+    [
+     "liquidacion"
+    ],
+    [
+     "monto",
+     "calcul"
+    ]
+   ],
+   "tipo": "contradicción",
+   "tipos_aceptados": [
+    "contradiccion",
+    "decision_evolucionada",
+    "cambio_de_alcance"
+   ]
+  },
+  {
+   "id": "C2",
+   "texto": "M1 exige contratos obligatorios de urnas y material, que están fuera o en standby",
+   "grupos": [
+    [
+     "contrato",
+     "urna"
+    ]
+   ],
+   "tipo": "inconsistencia",
+   "tipos_aceptados": [
+    "contradiccion",
+    "decision_evolucionada",
+    "cambio_de_alcance"
+   ]
+  }
+ ],
+ "toleradas": [
+  {
+   "id": "T1",
+   "texto": "M2 dice que el Maestro de Materiales quedó fuera; M1 lo dejó en standby (lo cubre A2)",
+   "grupos": [
+    [
+     "material",
+     "standby"
+    ]
+   ]
+  },
+  {
+   "id": "T2",
+   "texto": "La preventa limita el LLM a dos módulos pero lista tres",
+   "grupos": [
+    [
+     "llm",
+     "modulo"
+    ]
+   ]
+  },
+  {
+   "id": "T3",
+   "texto": "La preventa ofrece plantillas de nota pero la impresión es manual",
+   "grupos": [
+    [
+     "plantilla",
+     "nota"
+    ]
+   ]
+  },
+  {
+   "id": "T4",
+   "texto": "Comprobantes y correo dependen de una nomenclatura sin definir",
+   "grupos": [
+    [
+     "nomenclatura"
+    ]
+   ]
+  },
+  {
+   "id": "T5",
+   "texto": "M2 A#1 dice «excluido» y «pendiente de confirmación» a la vez",
+   "grupos": [
+    [
+     "excluid",
+     "pendiente"
+    ]
+   ]
+  },
+  {
+   "id": "T6",
+   "texto": "Transportistas fuera del MVP (refuerza A3)",
+   "grupos": [
+    [
+     "transportista"
+    ]
+   ]
+  },
+  {
+   "id": "T7",
+   "texto": "Replicar una elección es riesgoso, pero se clonan templates (a validar)",
+   "grupos": [
+    [
+     "clon",
+     "template"
+    ]
+   ]
+  },
+  {
+   "id": "T8",
+   "texto": "El algoritmo heredado de escaneo de DNI está obsoleto (pendiente)",
+   "grupos": [
+    [
+     "algoritmo"
+    ],
+    [
+     "obsoleto"
+    ]
+   ]
+  }
+ ]
+}

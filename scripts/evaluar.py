@@ -23,7 +23,7 @@ from pathlib import Path
 from backlogguard.board import AgentRole
 from backlogguard.evaluation import cargar_verdad, puntuar
 from backlogguard.evaluation.baseline import correr_agente_unico
-from backlogguard.evaluation.outputs import fuentes_de, salida_desde_estado
+from backlogguard.evaluation.outputs import fuentes_de, salida_desde_catalogo, salida_desde_estado
 from backlogguard.evaluation.report import tabla_markdown
 from backlogguard.graph import load_state
 from backlogguard.graph.setup import build_run_deps, open_graph
@@ -69,7 +69,10 @@ def puntuar_corrida(options) -> int:
     state = load_state(graph, thread_id)
     print(f"Corrida {thread_id}: estado={state.get('status')} tokens={state.get('tokens', 0):,}")
     verdad = cargar_verdad(options.verdad)
-    salida = salida_desde_estado(options.nombre, state, deps.catalog)
+    if options.desde == "auto":
+        salida = salida_desde_estado(options.nombre, state, deps.catalog)
+    else:  # flujo con documentos propios: lo que propusieron los agentes, o lo que quedó aprobado
+        salida = salida_desde_catalogo(options.nombre, deps.catalog, state, propuestas=options.desde == "propuestas")
     resultado = puntuar(verdad, salida, fuentes_de(SourceLibrary(library_dir)))
     mostrar(resultado)
     print(f"\nGuardado en {guardar(resultado, Path(options.salida) if options.salida else None)}")
@@ -118,6 +121,8 @@ def main() -> int:
         if name == "puntuar":
             p.add_argument("--datos", default=str(ROOT / "data"), help="carpeta de datos de la corrida (corridas.sqlite y catalogo.sqlite)")
             p.add_argument("--corrida", help="thread_id; por defecto, la más reciente")
+            p.add_argument("--desde", choices=["auto", "propuestas", "catalogo"], default="auto",
+                           help="auto: como antes; propuestas: lo que propusieron los agentes al leer las reuniones; catalogo: lo aprobado")
     t = sub.add_parser("tabla")
     t.add_argument("--carpeta")
     options = parser.parse_args()

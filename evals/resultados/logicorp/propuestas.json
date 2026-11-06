@@ -1,0 +1,832 @@
+{
+  "variante": "propuestas",
+  "caso": "LogiCorp (real, anonimizado)",
+  "requisitos": {
+    "esperados": 48,
+    "encontrados": 45,
+    "faltantes": [
+      "R08",
+      "R29",
+      "R31"
+    ],
+    "inventados": [
+      "P-009",
+      "P-015",
+      "P-020",
+      "P-056",
+      "P-059"
+    ],
+    "duplicados": 7,
+    "opcionales": 3,
+    "recall": 0.938,
+    "precision": 0.917
+  },
+  "hallazgos": {
+    "esperados": 11,
+    "detectados": 1,
+    "no_detectados": [
+      "A1",
+      "A2",
+      "A3",
+      "A4",
+      "A5",
+      "A6",
+      "A7",
+      "B1",
+      "B4",
+      "C2"
+    ],
+    "falsas_alarmas": [
+      "P-046"
+    ],
+    "recall": 0.091,
+    "precision": 0.5
+  },
+  "citas": {
+    "total": 83,
+    "verificables": 83,
+    "tasa": 1.0,
+    "sin_citas": [],
+    "no_verificables": []
+  },
+  "inyeccion": null,
+  "tokens": 2164833,
+  "segundos": 0.0,
+  "errores": [],
+  "salida": {
+    "nombre": "propuestas",
+    "requisitos": [
+      {
+        "id": "P-001",
+        "texto": "Elecciones como entidades aisladas e independientes Configurar cada elección como entidad aislada e independiente, sin cruce ni contaminación de datos entre procesos electorales",
+        "citas": [
+          {
+            "quote": "Las elecciones se configuran como entidades aisladas e independientes",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          },
+          {
+            "quote": "Configurar nueva elección como red independiente",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-002",
+        "texto": "Perfiles Super Admin (consolidado) y Admin de elección Contar con dos perfiles de usuario: Super Admin con vista consolidada de todas las elecciones y Admin enfocado en una sola elección",
+        "citas": [
+          {
+            "quote": "Super Admin: Posee una visualización consolidada y en paralelo de todos los procesos de elecciones",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-003",
+        "texto": "Permisos de creación y visibilidad de elecciones por perfil El Super Admin visualiza y crea todas las elecciones; el Admin de elección puede crear una elección pero solo visualiza y administra la que creó",
+        "citas": [
+          {
+            "quote": "El Admin de elección también podrá crear una elección",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-004",
+        "texto": "Sin bloqueo temporal de datos de la elección No bloquear los datos de la elección: la edición de los parámetros permanece abierta hasta último momento, con carga progresiva",
+        "citas": [
+          {
+            "quote": "no se implementará una lógica de bloqueo o \"candado\" temporal para los datos de la elección",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-005",
+        "texto": "Carga masiva de Carta Marina solo por Excel La carga masiva de la Carta Marina se hace exclusivamente con un archivo Excel",
+        "citas": [
+          {
+            "quote": "El formato estándar y exclusivo para la carga masiva de la Carta Marina será un archivo Excel",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-006",
+        "texto": "Mapeo simple de columnas de Carta Marina; limpieza a cargo de LogiCorp El backoffice solo mapea columnas simples y persiste los datos de la Carta Marina; la limpieza y transformación del Excel la hace LogiCorp fuera del sistema",
+        "citas": [
+          {
+            "quote": "El sistema de backoffice se limitará a realizar un mapeo simple de las columnas y la persistencia de los datos.",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-007",
+        "texto": "Carga de Carta Marina con reemplazo total por elección Cada carga masiva de la Carta Marina borra por completo los datos existentes de esa elección y escribe de nuevo, sin solapamiento ni sobreescritura parcial",
+        "citas": [
+          {
+            "quote": "Cada carga masiva de la Carta Marina implicará un borrado completo de los datos existentes",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-008",
+        "texto": "Validar duplicados Escuela-Mesa al importar Carta Marina Bloquear la importación de la Carta Marina si se repiten combinaciones de ID de Escuela y Código de Mesa (Urna)",
+        "citas": [
+          {
+            "quote": "El sistema bloqueará la importación si se repiten combinaciones del ID de Escuela y Código de Mesa",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-009",
+        "texto": "Aviso en pantalla de duplicados indicando la fila del Excel Ante duplicados en la carga, notificar al operador en pantalla indicando explícitamente la fila del Excel con la duplicidad",
+        "citas": [
+          {
+            "quote": "indicando de forma explícita la fila del archivo Excel que presenta la duplicidad",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-010",
+        "texto": "Alcance del MVP limitado a la operativa del domingo electoral El alcance del MVP se limita a la operativa del domingo electoral; el Maestro de Materiales y la operación del sábado quedan pendientes/fuera",
+        "citas": [
+          {
+            "quote": "El alcance queda estrictamente limitado a la operativa del domingo electoral.",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-011",
+        "texto": "DNI obligatorio y único en el maestro de autoridades En el maestro de autoridades el DNI es obligatorio y único, sin admitir duplicados",
+        "citas": [
+          {
+            "quote": "El campo DNI es obligatorio y único",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-012",
+        "texto": "Sin otros campos obligatorios en el maestro de autoridades No establecer otros campos obligatorios en el maestro de autoridades además del DNI",
+        "citas": [
+          {
+            "quote": "No se establecerán otros campos obligatorios debido a la alta variabilidad",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-013",
+        "texto": "Roles de autoridades configurables por elección Lista configurable de roles de autoridades definida al crear cada elección, con un panel de creación de roles en la pantalla Datos de elección",
+        "citas": [
+          {
+            "quote": "un panel de creación de roles de autoridades",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-014",
+        "texto": "Integración por API con el TMS para el seguimiento de notificaciones Integrar por API con el TMS de LogiCorp para el seguimiento de notificaciones, en lugar de cargar archivos de tracking",
+        "citas": [
+          {
+            "quote": "se implementará una integración directa por API con el TMS de LogiCorp",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          },
+          {
+            "quote": "API de seguimiento de envios DMS",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          },
+          {
+            "quote": "consume la API de seguimiento del servicio DMS de LogiCorp para obtener en tiempo real el estado de cada pieza postal",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-015",
+        "texto": "Consulta al TMS por DNI y número de contrato para obtener el estado del envío Consultar al TMS por DNI del destinatario y Número de Contrato para obtener número de envío y estado de la notificación (enviada, entregada, no entregada, recibida, rechazada)",
+        "citas": [
+          {
+            "quote": "Consultando el DNI del destinatario y el Número de Contrato",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          },
+          {
+            "quote": "API de seguimiento de envios DMS",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          },
+          {
+            "quote": "consume la API de seguimiento del servicio DMS de LogiCorp para obtener en tiempo real el estado de cada pieza postal",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-016",
+        "texto": "Actualización automática del estado de notificaciones dos veces al día Actualizar automáticamente el estado de las notificaciones dos veces al día",
+        "citas": [
+          {
+            "quote": "actualizará de manera automática este estado de notificaciones dos veces al día",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-017",
+        "texto": "Campos obligatorios de números de contrato en el alta de elección Agregar obligatoriamente al alta de elección tres campos de texto de contratos: Notificaciones, Distribución de Urnas y Material Electoral",
+        "citas": [
+          {
+            "quote": "tres campos paramétricos de texto para registrar números de contratos específicos",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-018",
+        "texto": "Historial de estados de hasta 3 notificaciones por DNI Visualizar el historial cronológico de estados de hasta 3 notificaciones por DNI",
+        "citas": [
+          {
+            "quote": "historial completo de estados de hasta 3 notificaciones para un mismo DNI",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          },
+          {
+            "quote": "Consultar y exportar estados de envíos",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-019",
+        "texto": "Gestión de autoridades por lotes con importación progresiva Gestionar autoridades por Lotes (Batch), con importación progresiva y edición de un lote sin borrar ni sobreescribir los previos",
+        "citas": [
+          {
+            "quote": "importación progresiva mediante lotes aislados",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-020",
+        "texto": "Exclusión del MVP: plantillas de impresión, impresión centralizada y generación física de notificaciones Quedan fuera del MVP la edición de plantillas de impresión de notificaciones, la configuración de impresión centralizada y la generación física de notificaciones",
+        "citas": [
+          {
+            "quote": "quedan completamente fuera del alcance del proyecto MVP",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          },
+          {
+            "quote": "Configurar modelo de nota personalizable por elección/cliente",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          },
+          {
+            "quote": "Configurar plantilla con variables y branding básico",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          },
+          {
+            "quote": "Soporte a impresión en origen, en nodo, en sucursal destino o por",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          },
+          {
+            "quote": "La impresión de las piezas se realizará de forma manual",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-021",
+        "texto": "Monto informativo del tribunal, sin cálculo de montos ni viáticos El sistema no calcula montos ni viáticos; el monto es solo un campo informativo provisto por el tribunal",
+        "citas": [
+          {
+            "quote": "El sistema no calculará montos ni aplicará fórmulas de viáticos",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-022",
+        "texto": "Carga masiva por Excel de órdenes de pago del tribunal con mapeo dinámico Cargar masivamente por Excel las órdenes de pago del tribunal con mapeo dinámico de campos por elección",
+        "citas": [
+          {
+            "quote": "La carga de las órdenes del tribunal se ejecutará masivamente vía Excel",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-023",
+        "texto": "Cruce de presentismo y autogestión con órdenes de pago del tribunal Cruzar presentismo y registros de autogestión con las órdenes de pago autorizadas del tribunal para determinar a quién pagar",
+        "citas": [
+          {
+            "quote": "Esta información se cruza con las órdenes de pago autorizadas del tribunal",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-024",
+        "texto": "Carga de ZIP con comprobantes de pago individuales en PDF Cargar un archivo ZIP con todos los comprobantes de pago individuales en PDF",
+        "citas": [
+          {
+            "quote": "se cargará al sistema un archivo comprimido",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-025",
+        "texto": "Notificación de pago por correo a autoridades con enlace al comprobante Enviar correos de notificación de pago a las autoridades con enlace al portal de autogestión para ver y descargar el comprobante",
+        "citas": [
+          {
+            "quote": "envío de correos electrónicos de notificación a las autoridades",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          },
+          {
+            "quote": "Notificar pago rechazado o confirmado a la autoridad de mesa",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-026",
+        "texto": "Notificar el pago solo si el comprobante ya está cargado y asociado Habilitar la notificación de pago por correo solo si el registro de la autoridad ya tiene su comprobante cargado y asociado",
+        "citas": [
+          {
+            "quote": "si el registro de la autoridad ya posee su comprobante de pago cargado",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          },
+          {
+            "quote": "Notificar pago rechazado o confirmado a la autoridad de mesa",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-027",
+        "texto": "Presentismo en tres cortes el domingo y autogestión por QR para cargar CBU/Alias Registrar presentismo en tres cortes de control el domingo y autogestión por QR donde se carga CBU/Alias",
+        "citas": [
+          {
+            "quote": "registros de autogestión QR donde los operadores y reemplazantes cargan su CBU/Alias",
+            "source_name": "Minuta LogiCorp 24-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-028",
+        "texto": "Mapa interactivo 2D de tráfico de establecimientos Visualizar los establecimientos de forma interactiva en un mapa 2D de tráfico, sin relieve ni vista satelital",
+        "citas": [
+          {
+            "quote": "mapa con vista 2D de tráfico (excluyendo relieve y satelital)",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-029",
+        "texto": "Precarga de coordenadas de establecimientos desde la Carta Marina Precargar latitud y longitud de los establecimientos desde la Carta Marina de la elección",
+        "citas": [
+          {
+            "quote": "vendrán precargadas desde la Carta Marina de la elección",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-030",
+        "texto": "Trazado de cobertura de nodo por polígono con asociación automática de establecimientos Trazar la cobertura de un Nodo dibujando un polígono cerrado con clics continuos, asociando automáticamente al nodo los establecimientos contenidos en el área",
+        "citas": [
+          {
+            "quote": "todas las escuelas (Establecimientos) contenidas en el área se etiquetarán y asociarán automáticamente a ese Nodo",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-031",
+        "texto": "Alta manual de nodo con datos y geolocalización Alta manual de nodo con Título, Descripción, Dirección física y geolocalización manual",
+        "citas": [
+          {
+            "quote": "introduciendo un Título del Nodo, Descripción, Dirección física y su geolocalización manual",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          },
+          {
+            "quote": "Crear, editar y eliminar nodos, rutas y recorridos",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-032",
+        "texto": "Indicadores informativos del nodo: establecimientos, urnas y radio de cobertura Calcular y mostrar informativamente en el nodo: cantidad de establecimientos, total de urnas asociadas y radio de cobertura",
+        "citas": [
+          {
+            "quote": "calculará automáticamente y mostrará a nivel informativo: cantidad de establecimientos incluidos",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-033",
+        "texto": "Radio de cobertura del nodo solo informativo, sin restringir asignaciones El radio de cobertura es solo informativo y no restringe asignaciones a grandes distancias",
+        "citas": [
+          {
+            "quote": "no operará como una restricción lógica del sistema para impedir asignaciones",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-034",
+        "texto": "Ver geolocalización del nodo desde la grilla con pin en el mapa Función \"Ver geolocalización\" en la grilla que centra el mapa y muestra un pin en la ubicación del nodo",
+        "citas": [
+          {
+            "quote": "el mapa centrará la vista y mostrará con un marcador (\"pin\") la ubicación del nodo",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-035",
+        "texto": "Asignación manual de establecimientos a nodos desde la ficha del establecimiento Asignación o reasignación manual de establecimientos a nodos mediante un menú desplegable en la ficha del establecimiento, coexistiendo con el trazado de polígonos",
+        "citas": [
+          {
+            "quote": "mediante un menú desplegable en la ficha de cada establecimiento, el cual listará los nodos existentes",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-036",
+        "texto": "Persistencia de cambios geográficos con botón \"Guardar y Confirmar\" Persistir los cambios geográficos solo con un botón \"Guardar y Confirmar\", sin autoguardado parcial",
+        "citas": [
+          {
+            "quote": "pulsar un botón \"Guardar y Confirmar\" para persistir los cambios geográficos de la sesión",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-037",
+        "texto": "Botón \"Limpiar\" con selección del polígono/nodo a borrar, sin \"Deshacer\" Botón \"Limpiar\" que permite elegir qué polígono/nodo borrar; sin función \"Deshacer última acción\"",
+        "citas": [
+          {
+            "quote": "el botón \"Limpiar\" permitirá al usuario elegir específicamente qué polígono/nodo desea borrar",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-038",
+        "texto": "Backoffice como receptor y maestro de la nómina confirmada de personal El backoffice actúa como receptor y maestro de la nómina confirmada de personal para dar de alta usuarios móviles y asignarles tareas del domingo",
+        "citas": [
+          {
+            "quote": "actuar como receptor y maestro de la nómina confirmada",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-039",
+        "texto": "Importación de nómina de personal por Excel de columnas fijas Importar la nómina de personal mediante carga masiva de un Excel de estructura estática y columnas fijas, sin configurador de mapeo dinámico",
+        "citas": [
+          {
+            "quote": "carga masiva de un archivo Excel de estructura estática y de columnas fijas",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-040",
+        "texto": "Maestro de personal con DNI obligatorio y único y campos definidos Maestro de personal con Nombre, Apellido, DNI obligatorio y único, mail, edad, tipo de celular, teléfono, dirección, disponibilidad, rol del domingo y movilidad propia (SÍ/NO)",
+        "citas": [
+          {
+            "quote": "DNI (obligatorio y clave primaria de validación única)",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-041",
+        "texto": "Importación acumulativa de Excel de personal Cada importación de Excel de personal es acumulativa y suma registros a la base actual",
+        "citas": [
+          {
+            "quote": "cada importación de Excel de personal será acumulativa",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-042",
+        "texto": "Bajas individuales manuales de personal en la grilla de PA Las bajas individuales de personal se gestionan manualmente en la UI (grilla de PA)",
+        "citas": [
+          {
+            "quote": "Las bajas individuales se gestionarán de forma manual en la UI",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-043",
+        "texto": "Quitar columna \"Estado\" de la grilla de personal Retirar la columna \"Estado\" de la grilla de personal del backoffice",
+        "citas": [
+          {
+            "quote": "retirar la columna \"Estado\" (pendiente, contactado, preseleccionado)",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-044",
+        "texto": "Bloqueo de importación por DNI duplicado o error de formato, con aviso de fila y causa Bloquear la importación ante DNI duplicado o error de formato e informar en pantalla la fila exacta del Excel y la causa",
+        "citas": [
+          {
+            "quote": "la importación se bloqueará y se notificará en pantalla al operador detallando la fila exacta del Excel",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-047",
+        "texto": "Solo el Super Admin abre o cierra el candado de un módulo Solo el Super Admin puede abrir o cerrar el candado de un módulo",
+        "citas": [
+          {
+            "quote": "Únicamente el Super Admin dispondrá de los permisos de sistema",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-048",
+        "texto": "Bloqueo de tareas futuras hasta cumplir dependencias u horario El sistema debe bloquear la ejecución de hitos/tareas futuros hasta que se cumplan las dependencias o el horario establecido.",
+        "citas": [
+          {
+            "quote": "El sistema debe bloquear hitos futuros hasta que se cumplan las dependencias o el horario establecido.",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          },
+          {
+            "quote": "Bloquear visibilidad y ejecución de tarea fuera de la ventana horaria",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-049",
+        "texto": "Tareas compuestas por pasos secuenciales obligatorios Cada tarea se compone de pasos o acciones secuenciales obligatorias (ej. escanear DNI de escuela, sacar foto de fachada).",
+        "citas": [
+          {
+            "quote": "Cada tarea se compone internamente de pasos o acciones secuenciales obligatorias",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-050",
+        "texto": "Categorización de tareas para filtrar asignaciones y métricas Las tareas se organizan en categorías (Transporte, Digitalización, Supervisión) para filtrar al asignar tareas y visualizar métricas.",
+        "citas": [
+          {
+            "quote": "se acuerda mantener la categorización para facilitar el filtrado a la hora de asignar tareas a usuarios",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-051",
+        "texto": "Alta de categorías de tareas desde la lista desplegable Permitir crear nuevas categorías de tareas con un botón \"Agregar nueva\" dentro de la propia lista desplegable, sin pantallas de configuración externas.",
+        "citas": [
+          {
+            "quote": "un botón de \"Agregar nueva\" dentro de la propia lista desplegable de la UI",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-052",
+        "texto": "Tareas del domingo limitadas a PA en el MVP, sin Transportistas En el MVP las tareas del domingo se limitan al Personal de LogiCorp (PA); se mantiene el selector de roles pero el rol Transportistas queda excluido del alcance.",
+        "citas": [
+          {
+            "quote": "las tareas del domingo se limitarán de forma operativa al Personal de LogiCorp (PA)",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-053",
+        "texto": "Creación y edición de tareas restringida a rol jerárquico superior La creación y edición de tareas en el Backoffice se restringe a un rol jerárquico superior (Super Admin o Analistas designados), no a administradores locales o de nodo.",
+        "citas": [
+          {
+            "quote": "La creación y edición de tareas en el Backoffice se limitará a un rol jerárquico superior",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-054",
+        "texto": "Autocompletado por escaneo de DNI con campo editable para corregir OCR Al escanear el DNI, la app extrae Nombre, Apellido y DNI y autocompleta los datos, con un campo editable para corregir errores del OCR.",
+        "citas": [
+          {
+            "quote": "habilitando un campo editable por si el OCR comete errores",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          },
+          {
+            "quote": "Escanear DNI para toma de datos externos de autoridad",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-055",
+        "texto": "App offline-first con análisis local de DNI y sincronización en segundo plano La app móvil debe funcionar igual online u offline; el análisis del DNI se hace localmente en el dispositivo y las tareas se sincronizan en segundo plano al captar señal.",
+        "citas": [
+          {
+            "quote": "la sincronización de tareas se realizará en segundo plano una vez captada la señal",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          },
+          {
+            "quote": "Sincronizar automáticamente al recuperar conectividad",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          },
+          {
+            "quote": "La app detecta conectividad, envía la cola de eventos pendientes al",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-056",
+        "texto": "Validación local robusta de datos del DNI escaneado (tildes, Ñ, nombres compuestos) TechPartner debe analizar con Persona 5 el algoritmo de validación local de DNI y proponer un mecanismo robusto y optimizado para el MVP (tildes, Ñ, nombres compuestos).",
+        "citas": [
+          {
+            "quote": "TechPartner analizará con Persona 5 este desarrollo para proponer un mecanismo robusto y optimizado para el MVP",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-057",
+        "texto": "Escaneo de DNI limitado a DNI argentino válido El escaneo de DNI soporta DNI argentino válido (incluidos extranjeros nacionalizados); quedan fuera DNIs extranjeros sin validez electoral argentina.",
+        "citas": [
+          {
+            "quote": "descartándose del alcance DNIs extranjeros sin validez electoral argentina",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          },
+          {
+            "quote": "Escanear DNI para toma de datos externos de autoridad",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-058",
+        "texto": "Tarea como instancia por elección asociada a un template único La Tarea es la instancia de ejecución a nivel de elección que se asocia a un template único heredando su formulario, y contiene asignación, ruteo y despacho a operadores.",
+        "citas": [
+          {
+            "quote": "La tarea contiene la lógica de negocio secundaria como la asignación, los ruteos y el despacho a los operadores.",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-059",
+        "texto": "Template como estructura de formulario reutilizable El Template define la estructura técnica del formulario y el conjunto de campos o acciones requeridas, reutilizable entre tareas.",
+        "citas": [
+          {
+            "quote": "Define la estructura técnica atómica de la actividad",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          },
+          {
+            "quote": "Definir campos a completar (formulario con obligatorios/opcionales),",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-060",
+        "texto": "Repositorio global de templates editable solo por rol autorizado Scope Global: repositorio de templates reutilizables, editables solo por usuarios con rol autorizado.",
+        "citas": [
+          {
+            "quote": "las cuales solamente pueden ser editadas por un usuario con rol autorizado",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          },
+          {
+            "quote": "Crear catálogo de templates con nombre, descripción y tipo",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-061",
+        "texto": "Clonado local de templates globales por elección Scope Local: el usuario clona un template global a su elección y lo adapta localmente sin afectar los templates globales ni otras elecciones concurrentes.",
+        "citas": [
+          {
+            "quote": "el usuario busca un template genérico en el repositorio global y lo clona/duplica localmente a su elección",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          }
+        ],
+        "tipo": ""
+      },
+      {
+        "id": "P-062",
+        "texto": "Campos de formulario estándar en el MVP (texto corto, largo y numérico) En el MVP los campos de entrada son estándar (texto corto, texto largo y numérico), sin validaciones complejas de audio o video.",
+        "citas": [
+          {
+            "quote": "priorizando campos de entrada estándar (texto corto, texto largo y numérico)",
+            "source_name": "Minuta LogiCorp 27-08-2026"
+          },
+          {
+            "quote": "Definir campos a completar (formulario con obligatorios/opcionales),",
+            "source_name": "Propuesta TechPartner - Proyecto LogiCorp - DMS Elecciones"
+          }
+        ],
+        "tipo": ""
+      }
+    ],
+    "hallazgos": [
+      {
+        "id": "P-045",
+        "texto": "RQ-002 dice que los datos de la elección no se bloquean y que la edición queda abierta hasta último momento. El candidato introduce candados de bloqueo de edición por módulo. La reunión no aclara explícitamente que esto reemplace lo anterior. candados de bloqueo de edición configurable de forma independiente por módulo",
+        "citas": [
+          {
+            "quote": "candados de bloqueo de edición configurable de forma independiente por módulo",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": "contradiccion"
+      },
+      {
+        "id": "P-046",
+        "texto": "Permitir que el Super Admin bloquee la edición de un módulo completo, que pasa a solo lectura, se opone a RQ-002, que mantiene la edición abierta sin bloqueos. No queda explícito que lo reemplace. el Super Admin podrá bloquear la edición de un módulo completo",
+        "citas": [
+          {
+            "quote": "el Super Admin podrá bloquear la edición de un módulo completo",
+            "source_name": "Minuta LogiCorp 25-08-2026"
+          }
+        ],
+        "tipo": "contradiccion"
+      }
+    ],
+    "tokens": 2164833,
+    "segundos": 0.0,
+    "errores": []
+  }
+}
