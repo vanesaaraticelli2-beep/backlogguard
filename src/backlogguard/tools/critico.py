@@ -11,12 +11,11 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from backlogguard.board import EVIDENCE_TYPES, BacklogItem, Board, ItemKind, ItemState
+from backlogguard.board import EVIDENCE_TYPES, MAX_CRITERIA, BacklogItem, Board, ItemKind, ItemState
 from backlogguard.board.similarity import repeats
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 from backlogguard.tools.models import ToolResult
 
-MAX_CRITERIA = 12
 _STORY = re.compile(r"\bcomo\b.*\bquiero\b.*\bpara\b", re.IGNORECASE | re.DOTALL)
 _GHERKIN = re.compile(r"\b(dado|given)\b.*\b(cuando|when)\b.*\b(entonces|then)\b", re.IGNORECASE | re.DOTALL)
 _QUOTES = str.maketrans({"“": '"', "”": '"', "«": '"', "»": '"', "‘": "'", "’": "'"})
@@ -70,6 +69,13 @@ def check_citations(item: BacklogItem, retriever: InMemoryRetriever | QdrantRetr
         else:
             checks.append(CitationCheck(citation.fragment_id, True, "cita textual verificada"))
     return checks
+
+
+def _has_story(item: BacklogItem) -> bool:
+    """Los tres campos completos (como los exige `redactar_historia`); un ítem anterior a los campos se lee de su descripción."""
+    if all(p and p.strip() for p in (item.como, item.quiero, item.para)):
+        return True
+    return not any((item.como, item.quiero, item.para)) and bool(_STORY.search(item.description))
 
 
 def _fail(content: str, error_type: str) -> ToolResult:
@@ -143,8 +149,8 @@ class CriticToolkit:
             ),
             (
                 "formato_como_quiero_para",
-                item.kind is not ItemKind.HISTORIA or bool(_STORY.search(item.description)),
-                "la descripción de una historia debe decir Como … quiero … para …",
+                item.kind is not ItemKind.HISTORIA or _has_story(item),
+                "una historia lleva Como, quiero y para",
             ),
             (
                 "criterios_gherkin",

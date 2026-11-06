@@ -183,6 +183,7 @@ def test_la_cita_de_la_preventa_muestra_la_pagina_y_el_critico_la_verifica(tmp_p
     agreed = retriever.all_chunks({"source_type": "reunion"})[0]
     args = {
         "kind": "historia", "title": "Ingreso con SSO", "description": "Como cliente quiero ingresar con SSO para no crear usuarios.",
+        "como": "cliente", "quiero": "ingresar con SSO", "para": "no crear usuarios",
         "acceptance_criteria": ["Dado un cliente Cuando ingresa Entonces entra con SSO"],
         # la preventa acompaña (cita adicional); el respaldo acordado sale de la reunión
         "citations": [

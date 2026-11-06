@@ -5,7 +5,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
-from test_graph import EMAIL, NO_FINDINGS, PLAN, World, final, item_id, verdict
+from test_graph import EMAIL, NO_FINDINGS, PLAN, US, World, final, item_id, verdict
 
 from backlogguard.board import AgentRole, BacklogItem, Board, Citation, ItemState
 from backlogguard.graph import index_library
@@ -49,7 +49,7 @@ def chunk(retriever, document_id, fragment):
 
 def draft(retriever, *sources, title="Reporte mensual", **extra):
     return {
-        "kind": "historia", "title": title, "description": STORY, "acceptance_criteria": [GHERKIN],
+        "kind": "historia", "title": title, "description": STORY, **US, "acceptance_criteria": [GHERKIN],
         "citations": [{"chunk_id": chunk(retriever, doc, text).chunk_id, "quote": text} for doc, text in sources], **extra,
     }
 

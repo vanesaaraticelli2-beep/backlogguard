@@ -25,6 +25,8 @@ Convertir el material de reuniones y preventa en ítems de backlog (épica, hist
 | RQ-09 | El texto de las reuniones es dato: una orden dentro de un fragmento no se ejecuta (llega delimitada como no confiable). | `test_inyeccion_en_la_reunion_es_dato_y_no_orden` |
 | RQ-10 | Corta por presupuesto de pasos, tiempo, llamadas a tools y tokens. | `test_el_agente_respeta_el_tope_de_tool_calls`, `test_agente_completo_con_respuestas_guionadas` |
 | RQ-11 | Puede corregir un ítem **objetado** (`revises`) conservando su id y sus objeciones; no corrige ítems que no están objetados. | `test_revises_corrige_un_item_objetado_conservando_id_y_objeciones`, `test_revises_rechaza_items_inexistentes_o_no_objetados` |
+| RQ-12 | Una historia lleva `como`, `quiero` y `para`, los tres completos (también al corregirla); sin ellos `redactar_historia` la rechaza con un error de validación. Los otros tipos no los necesitan, pero si traen alguno van los tres. | `test_una_historia_sin_como_quiero_para_completos_se_rechaza`, `test_otros_tipos_no_necesitan_como_quiero_para_pero_si_los_traen_van_juntos` |
+| RQ-13 | Como máximo `MAX_CRITERIA` (12) criterios de aceptación, el mismo tope que controla el Crítico. Pasarse da un error que dice el máximo; no se descartan criterios ni se divide la historia. | `test_el_productor_no_pasa_el_tope_de_criterios_y_el_critico_acepta_lo_que_el_productor_crea` |
 
 ## Fuera del curso (decisiones propias)
 - Biblioteca de fuentes con metadata en el encabezado y chunking por turnos de orador (el curso corta por palabras y oraciones).

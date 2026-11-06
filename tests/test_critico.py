@@ -153,6 +153,21 @@ def test_dor_invest_marca_formato_gherkin_tamano_y_duplicados(world):
     assert failed == {"formato_como_quiero_para", "criterios_gherkin", "tamano_acotado", "sin_duplicados"}
 
 
+def test_dor_invest_lee_el_formato_de_los_campos_como_quiero_para(world):
+    retriever, board = world
+    citation = citation_for(retriever, "reunion_01_kickoff", "listado pedidos filtros")
+    add_item(board, citation, item_id="HU-1", title="Campos completos", description="Listado.", como="cliente", quiero="ver mis pedidos", para="seguirlos")
+    add_item(board, citation, item_id="HU-2", title="Un campo vacío", como="cliente", quiero="ver mis pedidos", para=" ")
+    add_item(board, citation, item_id="HU-3", title="Historia anterior a los campos")  # solo la descripción STORY
+    registry = critic_registry(retriever, board)
+
+    def formato(item_id):
+        report = json.loads(run_tool(registry, "evaluar_dor_invest", item_id=item_id).content)
+        return next(c["ok"] for c in report["controles"] if c["nombre"] == "formato_como_quiero_para")
+
+    assert (formato("HU-1"), formato("HU-2"), formato("HU-3")) == (True, False, True)
+
+
 def test_dor_invest_acepta_reglas_simples_si_hay_al_menos_un_escenario(world):
     retriever, board = world
     add_item(

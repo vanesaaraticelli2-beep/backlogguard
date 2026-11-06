@@ -30,6 +30,7 @@ POLICY = load_policy_config(ROOT / "config" / "policy.yaml")
 PEOPLE = load_people(ROOT / "config" / "people.yaml")
 GHERKIN = "Dado un cliente Cuando ocurre algo Entonces ve el resultado"
 STORY = "Como cliente quiero esta función para trabajar mejor."
+US = {"como": "cliente", "quiero": "esta función", "para": "trabajar mejor"}  # los campos de STORY, que `redactar_historia` exige
 MEETINGS = ["reunion_01_kickoff", "reunion_02_seguimiento", "reunion_03_refinamiento"]
 EMAIL = ("reunion_01_kickoff", "recibir un email con el nuevo estado")
 PDF = ("reunion_01_kickoff", "El reporte mensual lo necesitamos en PDF")
@@ -90,6 +91,7 @@ class World:
             "kind": "historia",
             "title": title,
             "description": STORY,
+            **US,
             "acceptance_criteria": [GHERKIN],
             "citations": [{"chunk_id": self.chunk(document_id, fragment).chunk_id, "quote": fragment}],
         }

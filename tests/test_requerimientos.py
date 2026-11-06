@@ -39,6 +39,7 @@ def draft_args(chunk, **overrides):
         "kind": "historia",
         "title": "Notificación por email",
         "description": "Como cliente quiero un email para saber el estado.",
+        "como": "cliente", "quiero": "un email", "para": "saber el estado",
         "acceptance_criteria": [GHERKIN],
         "citations": [{"chunk_id": chunk.chunk_id, "quote": "recibir un email con el nuevo estado"}],
     }
@@ -161,6 +162,7 @@ def test_agente_completo_con_respuestas_guionadas():
                 "redactar_historia",
                 kind="historia",
                 title="Notificación por email",
+                como="cliente", quiero="un email", para="saber el estado",
                 acceptance_criteria=[GHERKIN],
                 citations=[{"chunk_id": chunk_id, "quote": "recibir un email"}],
             ),

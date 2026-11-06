@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 from test_catalogo import approve_and_apply, draft
-from test_graph import EMAIL, GHERKIN, NO_FINDINGS, PDF, PLAN, STORY, World, final, tool
+from test_graph import EMAIL, GHERKIN, NO_FINDINGS, PDF, PLAN, STORY, US, World, final, tool
 
 from backlogguard.board import BacklogItem, Board, ItemKind, SourceType
 from backlogguard.catalog import Catalog, Draft, Evidence, Proposal, ProposalKind, RequirementStatus
@@ -52,7 +52,7 @@ def approve_requirement(world, title=TITLE, source=EMAIL, key="c1"):
 
 
 def write(requirement_id=RID, title=TITLE):
-    return tool("redactar_historia", kind="historia", title=title, description=STORY, acceptance_criteria=[GHERKIN], requirement_id=requirement_id)
+    return tool("redactar_historia", kind="historia", title=title, description=STORY, **US, acceptance_criteria=[GHERKIN], requirement_id=requirement_id)
 
 
 def verdict_of(item_id, kind="sustentado", *objections):
@@ -91,7 +91,7 @@ def test_la_historia_nace_del_requisito_aprobado_con_su_identidad_y_sus_citas(wo
 
 def test_el_modelo_no_puede_atribuir_una_historia_a_un_requisito_que_no_existe_o_no_esta_activo(world):
     toolkit = RequirementsToolkit(world.deps.library, world.retriever, Board(), world.catalog)
-    args = {"kind": "historia", "title": TITLE, "description": STORY, "acceptance_criteria": [GHERKIN], "citations": []}
+    args = {"kind": "historia", "title": TITLE, "description": STORY, **US, "acceptance_criteria": [GHERKIN], "citations": []}
     assert toolkit.redactar_historia({**args, "requirement_id": "RQ-009"}).metadata["error_type"] == "unknown_requirement"
     rid = approve_requirement(world)
     ok = toolkit.redactar_historia({**args, "requirement_id": rid})
@@ -113,8 +113,8 @@ EXCEL_SOURCE = ("reunion_02_seguimiento", "lo queremos en Excel")
 
 def test_sin_requisito_ni_cita_la_tool_sigue_exigiendo_una_cita():
     with pytest.raises(ValueError, match="al menos una cita"):
-        DraftArgs(kind="historia", title=TITLE, description=STORY, acceptance_criteria=[GHERKIN])
-    assert DraftArgs(kind="historia", title=TITLE, requirement_id=RID, acceptance_criteria=[GHERKIN]).citations == []
+        DraftArgs(kind="historia", title=TITLE, description=STORY, **US, acceptance_criteria=[GHERKIN])
+    assert DraftArgs(kind="historia", title=TITLE, **US, requirement_id=RID, acceptance_criteria=[GHERKIN]).citations == []
 
 
 def test_aprobar_el_plan_publica_y_anota_en_el_catalogo_que_version_quedo_publicada(world):
@@ -173,7 +173,7 @@ def test_la_evidencia_de_la_preventa_guardada_con_el_id_del_compromiso_se_resuel
     rid = approve_and_apply(world.catalog, world.catalog.propose(proposal)).affected[0]
     board = Board()
     toolkit = RequirementsToolkit(world.deps.library, world.retriever, board, world.catalog)
-    args = {"kind": "historia", "title": TITLE, "description": STORY, "acceptance_criteria": [GHERKIN], "citations": [], "requirement_id": rid}
+    args = {"kind": "historia", "title": TITLE, "description": STORY, **US, "acceptance_criteria": [GHERKIN], "citations": [], "requirement_id": rid}
     assert toolkit.redactar_historia(args).ok
     citations = board.items[ITEM].citations
     assert sorted(c.quote for c in citations) == sorted([world.chunk(*EMAIL).text.strip(), PREVENTA[1]])  # de la reunión, el fragmento completo; la que no se puede ubicar no se hereda
@@ -253,7 +253,7 @@ def test_la_historia_hereda_el_fragmento_completo_y_reemplaza_la_frase_suelta_de
     toolkit = RequirementsToolkit(world.deps.library, world.retriever, board, world.catalog)
     chunk = world.chunk(*EMAIL)
     partial = {"chunk_id": chunk.chunk_id, "quote": EMAIL[1]}  # el productor cita la misma frase corta
-    args = {"kind": "historia", "title": TITLE, "description": STORY, "acceptance_criteria": [GHERKIN], "citations": [partial], "requirement_id": rid}
+    args = {"kind": "historia", "title": TITLE, "description": STORY, **US, "acceptance_criteria": [GHERKIN], "citations": [partial], "requirement_id": rid}
     assert toolkit.redactar_historia(args).ok
     citations = board.items[ITEM].citations
     assert [c.quote for c in citations] == [chunk.text.strip()]  # una sola cita, la del fragmento completo

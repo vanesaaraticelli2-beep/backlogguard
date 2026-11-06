@@ -12,6 +12,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 MAX_ROUNDS = 2
+MAX_CRITERIA = 12  # tope de criterios de aceptación: el Productor no puede pasarlo y el Crítico lo controla
 
 
 class _Strict(BaseModel):

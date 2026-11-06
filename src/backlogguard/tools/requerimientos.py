@@ -15,7 +15,7 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator, model_validator
 
 from backlogguard.board.similarity import repeat_requirement
-from backlogguard.board import EVIDENCE_TYPES, BacklogItem, Board, Citation, ItemKind, ItemState, SourceType
+from backlogguard.board import EVIDENCE_TYPES, MAX_CRITERIA, BacklogItem, Board, Citation, ItemKind, ItemState, SourceType
 from backlogguard.catalog import Catalog, RequirementStatus
 from backlogguard.rag import SourceLibrary, SourceNotFound, build_chunks
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
@@ -93,7 +93,11 @@ class DraftArgs(_Args):
     @model_validator(mode="after")
     def _story(self) -> "DraftArgs":
         parts = [self.como, self.quiero, self.para]
-        if any(parts) and not all(p and p.strip() for p in parts):
+        if self.kind is ItemKind.HISTORIA:
+            missing = [name for name, p in zip(("como", "quiero", "para"), parts) if not (p and p.strip())]
+            if missing:
+                raise ValueError(f"una historia lleva Como, quiero y para, cada uno en su campo: falta(n) {', '.join(missing)}")
+        elif any(parts) and not all(p and p.strip() for p in parts):
             raise ValueError("Como, quiero y para van juntos: completá los tres")
         if self.kind in (ItemKind.HISTORIA, ItemKind.CASO_DE_PRUEBA) and not any(is_gherkin(c) for c in self.acceptance_criteria):
             raise ValueError("hace falta al menos un escenario Dado/Cuando/Entonces entre los criterios")
@@ -103,6 +107,11 @@ class DraftArgs(_Args):
     @classmethod
     def _criteria(cls, criteria: list[str]) -> list[str]:
         cleaned = [" ".join(c.split()) for c in criteria]
+        if len(cleaned) > MAX_CRITERIA:
+            raise ValueError(
+                f"{len(cleaned)} criterios; el máximo es {MAX_CRITERIA}. Uní los que verifican lo mismo; "
+                "si hay requisitos independientes con respaldo en las fuentes, mencionalo en tu respuesta final"
+            )
         for criterion in cleaned:
             if not 8 <= len(criterion) <= 500:
                 raise ValueError(f"cada criterio tiene entre 8 y 500 caracteres: {criterion[:60]!r}")

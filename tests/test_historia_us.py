@@ -1,4 +1,5 @@
 """La historia de usuario completa: Como/Quiero/Para, escenarios y reglas, Feature y el Word por historia."""
+import json
 from io import BytesIO
 
 import pytest
@@ -89,8 +90,8 @@ def draft_args(w, **extra):
 def test_una_historia_necesita_un_escenario_pero_acepta_reglas_y_arma_su_descripcion_con_como_quiero_para(toolkit):
     tk, board, w = toolkit
     with pytest.raises(ValueError, match="al menos un escenario"):
-        DraftArgs(**draft_args(w, acceptance_criteria=[RULE]))
-    with pytest.raises(ValueError, match="juntos"):
+        DraftArgs(**draft_args(w, como="cliente", quiero="recibir un email", para="enterarme del cambio", acceptance_criteria=[RULE]))
+    with pytest.raises(ValueError, match="falta\\(n\\) quiero, para"):
         DraftArgs(**draft_args(w, como="cliente", acceptance_criteria=[GHERKIN]))
     args = DraftArgs(**draft_args(w, como="cliente", quiero="recibir un email", para="enterarme del cambio", acceptance_criteria=[GHERKIN, RULE, RULE + " también"])).model_dump(mode="json")
     result = tk.redactar_historia(args)
@@ -98,6 +99,50 @@ def test_una_historia_necesita_un_escenario_pero_acepta_reglas_y_arma_su_descrip
     saved = board.items[result.metadata["item_id"]]
     assert saved.description == "Como cliente quiero recibir un email para enterarme del cambio." and (saved.como, saved.quiero, saved.para) == ("cliente", "recibir un email", "enterarme del cambio")
     assert len(saved.acceptance_criteria) == 3
+
+
+US = {"como": "cliente", "quiero": "recibir un email", "para": "enterarme del cambio"}
+
+
+def test_una_historia_sin_como_quiero_para_completos_se_rechaza(toolkit):
+    tk, board, w = toolkit
+    with pytest.raises(ValueError, match="falta\\(n\\) como, quiero, para"):
+        DraftArgs(**draft_args(w, description="Como cliente quiero un email para enterarme.", acceptance_criteria=[GHERKIN]))
+    with pytest.raises(ValueError, match="falta\\(n\\) para"):
+        DraftArgs(**draft_args(w, **{**US, "para": "   "}, acceptance_criteria=[GHERKIN]))
+    # la herramienta devuelve el error al modelo y no crea nada
+    from backlogguard.tools import ExecutionContext, ToolCall, ToolPolicy, build_catalog_registry
+
+    registry = build_catalog_registry(tk.implementations())
+    result = registry.run(
+        ToolCall(tool_name="redactar_historia", arguments=draft_args(w, como="cliente", quiero="", acceptance_criteria=[GHERKIN])),
+        context=ExecutionContext(user_id="u", role="requerimientos"), policy=ToolPolicy(),
+    )
+    assert not result.ok and result.metadata["error_type"] == "validation_error" and board.items == {}
+
+
+def test_otros_tipos_no_necesitan_como_quiero_para_pero_si_los_traen_van_juntos(toolkit):
+    _, _, w = toolkit
+    assert DraftArgs(**draft_args(w, kind="tarea", title="Configurar el servidor de correo")).como is None
+    with pytest.raises(ValueError, match="juntos"):
+        DraftArgs(**draft_args(w, kind="tarea", title="Configurar el servidor de correo", como="cliente"))
+
+
+def test_el_productor_no_pasa_el_tope_de_criterios_y_el_critico_acepta_lo_que_el_productor_crea(toolkit):
+    from backlogguard.board import MAX_CRITERIA
+    from backlogguard.tools import critico
+    from backlogguard.tools.critico import CriticToolkit
+
+    tk, board, w = toolkit
+    criteria = [GHERKIN] + [f"{RULE} número {n}" for n in range(1, MAX_CRITERIA)]
+    with pytest.raises(ValueError, match=f"{MAX_CRITERIA + 1} criterios; el máximo es {MAX_CRITERIA}"):
+        DraftArgs(**draft_args(w, **US, acceptance_criteria=criteria + [RULE + " de más"]))
+    result = tk.redactar_historia(DraftArgs(**draft_args(w, **US, acceptance_criteria=criteria)).model_dump(mode="json"))
+    assert result.ok and len(board.items[result.metadata["item_id"]].acceptance_criteria) == MAX_CRITERIA
+    report = CriticToolkit(w.retriever, board).evaluar_dor_invest({"item_id": result.metadata["item_id"]})
+    controls = {c["nombre"]: c["ok"] for c in json.loads(report.content)["controles"]}
+    assert controls["tamano_acotado"] and controls["formato_como_quiero_para"]
+    assert critico.MAX_CRITERIA is MAX_CRITERIA  # un solo valor para los dos agentes
 
 
 def test_el_productor_recibe_el_contexto_de_la_reunion_y_la_orden_de_cubrir_todos_los_escenarios(world, tmp_path):  # noqa: F811

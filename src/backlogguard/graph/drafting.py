@@ -6,6 +6,7 @@ llamada del productor agota su tope de tokens a mitad y ningún requisito queda 
 """
 from __future__ import annotations
 
+from backlogguard.board import MAX_CRITERIA
 from backlogguard.catalog import Requirement
 from backlogguard.rag.retrieval import InMemoryRetriever, QdrantRetriever
 
@@ -17,7 +18,8 @@ MAX_CONTEXT_CHARS = 1800
 
 GOAL = (
     "Redactá una historia por cada requisito aprobado de la lista, y ninguna más. Para cada uno usá redactar_historia con "
-    "requirement_id (RQ-nnn) y kind=historia, con `como`, `quiero` y `para` por separado, un título claro y los criterios de aceptación. "
+    "requirement_id (RQ-nnn) y kind=historia, con `como`, `quiero` y `para` por separado (los tres obligatorios), un título claro y "
+    f"los criterios de aceptación (como máximo {MAX_CRITERIA}). "
     "Identificá TODOS los escenarios que las fuentes mencionan para ese requisito: el camino normal, los errores, los casos borde, "
     "las validaciones y las reglas. Al menos uno va como Dado/Cuando/Entonces; los demás pueden ser una regla verificable en una frase. "
     "Para eso leé el contexto de cada requisito (lo que se dijo antes y después de la cita) y, si hace falta, buscá más en las fuentes. "

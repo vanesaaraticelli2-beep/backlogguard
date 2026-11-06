@@ -5,6 +5,7 @@ from backlogguard.board.checkpoint import (
 )
 from backlogguard.board.models import (
     ALLOWED_TRANSITIONS,
+    MAX_CRITERIA,
     MAX_ROUNDS,
     AgentMessage,
     AgentRole,
@@ -23,6 +24,7 @@ from backlogguard.board.models import (
 
 __all__ = [
     "ALLOWED_TRANSITIONS",
+    "MAX_CRITERIA",
     "MAX_ROUNDS",
     "AgentMessage",
     "AgentRole",

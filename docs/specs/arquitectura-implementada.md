@@ -349,7 +349,9 @@ flowchart TD
 - `redactar_historia` exige que cada `chunk_id` exista y construye la cita con
   metadata del fragmento, pero no comprueba que `quote` aparezca literalmente
   en su texto. La validación textual de la cita no forma parte de esta tool.
-- `acceptance_criteria` se valida como Gherkin en `DraftArgs`; el ítem se agrega
+- `acceptance_criteria` se valida en `DraftArgs` (al menos un Gherkin y como
+  máximo `MAX_CRITERIA` = 12, el tope del Crítico); una historia exige `como`,
+  `quiero` y `para` completos. El ítem se agrega
   al tablero en estado `BORRADOR`. El paso de producción no lo aprueba.
 - La búsqueda híbrida combina embeddings y BM25 mediante RRF; los embeddings
   dependen del `EmbeddingProvider` elegido en la configuración de runtime.
