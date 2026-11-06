@@ -75,12 +75,12 @@ def test_el_estado_de_la_corrida_es_verde_roja_o_ambar_y_la_pausa_nombra_al_rol(
     assert run_badge({}, running=False, error="boom").css == "warn"
     assert run_badge({}, running=False, error=None) is None
     assert "bg-status paused" in badge_html(paused) and "<script>" not in badge_html(run_badge({}, running=False, error=None, request_role="x", request_title="<script>"))
-    assert scroll_html([]).startswith('<div class="bg-scroll">')
+    assert scroll_html([]).startswith('<div class="bg-reg">') and "bg-reg-body latest" in scroll_html([])
 
 
-def test_el_encabezado_del_mensaje_nombra_solo_a_quien_habla():
+def test_cada_fila_del_registro_nombra_a_quien_emite_y_a_quien_recibe():
     from backlogguard.graph.conversation import Message
     from backlogguard.ui.conversation_view import message_html
 
-    html = message_html(Message("auditor", "supervisor", "Encontré 2 hallazgos."))
-    assert "Auditor" in html and "Supervisor" not in html and "→" not in html
+    html = message_html(Message("auditor", "supervisor", "Se detectaron 2 hallazgos."), 7)
+    assert 'class="bg-n">07<' in html and 'bg-from"><i style="--c:#0B6E8A"></i>Auditor' in html and 'bg-to"><i style="--c:#13056D"></i>Supervisor' in html

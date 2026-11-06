@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversación entre agentes</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+  :root { --indigo: #13056D; --green: #59AE01; --ink: #262730; --muted: #5d5b7a; --line: #dddcec; --soft: #f6f6fb; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; color: var(--ink); font-family: 'Source Sans 3', 'Segoe UI', sans-serif; font-size: 16px; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1, h3 { font-family: 'Outfit', 'Segoe UI', sans-serif; color: var(--indigo); }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h3 { font-size: 20px; margin: 28px 0 6px; }
+  .note { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+  .bg-top { background: var(--indigo); border-bottom: 5px solid var(--green); border-radius: 8px; padding: 14px 20px; margin-bottom: 18px; color: #fff;
+            font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 19px; display: flex; gap: 24px; align-items: center; }
+  .bg-top b { font-weight: 700; font-size: 22px; } .bg-top b span { color: #8fe03a; }
+  .where { display: inline-block; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+
+  /* Filtro y contador, como los controles de Streamlit */
+  .bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: end; margin: 6px 0 8px; }
+  .bar label { font-size: 14px; color: var(--ink); display: grid; gap: 4px; }
+  .bar select { font: inherit; font-size: 15px; padding: 7px 10px; border: 1px solid #c9c8d6; border-radius: 8px; background: #f0f2f6; min-width: 220px; }
+  .count { margin-left: auto; font-size: 14px; color: var(--muted); }
+
+  /* El registro: encabezado fijo y scroll mediano */
+  .reg { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .reg-head, .row { display: grid; grid-template-columns: 56px 150px 150px 1fr 120px; }
+  .reg-head { background: var(--soft); border-bottom: 1px solid var(--line); font-size: 13px; font-weight: 700; color: var(--muted);
+              text-transform: uppercase; letter-spacing: .05em; }
+  .reg-head div { padding: 8px 12px; }
+  .reg-body { height: 440px; overflow-y: auto; scroll-behavior: smooth; }
+  .row { border-bottom: 1px solid #ecebf4; font-size: 15px; }
+  .row:nth-child(even) { background: #fbfbfe; }
+  .row > div { padding: 10px 12px; min-width: 0; }
+  .n { font-family: 'Outfit', sans-serif; font-weight: 700; color: var(--indigo); font-variant-numeric: tabular-nums; }
+  .who { font-weight: 600; display: flex; align-items: baseline; gap: 7px; overflow-wrap: anywhere; }
+  .who i { width: 9px; height: 9px; border-radius: 2px; background: var(--c); flex: none; transform: translateY(-1px); }
+  .msg { overflow-wrap: anywhere; line-height: 1.45; }
+  .msg ul { margin: 6px 0 0; padding-left: 20px; }
+  .msg li { margin: 2px 0; }
+  .cite { margin: 8px 0 2px; padding: 8px 12px; background: #ebe9fb; border-left: 4px solid var(--indigo); border-radius: 0 6px 6px 0; font-size: 14px; }
+  .cite small { display: block; color: var(--muted); margin-top: 3px; }
+  .task { font-size: 13px; color: var(--muted); }
+  .tag { display: inline-block; border-radius: 4px; padding: 1px 8px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-top: 4px; }
+  .tag.ok { background: #e6f3d6; color: #2f6a0a; }
+  .tag.warn { background: #fff0d9; color: #a35a00; }
+  .tag.wait { background: #e1defa; color: var(--indigo); }
+  .row.hidden { display: none; }
+
+  .bg-status { display: flex; align-items: center; gap: 10px; border-radius: 8px; padding: 10px 16px; font-weight: 700; margin: 4px 0 10px; background: #e6f3d6; color: #2f6a0a; }
+  .bg-status .dot { width: 12px; height: 12px; border-radius: 50%; background: currentColor; }
+
+  table.cmp { border-collapse: collapse; width: 100%; font-size: 15px; margin-top: 6px; }
+  table.cmp th, table.cmp td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
+  table.cmp th { background: var(--soft); font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+
+  @media (max-width: 760px) {
+    .reg-head { display: none; }
+    .row { grid-template-columns: 44px 1fr; }
+    .row > .n { grid-row: span 4; }
+    .row > div { padding: 4px 10px; }
+    .row > .from::before { content: "De: "; color: var(--muted); font-weight: 400; }
+    .row > .to::before { content: "Para: "; color: var(--muted); font-weight: 400; }
+    .row { padding: 6px 0; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="bg-top"><b>CFO<span>TECH</span></b>Del dicho al backlog</div>
+  <h1>Ejemplo · Conversación entre agentes con diseño formal</h1>
+  <p class="note">Prototipo para aprobar antes de tocar la pantalla. Los datos son de ejemplo; en la aplicación salen de la corrida real. El mismo componente se usa en los dos lugares donde hoy aparece la conversación.</p>
+
+  <span class="where">Pestaña «Corrida» · en vivo</span>
+  <h3>Registro de la conversación entre agentes</h3>
+  <div class="bg-status"><span class="dot"></span>Terminada: todo salió bien.</div>
+  <div class="bar">
+    <label>Mostrar solo lo que emite o recibe
+      <select id="filter"><option value="">Todos los participantes</option></select>
+    </label>
+    <span class="count" id="count"></span>
+  </div>
+  <div class="reg">
+    <div class="reg-head"><div>N.º</div><div>De</div><div>Para</div><div>Mensaje</div><div>Referencia</div></div>
+    <div class="reg-body" id="body"></div>
+  </div>
+  <p class="note" style="margin-top:8px">En vivo, la caja se posiciona en el último mensaje y el número permite seguir el orden. En «Avanzado › Detalle de la corrida» se abre al principio. La caja mide 440 px de alto y el encabezado queda fijo.</p>
+
+  <h3>Cambio de redacción (tono formal)</h3>
+  <p class="note">Los mensajes salen de plantillas fijas (<code>graph/conversation.py</code>). Pasan de la primera persona coloquial a un registro impersonal. Algunos ejemplos:</p>
+  <table class="cmp">
+    <tr><th>Hoy</th><th>Propuesto</th></tr>
+    <tr><td>Te paso «Notificación por email del estado» para que la revises.</td><td>Se remite «Notificación por email del estado» para su revisión.</td></tr>
+    <tr><td>Listo: redacté 4 elementos, cada uno con su cita.</td><td>Redacción finalizada: 4 elementos, cada uno con su cita.</td></tr>
+    <tr><td>Tengo objeciones sobre «Reporte mensual en PDF»:</td><td>Se formulan objeciones sobre «Reporte mensual en PDF»:</td></tr>
+    <tr><td>Necesito que el service manager decida 1 cosa:</td><td>Se requiere la decisión del service manager sobre 1 asunto:</td></tr>
+    <tr><td>No encontré diferencias entre lo vendido y lo conversado.</td><td>No se detectaron diferencias entre lo vendido y lo conversado.</td></tr>
+  </table>
+</main>
+
+<script>
+const C = { "Persona": "#5D5B7A", "Supervisor": "#13056D", "Requerimientos": "#3F7D12", "Crítico": "#B26A00", "Auditor": "#0B6E8A",
+            "Integración": "#7A4B8F", "Equipo": "#5D5B7A", "Service manager": "#5D5B7A", "Ingeniero": "#5D5B7A" };
+const TAGS = { ok: "Conforme", warn: "Observación", wait: "En espera" };
+const EMAIL = ["Cuando un pedido cambia de estado, el cliente debe recibir un email con el nuevo estado.", "Reunión de kickoff · 16-03-2026"];
+const EXCEL = ["El reporte mensual lo necesitamos en PDF… En realidad, lo queremos en Excel.", "Reunión de seguimiento · 23-03-2026"];
+const M = [
+  ["Persona", "Supervisor", "Objetivo de la corrida: «Armar el backlog del portal ACME a partir de los requisitos aprobados».", "T-001"],
+  ["Supervisor", "Equipo", "Fuentes de trabajo: Reunión de kickoff y Reunión de seguimiento. Orden previsto: redacción (Requerimientos), revisión (Crítico) y auditoría (Auditor).", "T-001"],
+  ["Supervisor", "Requerimientos", "Redactar una historia por cada requisito aprobado: son 4. Cada historia hereda las citas ya verificadas.", "T-002"],
+  ["Requerimientos", "Supervisor", "Redacción finalizada: 4 elementos, cada uno con su cita.", "T-002", "ok"],
+  ["Requerimientos", "Crítico", "Se remite «Notificación por email del estado» para su revisión.", "T-003 · HU-RQ-001", "", EMAIL],
+  ["Crítico", "Requerimientos", "«Notificación por email del estado»: la cita respalda el contenido. Resultado: sustentada.", "T-003 · HU-RQ-001", "ok"],
+  ["Requerimientos", "Crítico", "Se remite «Reporte mensual en PDF» para su revisión.", "T-004 · HU-RQ-002", "", EXCEL],
+  ["Crítico", "Requerimientos", "Se formulan objeciones sobre «Reporte mensual en PDF»:", "T-004 · HU-RQ-002", "warn", null,
+    ["La reunión de seguimiento cambia el formato a Excel.", "Falta un criterio para el envío fuera de término."]],
+  ["Requerimientos", "Crítico", "Se corrigió «Reporte mensual en PDF» según las objeciones recibidas.", "T-005 · HU-RQ-002", "ok"],
+  ["Requerimientos", "Crítico", "Se remite «Reporte mensual en PDF» corregida (ronda 2).", "T-006 · HU-RQ-002"],
+  ["Crítico", "Requerimientos", "«Reporte mensual en PDF»: la cita respalda el contenido. Resultado: sustentada.", "T-006 · HU-RQ-002", "ok"],
+  ["Requerimientos", "Crítico", "Se remite «Ingreso con SSO corporativo» para su revisión.", "T-007 · HU-RQ-003", "", ["Vamos a entrar con el SSO de la empresa, no queremos usuarios nuevos.", "Reunión de kickoff · 16-03-2026"]],
+  ["Crítico", "Requerimientos", "«Ingreso con SSO corporativo»: la cita respalda el contenido. Resultado: sustentada.", "T-007 · HU-RQ-003", "ok"],
+  ["Supervisor", "Auditor", "Auditar lo redactado contra lo vendido y las decisiones vigentes.", "T-008"],
+  ["Auditor", "Supervisor", "Se detectaron 2 hallazgos para atender.", "T-008", "warn"],
+  ["Auditor", "Service manager", "Cambio de alcance en «Reporte mensual en PDF»: la preventa comprometía PDF y la reunión pide Excel.", "T-008", "", EXCEL],
+  ["Auditor", "Supervisor", "Tratado y no vendido: la aplicación móvil se mencionó en la reunión de seguimiento y no figura en la preventa.", "T-008"],
+  ["Supervisor", "Persona", "Se requiere la decisión del service manager sobre 1 asunto:", "T-009", "wait", null, ["Un cambio de alcance: «Reporte mensual en PDF»"]],
+  ["Service manager", "Supervisor", "Aprobado.", "T-009", "ok"],
+  ["Supervisor", "Integración", "Armar el plan de publicación con lo sustentado. No escribir todavía en el backlog.", "T-010"],
+  ["Integración", "Supervisor", "Plan listo: 3 para crear y 1 para actualizar. No se escribe nada hasta que una persona lo apruebe.", "T-010", "ok"],
+  ["Ingeniero", "Supervisor", "Plan aprobado.", "R-plan", "ok"],
+  ["Integración", "Supervisor", "Se publicaron 4 elementos en el backlog, con la misma versión aprobada.", "T-010", "ok"],
+];
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const who = n => `<i style="--c:${C[n] || "#5D5B7A"}"></i>${esc(n)}`;
+const body = document.getElementById("body");
+body.innerHTML = M.map(([from, to, text, ref, tone, cite, points], i) => `
+  <div class="row" data-from="${esc(from)}" data-to="${esc(to)}">
+    <div class="n">${String(i + 1).padStart(2, "0")}</div>
+    <div class="who from">${who(from)}</div>
+    <div class="who to">${who(to)}</div>
+    <div class="msg">${esc(text)}
+      ${points ? "<ul>" + points.map(p => `<li>${esc(p)}</li>`).join("") + "</ul>" : ""}
+      ${cite ? `<div class="cite">«${esc(cite[0])}»<small>${esc(cite[1])}</small></div>` : ""}
+    </div>
+    <div class="task">${esc(ref)}${tone ? `<br><span class="tag ${tone}">${TAGS[tone]}</span>` : ""}</div>
+  </div>`).join("");
+const names = [...new Set(M.flatMap(m => [m[0], m[1]]))].sort();
+const filter = document.getElementById("filter");
+filter.innerHTML += names.map(n => `<option>${esc(n)}</option>`).join("");
+function apply() {
+  const v = filter.value;
+  let shown = 0;
+  body.querySelectorAll(".row").forEach(r => {
+    const ok = !v || r.dataset.from === v || r.dataset.to === v;
+    r.classList.toggle("hidden", !ok); shown += ok;
+  });
+  document.getElementById("count").textContent = v ? `${shown} de ${M.length} mensajes` : `${M.length} mensajes`;
+}
+filter.addEventListener("change", apply);
+apply();
+body.scrollTop = body.scrollHeight; // en vivo: se ve lo último
+</script>
+</body>

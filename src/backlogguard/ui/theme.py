@@ -53,23 +53,40 @@ h1, h2, h3, h4 {{ font-family: 'Outfit', 'Segoe UI', sans-serif; color: {INDIGO}
 .us-text {{ padding: 8px 14px; overflow-wrap: anywhere; }}
 .us-criteria {{ background: #7db383; color: #fff; font-weight: 700; padding: 8px 14px; border-top: 1px solid #9fa8c4; }}
 .us-check {{ color: #2e9e5b; font-weight: 700; font-size: 20px; text-align: center; padding: 6px 4px; }}
-.bg-chat {{ display: grid; gap: 10px; margin: 8px 0 16px; }}
-.bg-msg {{ background: #fff; border: 1px solid #dddcec; border-left: 6px solid var(--c); border-radius: 8px; padding: 10px 14px; max-width: 920px; }}
-.bg-msg.warn {{ background: #fffaf0; }}
-.bg-msg.wait {{ background: #eef0ff; border-style: dashed; border-left-style: solid; }}
-.bg-head {{ font-size: 13px; color: #5d5b7a; }}
-.bg-head b {{ color: var(--c); font-family: 'Outfit', sans-serif; font-size: 15px; }}
-.bg-text {{ margin-top: 2px; overflow-wrap: anywhere; }}
-.bg-scroll {{ max-height: 520px; overflow-y: auto; display: flex; flex-direction: column-reverse; padding-right: 6px; border: 1px solid #dddcec; border-radius: 10px; background: #fbfbfe; }}
-.bg-scroll .bg-chat {{ margin: 0; padding: 10px; }}
+.bg-reg {{ border: 1px solid #dddcec; border-radius: 10px; overflow: hidden; margin: 6px 0 16px; background: #fff; }}
+.bg-reg-head, .bg-row {{ display: grid; grid-template-columns: 56px 150px 150px minmax(0, 1fr) 130px; }}
+.bg-reg-head {{ background: #f6f6fb; border-bottom: 1px solid #dddcec; font-size: 13px; font-weight: 700; color: #5d5b7a; text-transform: uppercase; letter-spacing: .05em; }}
+.bg-reg-head div {{ padding: 8px 12px; }}
+.bg-reg-body {{ height: 440px; overflow-y: auto; }}
+.bg-reg-body.latest {{ display: flex; flex-direction: column-reverse; }}
+.bg-row {{ border-bottom: 1px solid #ecebf4; font-size: 15px; }}
+.bg-row:nth-child(even) {{ background: #fbfbfe; }}
+.bg-row > div {{ padding: 10px 12px; min-width: 0; }}
+.bg-n {{ font-family: 'Outfit', sans-serif; font-weight: 700; color: {INDIGO}; font-variant-numeric: tabular-nums; }}
+.bg-who {{ font-weight: 600; overflow-wrap: anywhere; }}
+.bg-who i {{ display: inline-block; width: 9px; height: 9px; border-radius: 2px; background: var(--c); margin-right: 7px; }}
+.bg-text {{ overflow-wrap: anywhere; line-height: 1.45; }}
+.bg-text ul {{ margin: 6px 0 0; padding-left: 20px; }}
+.bg-cite {{ margin: 8px 0 2px; padding: 8px 12px; background: #ebe9fb; border-left: 4px solid {INDIGO}; border-radius: 0 6px 6px 0; font-size: 14px; }}
+.bg-cite small {{ display: block; color: #5d5b7a; margin-top: 3px; }}
+.bg-ref {{ font-size: 13px; color: #5d5b7a; overflow-wrap: anywhere; }}
+.bg-ref .bg-tag {{ margin-top: 4px; }}
+.bg-ref .bg-tag.ok {{ background: #e6f3d6; color: #2f6a0a; }}
+.bg-ref .bg-tag.warn {{ background: #fff0d9; color: #a35a00; }}
+.bg-ref .bg-tag.wait {{ background: #e1defa; color: {INDIGO}; }}
+@media (max-width: 760px) {{
+  .bg-reg-head {{ display: none; }}
+  .bg-row {{ grid-template-columns: 44px minmax(0, 1fr); padding: 6px 0; }}
+  .bg-row > .bg-n {{ grid-row: span 4; }}
+  .bg-row > div {{ padding: 4px 10px; }}
+  .bg-from::before {{ content: "De: "; font-weight: 400; color: #5d5b7a; }}
+  .bg-to::before {{ content: "Para: "; font-weight: 400; color: #5d5b7a; }}
+}}
 .bg-status {{ display: flex; align-items: center; gap: 10px; border-radius: 8px; padding: 10px 16px; font-weight: 700; font-size: 16px; margin: 4px 0 10px; }}
 .bg-status .dot {{ width: 12px; height: 12px; border-radius: 50%; background: currentColor; flex: none; }}
 .bg-status.ok {{ background: #e6f3d6; color: #2f6a0a; }}
 .bg-status.paused {{ background: #fde7e5; color: #b3261e; }}
 .bg-status.warn {{ background: #fff0d9; color: #a35a00; }}
-.bg-msg ul {{ margin: 6px 0 0; padding-left: 20px; }}
-.bg-q {{ margin: 8px 0 0; padding: 6px 12px; background: #ebe9fb; border-left: 4px solid #13056D; border-radius: 0 6px 6px 0; font-size: 14px; }}
-.bg-q small {{ display: block; color: #5d5b7a; margin-top: 2px; }}
 .bg-tag.ok {{ background: {GREEN}; color: #10270a; }}
 .bg-tag.no {{ background: #fde7e5; color: #b3261e; }}
 .bg-anchor {{ scroll-margin-top: 72px; height: 0; }}

@@ -47,7 +47,8 @@ def test_una_objecion_del_critico_se_lista_y_la_cita_se_atribuye_a_la_fuente_no_
     assert sent.quote == QUOTE and sent.quote_from == "Reunión de inicio" and "Ana" not in sent.quote_from
     assert objection.sender == "critico" and objection.points == ("el criterio 2 no es verificable", "falta la cita del rol")
     assert fixed.tone == "ok" and "corregida (ronda 2)" in resent.text and resent.quote == ""
-    assert ok.tone == "ok" and "Sustentado" in ok.text
+    assert ok.tone == "ok" and "Resultado: sustentada" in ok.text
+    assert {m.ref for m in messages} == {"US-001"}  # la historia va en la referencia, no en el texto
 
 
 def test_el_auditor_informa_hallazgos_y_pide_una_sola_decision_con_la_lista():
@@ -65,7 +66,7 @@ def test_el_auditor_informa_hallazgos_y_pide_una_sola_decision_con_la_lista():
     messages = build_conversation(s)
     found, hallazgo, discarded, ask = messages[1:]
     assert "1 hallazgo" in found.text and "Cambio de alcance" in hallazgo.text and hallazgo.quote == "podrá modificar el domicilio"
-    assert "Descarté 2 hallazgos" in discarded.text
+    assert "Se descartaron 2 hallazgos" in discarded.text
     assert ask.tone == "wait" and "service manager" in ask.text and ask.points == ("Un cambio de alcance: Cambio uno", "Algo que se vendió y no se trató: Falta tratar los filtros")
 
 
@@ -78,10 +79,10 @@ def test_las_decisiones_idénticas_seguidas_se_cuentan_juntas_y_el_plan_tiene_su
     ))
     assert texts(messages) == [
         "Aprobados los 3 pedidos.",
-        "Armá el plan de publicación con lo que quedó sustentado. Todavía no escribas nada en el backlog.",
+        "Armar el plan de publicación con lo sustentado. No escribir todavía en el backlog.",
         "Plan listo: 2 para crear. No se escribe nada hasta que una persona lo apruebe.",
         "Plan aprobado.",
-        "Publiqué 2 en el backlog, con la misma versión que aprobaron.",
+        "Se publicaron 2 elementos en el backlog, con la misma versión aprobada.",
     ]
     assert messages[0].sender == "Service manager" and messages[3].sender == "Product owner"
 
@@ -106,4 +107,31 @@ def test_el_html_escapa_el_texto_pero_respeta_el_negrita_del_resumen():
     messages = build_conversation(state([task(1, "persona", "supervisor", "resumir")], summary="**Listo** <script>alert(1)</script>"))
     html = message_html(messages[-1])
     assert "<script>" not in html and "<b>Listo</b>" in html and "&lt;script&gt;" in html
-    assert chat_html(messages).startswith('<div class="bg-chat">')
+    assert chat_html(messages).startswith('<div class="bg-reg">')
+
+
+def test_el_registro_numera_en_orden_y_un_filtro_conserva_el_numero_original():
+    messages = build_conversation(state([
+        task(1, "persona", "supervisor", "planificar", detail="Objetivo"),
+        task(2, "supervisor", "requerimientos", "redactar", detail="Ítems redactados: 1."),
+        task(3, "requerimientos", "critico", "revisar", "US-001", "sustentado", round=1),
+    ]))
+    html = chat_html(messages)
+    assert re.findall(r'class="bg-n">(\d+)<', html) == ["01", "02", "03", "04", "05", "06"]
+    assert "N.º" in html and "Referencia" in html and "T-003 · US-001" in html and "Conforme" in html
+    only_critic = [(n, m) for n, m in enumerate(messages, 1) if "critico" in (m.sender, m.receiver)]
+    assert re.findall(r'class="bg-n">(\d+)<', chat_html(only_critic)) == ["05", "06"]
+    assert 'bg-reg-body latest' in chat_html(messages, latest=True) and 'bg-reg-body latest' not in html
+
+
+def test_el_tono_es_formal_e_impersonal():
+    messages = build_conversation(state([
+        task(1, "persona", "supervisor", "planificar", detail="Objetivo"),
+        task(2, "supervisor", "requerimientos", "redactar", detail="Ítems redactados: 2."),
+        task(3, "requerimientos", "critico", "revisar", "US-001", "objetado: falta un criterio", round=1),
+        task(4, "supervisor", "auditor", "auditar", detail="Hallazgos aplicados: 0; descartados: 0."),
+    ]))
+    everything = " ".join(m.text for m in messages)
+    assert "Se remite «Validar el CUIT antes de crear la cuenta» para su revisión." in everything
+    assert "Redacción finalizada: 2 elementos" in everything and "Se formulan objeciones" in everything
+    assert not re.search(r"\b(Te paso|Listo:|Tengo|Encontré|Necesito|Redactá|Auditá|Armá|pude|Publiqué|Corregí)\b", everything)

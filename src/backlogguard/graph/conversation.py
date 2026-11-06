@@ -7,7 +7,7 @@ sirve igual para una corrida en vivo y para una guardada.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from backlogguard.graph.live import NODE_TITLES
 
@@ -26,8 +26,8 @@ FINDING_LABELS = {
     "cambio_de_alcance": "Cambio de alcance", "contradiccion": "Contradicción", "tratado_no_vendido": "Tratado y no vendido",
     "vendido_no_tratado": "Vendido y no tratado", "decision_evolucionada": "Decisión que cambió",
 }
-DECISION_WORDS = {"approve": "Aprobado.", "reject": "Rechazado.", "edit": "Edité el pedido y lo vuelvo a enviar."}
-PLAN_WORDS = {"approve": "Plan aprobado.", "reject": "Plan rechazado: no se publica nada.", "edit": "Edité el plan: excluí algunos elementos y lo vuelvo a enviar."}
+DECISION_WORDS = {"approve": "Aprobado.", "reject": "Rechazado.", "edit": "Se editó el pedido y se reenvía."}
+PLAN_WORDS = {"approve": "Plan aprobado.", "reject": "Plan rechazado: no se publica nada.", "edit": "Se editó el plan: se excluyeron algunos elementos y se reenvía."}
 MAX_QUOTE = 220
 
 
@@ -41,6 +41,7 @@ class Message:
     points: tuple[str, ...] = ()
     tone: str = ""  # "", "ok", "warn" o "wait"
     task: str = ""
+    ref: str = ""  # id de la historia de la que se habla, si hay una en el tablero
 
 
 def _clip(text: str, limit: int) -> str:
@@ -99,7 +100,7 @@ def build_conversation(state: dict) -> list[Message]:
             d, count = group[0], len(group)
             who = _human(d["actor_role"]) if d["actor_role"] != "?" else "Persona"
             if not d["accepted"]:
-                out.append(Message(who, "supervisor", f"Mi decisión no se pudo registrar: {d.get('error') or 'formato inválido'}", tone="warn"))
+                out.append(Message(who, "supervisor", f"La decisión no pudo registrarse: {d.get('error') or 'formato inválido'}", tone="warn"))
                 continue
             words = (PLAN_WORDS if d["request_id"] == "R-plan" else DECISION_WORDS).get(d["decision"], d["decision"])
             if count > 1 and d["decision"] in ("approve", "reject"):
@@ -119,7 +120,8 @@ def build_conversation(state: dict) -> list[Message]:
         if kind == "armar_plan" and not decisions_said:
             say_decisions(before_plan)
             decisions_said = True
-        out.extend(_task_messages(task, kind, ref, facts, state))
+        item = ref if ref in facts.items else ""
+        out.extend(replace(m, ref=item) for m in _task_messages(task, kind, ref, facts, state))
         if kind == "armar_plan":
             out.extend(_plan_messages(state))
             say_decisions(plan_decisions)
@@ -140,9 +142,10 @@ def _task_messages(task: dict, kind: str, ref: str | None, facts: _Facts, state:
     if kind == "planificar":
         plan = state.get("plan") or {}
         sources = ", ".join(plan.get("sources", [])) or "las fuentes cargadas"
+        order = "redacción (Requerimientos), revisión (Crítico) y auditoría (Auditor)"
         plan_text = (
-            f"Voy a trabajar con: {sources}. Primero redacta Requerimientos, después revisa el Crítico y al final audita el Auditor."
-            if not plan.get("used_default") else "No pude armar un plan propio, así que sigo el plan por defecto. Redacta Requerimientos, revisa el Crítico y audita el Auditor."
+            f"Fuentes de trabajo: {sources}. Orden previsto: {order}."
+            if not plan.get("used_default") else f"No fue posible armar un plan propio; se sigue el plan por defecto: {order}."
         )
         return [Message("persona", "supervisor", f"Objetivo de la corrida: «{_clip(detail, 300)}»", task=tid), Message("supervisor", "equipo", plan_text, task=tid)]
     if kind == "redactar":
@@ -150,57 +153,57 @@ def _task_messages(task: dict, kind: str, ref: str | None, facts: _Facts, state:
         approved = re.search(r"Requisitos aprobados por redactar: (\d+)(?: \(quedan (\d+) para la próxima corrida\))?", detail)
         if approved:
             rest = f" Quedan {approved.group(2)} para la próxima corrida." if approved.group(2) else ""
-            ask = Message("supervisor", "requerimientos", f"Redactá una historia por cada requisito aprobado: son {approved.group(1)}. Cada una lleva las citas que ya se verificaron.{rest}", task=tid)
+            ask = Message("supervisor", "requerimientos", f"Redactar una historia por cada requisito aprobado: son {approved.group(1)}. Cada historia hereda las citas ya verificadas.{rest}", task=tid)
             if approved.group(1) == "0":
-                return [ask, Message("requerimientos", "supervisor", "No hay nada nuevo para redactar: todo lo aprobado ya está publicado.", tone="ok", task=tid)]
+                return [ask, Message("requerimientos", "supervisor", "No hay elementos nuevos para redactar: todo lo aprobado ya está publicado.", tone="ok", task=tid)]
         else:
-            ask = Message("supervisor", "requerimientos", "Redactá las historias solo a partir de lo que se dijo en "
+            ask = Message("supervisor", "requerimientos", "Redactar las historias solo a partir de lo tratado en "
                           + (", ".join(sources) if sources else "las reuniones")
-                          + ". La preventa sirve para saber qué se vendió, pero no cuenta como evidencia.", task=tid)
+                          + ". La preventa indica lo vendido, pero no cuenta como evidencia.", task=tid)
         found = re.search(r"Ítems redactados: (\d+)", detail)
         count = int(found.group(1)) if found else len(facts.items)
         if status == "incompleta":
-            return [ask, Message("requerimientos", "supervisor", "Me quedé sin pasos o presupuesto antes de terminar. Puede haber requisitos sin cubrir.", tone="warn", task=tid)]
-        return [ask, Message("requerimientos", "supervisor", f"Listo: redacté {count} {'elemento' if count == 1 else 'elementos'}, cada uno con su cita.", tone="ok", task=tid)]
+            return [ask, Message("requerimientos", "supervisor", "La redacción quedó incompleta por falta de pasos o presupuesto. Puede haber requisitos sin cubrir.", tone="warn", task=tid)]
+        return [ask, Message("requerimientos", "supervisor", f"Redacción finalizada: {count} {'elemento' if count == 1 else 'elementos'}, cada uno con su cita.", tone="ok", task=tid)]
     if kind == "revisar":
         quote, quote_from = facts.quote(ref)
         round_ = task.get("round") or 1
-        send = Message("requerimientos", "critico", f"Te paso {t} para que la revises." if round_ == 1 else f"Te paso {t} corregida (ronda {round_}).",
+        send = Message("requerimientos", "critico", f"Se remite {t} para su revisión." if round_ == 1 else f"Se remite {t} corregida (ronda {round_}).",
                        quote=quote if round_ == 1 else "", quote_from=quote_from if round_ == 1 else "", task=tid)
         if status == "fallida":
-            return [send, Message("critico", "requerimientos", f"No pude terminar la revisión de {t}.", tone="warn", task=tid)]
+            return [send, Message("critico", "requerimientos", f"No fue posible completar la revisión de {t}.", tone="warn", task=tid)]
         if detail.startswith("sustentado"):
-            return [send, Message("critico", "requerimientos", f"{t}: la cita respalda lo que dice. Sustentado.", tone="ok", task=tid)]
-        return [send, Message("critico", "requerimientos", f"Tengo objeciones sobre {t}:", points=_points(detail.partition(":")[2]), tone="warn", task=tid)]
+            return [send, Message("critico", "requerimientos", f"{t}: la cita respalda el contenido. Resultado: sustentada.", tone="ok", task=tid)]
+        return [send, Message("critico", "requerimientos", f"Se formulan objeciones sobre {t}:", points=_points(detail.partition(":")[2]), tone="warn", task=tid)]
     if kind == "corregir":
         origin = task["origin"]
-        asks = [Message(origin, "requerimientos", f"Hay que corregir {t}:", points=_points(detail), task=tid)] if origin == "auditor" else []
+        asks = [Message(origin, "requerimientos", f"Se solicita corregir {t}:", points=_points(detail), task=tid)] if origin == "auditor" else []
         if status == "fallida":
-            return [*asks, Message("requerimientos", origin, f"No pude corregir {t}.", tone="warn", task=tid)]
+            return [*asks, Message("requerimientos", origin, f"No fue posible corregir {t}.", tone="warn", task=tid)]
         if status == "sin_correccion":
-            return [*asks, Message("requerimientos", origin, f"Intenté corregir {t}, pero no logré aplicar esos cambios.", tone="warn", task=tid)]
-        return [*asks, Message("requerimientos", origin, f"Corregí {t} según lo que me pediste.", tone="ok", task=tid)]
+            return [*asks, Message("requerimientos", origin, f"Se intentó corregir {t}, pero los cambios no pudieron aplicarse.", tone="warn", task=tid)]
+        return [*asks, Message("requerimientos", origin, f"Se corrigió {t} según las observaciones recibidas.", tone="ok", task=tid)]
     if kind == "auditar":
-        ask = Message("supervisor", "auditor", "Auditá lo redactado contra lo que se vendió y lo que ya se había acordado.", task=tid)
+        ask = Message("supervisor", "auditor", "Auditar lo redactado contra lo vendido y lo ya acordado.", task=tid)
         if status == "fallida":
-            return [ask, Message("auditor", "supervisor", "No pude completar la auditoría.", tone="warn", task=tid)]
+            return [ask, Message("auditor", "supervisor", "No fue posible completar la auditoría.", tone="warn", task=tid)]
         found = re.search(r"aplicados: (\d+); descartados: (\d+)", detail)
         applied, discarded = (int(found.group(1)), int(found.group(2))) if found else (len(facts.findings), 0)
         if not applied:
-            return [ask, Message("auditor", "supervisor", "No encontré diferencias entre lo vendido y lo conversado.", tone="ok", task=tid)]
-        reply = [Message("auditor", "supervisor", f"Encontré {applied} {'hallazgo' if applied == 1 else 'hallazgos'} para atender.", tone="warn", task=tid)]
+            return [ask, Message("auditor", "supervisor", "No se detectaron diferencias entre lo vendido y lo conversado.", tone="ok", task=tid)]
+        reply = [Message("auditor", "supervisor", f"Se detectaron {applied} {'hallazgo' if applied == 1 else 'hallazgos'} para atender.", tone="warn", task=tid)]
         for f in facts.findings:
             where = facts.title(f.get("item_id")) if f.get("item_id") else ""
             quote = _clip(f["citations"][0]["quote"], MAX_QUOTE) if f.get("citations") else ""
             reply.append(Message("auditor", f["addressee"], f"{FINDING_LABELS.get(f['kind'], f['kind'])}" + (f" en {where}" if where else "") + f": {_clip(f['description'], 260)}",
                                  quote=quote, task=tid))
         if discarded:
-            reply.append(Message("auditor", "supervisor", f"Descarté {discarded} {'hallazgo' if discarded == 1 else 'hallazgos'} que no se sostenían (sin cita válida o repetidos).", task=tid))
+            reply.append(Message("auditor", "supervisor", f"Se {'descartó' if discarded == 1 else 'descartaron'} {discarded} {'hallazgo' if discarded == 1 else 'hallazgos'} que no se sostenían (sin cita válida o repetidos).", task=tid))
         return [ask, *reply]
     if kind == "armar_plan":
-        return [Message("supervisor", "integracion", "Armá el plan de publicación con lo que quedó sustentado. Todavía no escribas nada en el backlog.", task=tid)]
+        return [Message("supervisor", "integracion", "Armar el plan de publicación con lo sustentado. No escribir todavía en el backlog.", task=tid)]
     if kind == "resumir":
-        return [Message("supervisor", "persona", state.get("summary") or "La corrida terminó.", tone="ok", task=tid)]
+        return [Message("supervisor", "persona", state.get("summary") or "La corrida finalizó.", tone="ok", task=tid)]
     return []
 
 
@@ -228,7 +231,7 @@ def _ask_messages(batch: list[dict], facts: _Facts) -> list[Message]:
             phrase = REASON_PHRASES.get(esc.get("reason", ""), "una decisión").capitalize()
             what = facts.title(esc.get("ref")) if esc.get("ref") in facts.items else _clip(esc.get("detail", "").lstrip("- "), 150)
             lines.append(f"{phrase}: {what}" if what else phrase)
-        text = f"Necesito que el {who} decida {len(lines)} {'cosa' if len(lines) == 1 else 'cosas'}:"
+        text = f"Se requiere la decisión del {who} sobre {len(lines)} {'asunto' if len(lines) == 1 else 'asuntos'}:"
         out.append(Message(batch[0]["origin"], "persona", text, points=tuple(lines), tone="wait", task=batch[0]["id"]))
     return out
 
@@ -237,7 +240,7 @@ def _plan_messages(state: dict) -> list[Message]:
     plan = state.get("publish_plan") or {}
     counts = plan.get("counts") or {}
     if not plan:
-        return [Message("integracion", "supervisor", "No pude armar el plan de publicación.", tone="warn")]
+        return [Message("integracion", "supervisor", "No fue posible armar el plan de publicación.", tone="warn")]
     parts = ", ".join(f"{n} para {action}" for action, n in counts.items() if n) or "nada para publicar"
     return [Message("integracion", "supervisor", f"Plan listo: {parts}. No se escribe nada hasta que una persona lo apruebe.", tone="ok")]
 
@@ -250,24 +253,24 @@ def _publication_messages(state: dict) -> list[Message]:
         return [Message("integracion", "supervisor", publication["error"], tone="warn")]
     written = sum(1 for r in publication.get("results", []) if r["outcome"] in ("publicado", "actualizado", "vinculado"))
     if publication.get("ok"):
-        return [Message("integracion", "supervisor", f"Publiqué {written} en el backlog, con la misma versión que aprobaron.", tone="ok")]
-    return [Message("integracion", "supervisor", f"Frené la publicación después de {written}. Revisá el detalle en «Backlog simulado».", tone="warn")]
+        return [Message("integracion", "supervisor", f"Se {'publicó' if written == 1 else 'publicaron'} {written} {'elemento' if written == 1 else 'elementos'} en el backlog, con la misma versión aprobada.", tone="ok")]
+    return [Message("integracion", "supervisor", f"La publicación se detuvo después de {written} {'elemento' if written == 1 else 'elementos'}. El detalle figura en «Backlog simulado».", tone="warn")]
 
 
 def _waiting(state: dict, facts: _Facts) -> list[Message]:
     status = state.get("status")
     if status == "plan_pendiente_de_aprobacion":
-        return [Message("supervisor", "persona", "El plan está listo y espera tu aprobación, acá mismo en «Corrida».", tone="wait")]
+        return [Message("supervisor", "persona", "El plan está listo y espera aprobación en la pestaña «Corrida».", tone="wait")]
     requests = state.get("requests") or []
     if status == "esperando_decision" and requests:
         first = requests[0]
-        return [Message("supervisor", "persona", f"Falta la decisión del {_human(first['decides']).lower()} sobre «{_clip(first['title'], 140)}». La corrida sigue apenas se decida (se responde en «Corrida»).", tone="wait")]
+        return [Message("supervisor", "persona", f"Falta la decisión del {_human(first['decides']).lower()} sobre «{_clip(first['title'], 140)}». La corrida continúa cuando se decida (se responde en «Corrida»).", tone="wait")]
     return []
 
 
 def _problems(state: dict) -> list[Message]:
     stop = state.get("stop_reason")
-    out = [Message("supervisor", "persona", "Corté la corrida porque se agotó el presupuesto. Puede haber elementos sin revisar.", tone="warn")] if stop else []
+    out = [Message("supervisor", "persona", "La corrida se detuvo por presupuesto agotado. Puede haber elementos sin revisar.", tone="warn")] if stop else []
     out += [
         Message("supervisor", "persona", f"Una etapa tuvo un problema y quedó registrada: {NODE_TITLES.get(e['node'], e['node']).lower()}.", tone="warn")
         for e in state.get("errors", [])
