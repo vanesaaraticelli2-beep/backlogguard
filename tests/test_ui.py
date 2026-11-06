@@ -71,6 +71,22 @@ def test_el_pedido_muestra_la_evidencia_y_las_acciones(screen):
     assert any(t.key and t.key.endswith("-titulo") for t in at.text_input)  # los campos editables existen
 
 
+def test_editar_va_en_un_bloque_aparte_de_aprobar_y_genera_una_version_nueva(screen):
+    at, controller = screen
+    start_and_wait(at, controller)
+    pick(at, "product_owner")
+    before = controller.pending()["request"]
+    editor = next(e for e in at.expander if e.label.startswith("Editar la historia"))
+    assert [b.key for b in editor.button] == ["editar"]  # «Aprobar» y «Rechazar» quedan fuera de la edición
+    title = next(t for t in editor.text_input if t.key.endswith("-titulo"))
+    title.input(before["payload"]["title"] + " (editada)")
+    editor.button[0].click().run()
+    assert controller.wait(30)
+    at.run()
+    after = controller.pending()["request"]
+    assert after["request_id"] == before["request_id"] and after["version"] == before["version"] + 1
+
+
 def test_decidir_en_la_pantalla_reanuda_la_corrida(screen):
     at, controller = screen
     start_and_wait(at, controller)

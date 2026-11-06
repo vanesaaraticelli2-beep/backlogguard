@@ -121,6 +121,13 @@ def decision_payload(request: dict, who, action: str, comment: str, edited: dict
     }
 
 
+EDIT_TITLES = {
+    "plan": "Excluir ítems del plan (genera una versión nueva para volver a revisar)",
+    "alcance": "Editar el texto de la decisión (genera una versión nueva)",
+    "item": "Editar la historia (genera una versión nueva)",
+}
+
+
 def edit_fields(request: dict) -> tuple[dict, dict]:
     """Campos editables según el tipo de pedido. Devuelve (valores actuales, valores ingresados)."""
     key = f"{request['request_id']}-v{request['version']}"
@@ -157,7 +164,8 @@ def plan_preview(payload: dict) -> None:
         with st.expander(plan_view.item_heading(item), expanded=len(items) <= 3 and item["action"] != "omitir"):
             st.markdown(plan_view.item_markdown(item, titles.get(item.get("parent_item_id") or "")))
     st.caption(
-        "Aprobar publica exactamente este plan. «Excluir del plan» saca ítems y genera una versión nueva para volver a revisar."
+        "Aprobar publica exactamente este plan. Para sacar ítems antes de publicar, usá «Excluir ítems del plan», debajo de tu decisión: "
+        "genera una versión nueva para volver a revisar."
     )
 
 
@@ -176,23 +184,29 @@ def decision_form(controller: RunController, who, payload: dict) -> None:
     if request["evidence"]:
         st.markdown("**Evidencia**")
         evidence_cards(request["evidence"])
-    with st.form(f"form-{request['request_id']}-v{request['version']}"):
-        current, typed = edit_fields(request)
-        comment = st.text_input("Comentario (opcional)", key=f"{request['request_id']}-v{request['version']}-comentario")
-        approve, edit, reject = st.columns(3)
+    key = f"{request['request_id']}-v{request['version']}"
+    # Decidir y editar son dos acciones distintas: cada una en su bloque, para que «Aprobar» no parezca parte de la edición.
+    st.markdown("**Tu decisión**")
+    with st.form(f"form-{key}"):
+        comment = st.text_input("Comentario (opcional)", key=f"{key}-comentario")
+        approve, reject, _ = st.columns(3)
         approved = approve.form_submit_button("Aprobar", type="primary", key="aprobar", width="stretch")
-        edited = edit.form_submit_button("Guardar edición (nueva versión)", key="editar", width="stretch")
         rejected = reject.form_submit_button("Rechazar", key="rechazar", width="stretch")
     if approved or rejected:
         controller.decide(decision_payload(request, who, "approve" if approved else "reject", comment, None))
         request_scroll(DECISION)
         st.rerun()
+    with st.expander(EDIT_TITLES.get(request["kind"], EDIT_TITLES["item"])):
+        with st.form(f"form-{key}-edicion", border=False):
+            current, typed = edit_fields(request)
+            edit_comment = st.text_input("Comentario de la edición (opcional)", key=f"{key}-comentario-edicion")
+            edited = st.form_submit_button("Guardar edición (nueva versión)", key="editar")
     if edited:
         changes = {name: value for name, value in typed.items() if value != current[name]}
         if not changes:
             st.warning("No cambiaste nada: no hay nada que editar.")
         else:
-            controller.decide(decision_payload(request, who, "edit", comment, changes))
+            controller.decide(decision_payload(request, who, "edit", edit_comment, changes))
             request_scroll(DECISION)
             st.rerun()
 

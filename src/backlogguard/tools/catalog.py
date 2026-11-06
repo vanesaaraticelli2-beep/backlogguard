@@ -14,6 +14,10 @@ from backlogguard.tools.models import ExecutionContext, ToolKind, ToolResult
 from backlogguard.tools.registry import ToolRegistry
 from backlogguard.tools.tool import Tool
 
+# La publicación escribe todo el plan en una sola llamada (decenas de work items, cada uno con su clave de idempotencia):
+# con el tope general de 3 s se cortaba a mitad de un plan de 33 historias. Contra Azure real cada alta es una llamada de red.
+PUBLISH_TIMEOUT_S = 300.0
+
 
 class ExecutePlanArgs(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -106,6 +110,7 @@ def build_catalog_registry(
                 idempotent=idempotent,
                 visible_roles={role},
                 authorize=approved_plan_guard if is_publish else (guard[0] if guard else None),
+                **({"timeout_s": PUBLISH_TIMEOUT_S} if is_publish else {}),
             )
         )
     return registry

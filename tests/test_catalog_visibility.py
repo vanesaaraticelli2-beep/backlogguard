@@ -101,3 +101,12 @@ def test_policy_yaml_coincide_con_el_codigo():
     for role, role_policy in config.roles.items():
         assert set(role_policy.kinds) == ToolPolicy.KINDS_BY_ROLE[role]
         assert set(role_policy.tools) == EXPECTED[role]
+
+
+def test_la_publicacion_tiene_tiempo_para_un_plan_grande_y_el_resto_conserva_el_tope_general():
+    """Con el tope general de 3 s, un plan de 33 historias se cortaba a mitad de la publicación."""
+    from backlogguard.tools.catalog import PUBLISH_TIMEOUT_S
+
+    tools = build_catalog_registry().tools
+    assert tools["ejecutar_plan_aprobado"].timeout_s == PUBLISH_TIMEOUT_S >= 60
+    assert {t.timeout_s for name, t in tools.items() if name != "ejecutar_plan_aprobado"} == {3.0}
