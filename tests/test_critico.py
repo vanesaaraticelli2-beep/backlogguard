@@ -52,6 +52,9 @@ def add_item(board, citation, item_id="HU-1", title="Reporte mensual en PDF", **
         "kind": "historia",
         "title": title,
         "description": STORY,
+        "como": "cliente",
+        "quiero": "ver mis pedidos",
+        "para": "seguirlos",
         "acceptance_criteria": [GHERKIN],
         "citations": [citation],
     }
@@ -146,6 +149,9 @@ def test_dor_invest_marca_formato_gherkin_tamano_y_duplicados(world):
         item_id="HU-2",
         title="Autenticación en el portal mediante SSO corporativo",
         description="Quiero entrar.",
+        como=None,
+        quiero=None,
+        para=None,
         acceptance_criteria=["debería andar bien"] * 13,
     )
     report = json.loads(run_tool(critic_registry(retriever, board), "evaluar_dor_invest", item_id="HU-2").content)
@@ -153,19 +159,23 @@ def test_dor_invest_marca_formato_gherkin_tamano_y_duplicados(world):
     assert failed == {"formato_como_quiero_para", "criterios_gherkin", "tamano_acotado", "sin_duplicados"}
 
 
-def test_dor_invest_lee_el_formato_de_los_campos_como_quiero_para(world):
+def test_dor_invest_exige_los_campos_como_quiero_para_aunque_la_descripcion_tenga_el_formato(world):
     retriever, board = world
     citation = citation_for(retriever, "reunion_01_kickoff", "listado pedidos filtros")
     add_item(board, citation, item_id="HU-1", title="Campos completos", description="Listado.", como="cliente", quiero="ver mis pedidos", para="seguirlos")
     add_item(board, citation, item_id="HU-2", title="Un campo vacío", como="cliente", quiero="ver mis pedidos", para=" ")
-    add_item(board, citation, item_id="HU-3", title="Historia anterior a los campos")  # solo la descripción STORY
+    add_item(
+        board, citation, item_id="HU-3", title="Historia antigua",
+        description="Como cliente quiero consultar mis pedidos para conocer su estado.",
+        como=None, quiero=None, para=None,
+    )
     registry = critic_registry(retriever, board)
 
     def formato(item_id):
         report = json.loads(run_tool(registry, "evaluar_dor_invest", item_id=item_id).content)
         return next(c["ok"] for c in report["controles"] if c["nombre"] == "formato_como_quiero_para")
 
-    assert (formato("HU-1"), formato("HU-2"), formato("HU-3")) == (True, False, True)
+    assert (formato("HU-1"), formato("HU-2"), formato("HU-3")) == (True, False, False)
 
 
 def test_dor_invest_acepta_reglas_simples_si_hay_al_menos_un_escenario(world):

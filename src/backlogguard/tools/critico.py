@@ -72,10 +72,8 @@ def check_citations(item: BacklogItem, retriever: InMemoryRetriever | QdrantRetr
 
 
 def _has_story(item: BacklogItem) -> bool:
-    """Los tres campos completos (como los exige `redactar_historia`); un ítem anterior a los campos se lee de su descripción."""
-    if all(p and p.strip() for p in (item.como, item.quiero, item.para)):
-        return True
-    return not any((item.como, item.quiero, item.para)) and bool(_STORY.search(item.description))
+    """Una historia debe tener los tres campos completos; no se infieren desde la descripción."""
+    return all(p and p.strip() for p in (item.como, item.quiero, item.para))
 
 
 def _fail(content: str, error_type: str) -> ToolResult:
