@@ -17,6 +17,8 @@ from backlogguard.graph import RunDeps, load_state, pending_request, resume_pipe
 from backlogguard.graph.live import format_event, format_trace
 from backlogguard.graph.setup import build_run_deps, has_user_sources, open_graph, user_sources_dir
 from backlogguard.llm import Settings
+from backlogguard.llm.model_config import ModelsConfig
+from backlogguard.llm.model_costs import load_effective_models, save_models_config
 from backlogguard.ui.decision_history import history
 
 DEFAULT_OBJECTIVE = "Armá el backlog a partir de las reuniones y auditalo contra la preventa."
@@ -172,6 +174,38 @@ class RunController:
         if self.thread_id is None:
             return {}
         return load_state(self.graph, self.thread_id) or {}
+
+    def runs_with_tasks(self) -> list[tuple[str, list[dict]]]:
+        """(corrida, tareas con sus tokens) de cada corrida guardada, de la más reciente a la más vieja."""
+        path = self.data_dir / "corridas.sqlite"
+        if not path.exists():
+            return []
+        try:
+            with closing(sqlite3.connect(f"file:{path.as_posix()}?mode=ro", uri=True)) as conn:
+                ids = [row[0] for row in conn.execute(
+                    "SELECT thread_id FROM checkpoints GROUP BY thread_id ORDER BY MAX(checkpoint_id) DESC"
+                ).fetchall()]
+        except sqlite3.OperationalError:
+            return []
+        return [
+            (tid, (self.graph.get_state({"configurable": {"thread_id": tid}}).values or {}).get("tasks", []))
+            for tid in ids
+        ]
+
+    def saved_tasks(self) -> list[list[dict]]:
+        """Las tareas de cada corrida guardada: de ahí sale la proporción entrada/salida por agente."""
+        return [tasks for _, tasks in self.runs_with_tasks()]
+
+    def models(self) -> ModelsConfig:
+        """Modelo por agente vigente para la próxima corrida (la elección del proyecto o config/models.yaml)."""
+        return load_effective_models(self.root, self.data_dir)
+
+    def apply_models(self, config: ModelsConfig) -> None:
+        """Guarda la elección en los datos del proyecto y rearma los proveedores para la próxima corrida."""
+        if self.running:
+            raise RuntimeError("No se pueden cambiar los modelos con una corrida en curso.")
+        save_models_config(config, self.data_dir / "models.yaml")
+        self._build()
 
     def list_runs(self) -> list[dict]:
         """Corridas guardadas en `data/corridas.sqlite` (de esta pantalla o de un script), la más reciente primero."""

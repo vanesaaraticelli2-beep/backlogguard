@@ -29,6 +29,8 @@ from backlogguard.ui.controller import DEFAULT_OBJECTIVE, RunController
 from backlogguard.ui.conversation_view import live_conversation, tab_conversation
 from backlogguard.ui import backlog_view, plan_view
 from backlogguard.ui.glossary import glossary_markdown
+from backlogguard.ui.models_view import models_card
+from backlogguard.ui.consumption_view import consumption_card
 from backlogguard.ui.guide import ADVANCED_TABS, AVANZADO, CORRIDA, DECISIONES, FUENTES, HELP, HISTORIAS, REVISION, TABS, render_guide
 from backlogguard.ui.revision import KIND_LABELS, tab_catalog, tab_review
 from backlogguard.ui.runtime import make_controller
@@ -286,6 +288,7 @@ def tab_run(controller: RunController, who) -> None:
         st.write(state["summary"])
     if state:
         st.caption(f"Tokens usados: {state.get('tokens', 0)}")
+        consumption_card(controller, state.get("tasks", []))
     errors = state.get("errors", [])
     problem = first_explained([e["error"] for e in errors])
     if problem:
@@ -897,6 +900,7 @@ def main() -> None:
     st.sidebar.caption(f"Modo: {controller.mode}")
     with st.sidebar.expander("Referencia de siglas"):
         st.markdown(glossary_markdown())
+    models_card(controller)
     if controller.using_own_sources:
         st.sidebar.divider()
         st.sidebar.caption("El catálogo, las decisiones y lo publicado se conservan entre corridas.")

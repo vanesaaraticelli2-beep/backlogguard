@@ -1,8 +1,19 @@
-# USD por millón de tokens, para estimar el costo de una corrida (fuera del curso).
-# Claude: precios vigentes al 2026-10-06, a verificar en el proveedor antes de citar cifras.
+# USD por millón de tokens, para estimar el costo de una corrida y para la tarjeta «Modelos y costos».
+# Claude: tarifas de la API de Anthropic al 2026-11-03 (tabla de modelos actuales), a verificar antes de citar cifras.
+# Fuera de la lista: Claude Mythos (solo organizaciones verificadas).
 # Un modelo sin precio acá se muestra como "sin precio": el costo no se inventa.
 models:
+  claude-fable-5-2: {input: 8.00, output: 40.00}
+  claude-fable-5-1: {input: 10.00, output: 50.00}
+  claude-fable-5: {input: 10.00, output: 50.00}
   claude-opus-5-5: {input: 4.00, output: 20.00}
+  claude-opus-5: {input: 5.00, output: 25.00}
+  claude-opus-4-8: {input: 5.00, output: 25.00}
+  claude-opus-4-7: {input: 5.00, output: 25.00}
+  claude-opus-4-6: {input: 5.00, output: 25.00}
   claude-sonnet-5-5: {input: 2.00, output: 10.00}
+  claude-sonnet-5: {input: 2.00, output: 10.00}
+  claude-sonnet-4-6: {input: 3.00, output: 15.00}
   claude-haiku-5-5: {input: 0.10, output: 0.50}
+  claude-haiku-4-5: {input: 1.00, output: 5.00}
   gemini-3.8-flash: {input: 0.25, output: 1.50}

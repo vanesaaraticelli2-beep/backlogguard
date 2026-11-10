@@ -17,7 +17,8 @@ from backlogguard.graph.builder import build_graph, sqlite_checkpointer
 from backlogguard.graph.deps import Providers, RunDeps, build_providers
 from backlogguard.hitl import load_people
 from backlogguard.integrations import PublicationLedger, SimulatedBacklog
-from backlogguard.llm import Settings, load_models_config
+from backlogguard.llm import Settings
+from backlogguard.llm.model_costs import load_effective_models
 from backlogguard.llm.recording import Recording, replay_providers
 from backlogguard.memory import ProjectMemory
 from backlogguard.rag import DeterministicLexicalEmbeddings, InMemoryRetriever, SourceLibrary
@@ -63,7 +64,7 @@ def build_run_deps(
     if providers is not None or replay is not None or not settings.live_mode:
         # Respuestas guionadas o grabadas se consumen en orden por agente: en paralelo ese orden no está garantizado.
         budget = budget.model_copy(update={"max_parallel_reviews": 1})
-    providers = providers or build_providers(load_models_config(root / "config" / "models.yaml"), settings)
+    providers = providers or build_providers(load_effective_models(root, data), settings)  # la elección del proyecto, si hay
     providers = ablate(providers, parse_ablation(os.environ.get(ABLATION_ENV)))  # evaluación: retirar al Crítico o al Auditor
     return RunDeps(
         providers=providers,

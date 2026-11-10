@@ -154,3 +154,49 @@ def summarize_tasks(tasks: list[dict], pricing: dict | None = None) -> dict:
             for (origin, target), row in sorted(by_pair.items(), key=lambda kv: -kv[1]["tokens"])
         ],
     }
+
+
+# ---- consumo por agente (tarjeta de la sección Corrida) ----
+
+AGENT_ORDER = ("supervisor", "requerimientos", "critico", "auditor", "integracion")
+
+
+def consumption_by_agent(tasks: list[dict], pricing: dict | None = None) -> list[dict]:
+    """Por agente, en orden fijo: modelos que usó, tokens de entrada y salida y costo estimado en USD."""
+    pricing = load_pricing() if pricing is None else pricing
+    rows = {agent: {"agent": agent, "models": [], "input": 0, "output": 0, "cost": 0.0, "tasks": 0} for agent in AGENT_ORDER}
+    for task in tasks:
+        row = rows.get(task.get("target", ""))
+        entrada, salida = task.get("input_tokens", 0) or 0, task.get("output_tokens", 0) or 0
+        if row is None or not (entrada or salida):
+            continue
+        model = (task.get("model") or "").split(":", 1)[-1]  # "replay:claude-opus-5-5" es el mismo modelo grabado
+        if model and model not in row["models"]:
+            row["models"].append(model)
+        row["input"] += entrada
+        row["output"] += salida
+        row["tasks"] += 1
+        row["cost"] += estimate_cost(model, entrada, salida, pricing) or 0.0
+    return list(rows.values())
+
+
+def compare_consumption(current: list[dict], previous: list[dict] | None) -> list[dict]:
+    """Agrega `delta`: diferencia de costo frente a la corrida anterior (-0.5 = la mitad); `None` si no hay con qué comparar."""
+    before = {row["agent"]: row for row in previous or []}
+    out = []
+    for row in current:
+        old = before.get(row["agent"])
+        delta = (row["cost"] - old["cost"]) / old["cost"] if old and old["cost"] else None
+        out.append({**row, "delta": delta})
+    return out
+
+
+def previous_with_consumption(runs: list[tuple[str, list[dict]]], thread_id: str) -> tuple[str, list[dict]] | None:
+    """La última corrida anterior a `thread_id` que gastó tokens. `runs` va de la más reciente a la más vieja."""
+    ids = [tid for tid, _ in runs]
+    if thread_id not in ids:
+        return None
+    for tid, tasks in runs[ids.index(thread_id) + 1:]:
+        if any((t.get("input_tokens", 0) or 0) + (t.get("output_tokens", 0) or 0) for t in tasks):
+            return tid, tasks
+    return None

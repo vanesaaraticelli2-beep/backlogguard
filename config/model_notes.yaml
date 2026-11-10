@@ -1,0 +1,113 @@
+# Lo + y lo − de cada modelo, para la tarjeta «Modelos y costos» del menú izquierdo.
+# `agentes.<rol>.<modelo>` tiene prioridad sobre `generales.<modelo>`.
+# La tarjeta agrega sola lo que se calcula: cuánto más caro o más barato es frente al modelo anterior para ese
+# agente, la regla de independencia y cuántas tareas hay medidas.
+# Criterio de redacción: afirmaciones concretas y verificables (precio, generación, límites de la API, lo medido
+# en las corridas). Nada de "podría" ni "quizás".
+generales:
+  claude-fable-5-2:
+    mas: ["El modelo más capaz de Anthropic disponible para todos."]
+    menos: ["Cuesta el doble que Opus 5.5 (8 / 40 por millón).", "Cada respuesta tarda más: razona siempre, sin opción de apagarlo."]
+  claude-fable-5-1:
+    mas: ["Misma familia que Fable 5.2."]
+    menos: ["Fable 5.2 lo reemplaza: es mejor y 20% más barato. No conviene elegirlo."]
+  claude-fable-5:
+    mas: ["Misma familia que Fable 5.2."]
+    menos: ["Fable 5.2 lo reemplaza: es mejor y 20% más barato. No conviene elegirlo."]
+  claude-opus-5-5:
+    mas: ["El Opus actual: el más riguroso por debajo de Fable."]
+    menos: ["Cuesta el doble que Sonnet 5.5 (4 / 20 por millón)."]
+  claude-opus-5:
+    mas: ["Opus de la generación anterior."]
+    menos: ["Opus 5.5 lo reemplaza y es 20% más barato. No conviene elegirlo."]
+  claude-opus-4-8:
+    mas: ["Opus de la generación 4."]
+    menos: ["Más caro que Opus 5.5 (5 / 25 contra 4 / 20) y de una generación anterior."]
+  claude-opus-4-7:
+    mas: ["Opus de la generación 4."]
+    menos: ["Más caro que Opus 5.5 (5 / 25 contra 4 / 20) y de una generación anterior."]
+  claude-opus-4-6:
+    mas: ["Opus de la generación 4."]
+    menos: ["Más caro que Opus 5.5 (5 / 25 contra 4 / 20) y de una generación anterior."]
+  claude-sonnet-5-5:
+    mas: ["El Sonnet actual: la mitad del precio de Opus 5.5."]
+    menos: ["Menos riguroso que Opus 5.5 en razonamientos largos."]
+  claude-sonnet-5:
+    mas: ["Sonnet de la generación anterior."]
+    menos: ["Mismo precio que Sonnet 5.5, que lo reemplaza. No conviene elegirlo."]
+  claude-sonnet-4-6:
+    mas: ["Sonnet de la generación 4."]
+    menos: ["50% más caro que Sonnet 5.5 (3 / 15 contra 2 / 10) y de una generación anterior."]
+  claude-haiku-5-5:
+    mas: ["El más barato: 20 veces menos que Sonnet 5.5."]
+    menos: ["El menos capaz para seguir instrucciones largas y razonar."]
+  claude-haiku-4-5:
+    mas: ["Haiku de la generación 4."]
+    menos: ["10 veces más caro que Haiku 5.5 y peor.", "Contexto de 200 mil tokens (los actuales tienen 1 millón) y no acepta el nivel de esfuerzo."]
+  gemini-3.8-flash:
+    mas: ["Otro proveedor: independencia total frente a los modelos de Anthropic."]
+    menos: ["Cuota gratuita de 20 pedidos por día: no alcanza para una corrida real."]
+
+agentes:
+  supervisor:
+    claude-sonnet-5-5:
+      mas: ["Planifica y resume con menos del 1% del gasto de la corrida."]
+      menos: ["Ninguno con el uso actual: es la elección recomendada."]
+    claude-haiku-5-5:
+      mas: ["Planificar y resumir pasa a costar casi cero."]
+      menos: ["El ahorro es de centavos por corrida y un mal plan afecta a los cinco agentes."]
+    claude-opus-5-5:
+      mas: ["Plan más fino en objetivos ambiguos."]
+      menos: ["Duplica el costo sin mejora medida: el plan con Sonnet ya funciona."]
+    claude-fable-5-2:
+      mas: ["El plan más fino posible."]
+      menos: ["Cuadruplica el costo para una tarea que hoy no falla."]
+  requerimientos:
+    claude-sonnet-5-5:
+      mas: ["Cubrió los requisitos de las minutas reales (Haiku había cubierto 4 de al menos 8)."]
+      menos: ["Es el agente que más tokens consume: el 54% del gasto de la corrida real."]
+    claude-haiku-5-5:
+      mas: ["Baja 20 veces el costo del agente que más consume."]
+      menos: ["Con documentos reales cubrió 4 de al menos 8 requisitos de la reunión: pierde requisitos."]
+    claude-opus-5-5:
+      mas: ["Historias más completas en la primera redacción: menos correcciones del Crítico."]
+      menos: ["Duplica el costo del agente que más consume."]
+    claude-fable-5-2:
+      mas: ["La redacción más completa disponible."]
+      menos: ["Cuadruplica el costo del agente que más consume."]
+  critico:
+    claude-opus-5-5:
+      mas: ["Revisión rigurosa e independiente del productor (Sonnet 5.5)."]
+      menos: ["Objetó 28 de 33 historias en la 1ª ronda de la corrida real: genera muchas correcciones."]
+    claude-sonnet-5-5:
+      mas: ["Mitad de precio que Opus 5.5."]
+      menos: ["Sin corridas medidas como Crítico."]
+    claude-haiku-5-5:
+      mas: ["Revisar pasa a costar casi cero."]
+      menos: ["Deja pasar citas mal usadas e historias sin sustento: el Crítico pierde su función."]
+    claude-fable-5-2:
+      mas: ["La revisión más exigente disponible y de otra familia que el productor."]
+      menos: ["Duplica el costo del segundo agente que más consume (45% del gasto)."]
+    gemini-3.8-flash:
+      mas: ["Independencia total: otro proveedor que el productor."]
+      menos: ["La cuota gratuita (20 pedidos por día) no alcanza: la corrida real hizo 61 revisiones."]
+  auditor:
+    claude-opus-5-5:
+      mas: ["Detecta contradicciones sutiles contra la preventa."]
+      menos: ["El doble que Sonnet 5.5, aunque pesa solo el 1% del gasto."]
+    claude-sonnet-5-5:
+      mas: ["Mitad de precio que Opus 5.5."]
+      menos: ["Ahorra centavos por corrida y pasa por alto cambios de alcance sutiles."]
+    claude-fable-5-2:
+      mas: ["La auditoría más fina disponible, con impacto mínimo en el gasto (1%)."]
+      menos: ["Duplica el costo de Opus 5.5 y cada respuesta tarda más."]
+  integracion:
+    claude-haiku-5-5:
+      mas: ["Arma el plan de publicación, que el código valida igual: alcanza con el más barato."]
+      menos: ["Ninguno con el uso actual: es la elección recomendada."]
+    claude-sonnet-5-5:
+      mas: ["Más margen en planes de publicación muy grandes."]
+      menos: ["20 veces más caro para una tarea que ya se valida en código."]
+    claude-opus-5-5:
+      mas: ["Ninguna ventaja medida en esta tarea."]
+      menos: ["40 veces más caro que Haiku 5.5 para una tarea mecánica."]
