@@ -62,6 +62,7 @@ class Catalog:
                 CREATE TABLE IF NOT EXISTS proposals (seq INTEGER PRIMARY KEY AUTOINCREMENT, dedupe TEXT NOT NULL UNIQUE, state TEXT NOT NULL, json TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS sources (source_id TEXT NOT NULL, fingerprint TEXT NOT NULL, processed_at TEXT NOT NULL, source_date TEXT, PRIMARY KEY (source_id, fingerprint));
                 CREATE TABLE IF NOT EXISTS publications (requirement_id TEXT PRIMARY KEY, version INTEGER NOT NULL, remote_id INTEGER, key TEXT NOT NULL, updated_at TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS requirement_retirements (requirement_id TEXT PRIMARY KEY, retired_by TEXT NOT NULL, reason TEXT NOT NULL, retired_at TEXT NOT NULL);
                 """
             )
             try:  # catálogos creados antes de guardar la fecha de la fuente
@@ -216,6 +217,34 @@ class Catalog:
             self._save_proposal(conn, resolved)
         return resolved
 
+    def retire_requirement(self, requirement_id: str, *, by: str, reason: str) -> Requirement:
+        """Retira explícitamente un requisito activo y conserva quién tomó la decisión y por qué."""
+        actor, note = by.strip(), reason.strip()
+        if not actor:
+            raise CatalogError("La decisión de retiro necesita identificar a la persona responsable.")
+        if not note:
+            raise CatalogError("Indicá el motivo del retiro.")
+        with closing(self._connect()) as conn, conn:
+            if self._status(conn, requirement_id) is not RequirementStatus.ACTIVO:
+                raise CatalogError(f"{requirement_id} no está activo: no se puede retirar.")
+            self._set_status(conn, requirement_id, RequirementStatus.RETIRADO, [])
+            conn.execute(
+                "INSERT INTO requirement_retirements(requirement_id, retired_by, reason, retired_at) "
+                "VALUES (?, ?, ?, ?) ON CONFLICT(requirement_id) DO UPDATE SET "
+                "retired_by = excluded.retired_by, reason = excluded.reason, retired_at = excluded.retired_at",
+                (requirement_id, actor, note, _now()),
+            )
+        return self.requirement(requirement_id)
+
+    def retirement_decision(self, requirement_id: str) -> dict | None:
+        with closing(self._connect()) as conn:
+            row = conn.execute(
+                "SELECT requirement_id, retired_by, reason, retired_at "
+                "FROM requirement_retirements WHERE requirement_id = ?",
+                (requirement_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
     def apply_covered(self, proposal_id: str) -> Proposal:
         """«Ya cubierto» solo suma evidencia: no cambia el requisito, por eso no espera una aprobación."""
         proposal = self.proposal(proposal_id)
@@ -360,6 +389,6 @@ class Catalog:
     def clear(self) -> None:
         """Vacía todo el catálogo. Solo lo llama «Empezar proyecto nuevo», con confirmación."""
         with closing(self._connect()) as conn, conn:
-            for table in ("requirements", "versions", "evidences", "proposals", "sources", "publications"):
+            for table in ("requirements", "versions", "evidences", "proposals", "sources", "publications", "requirement_retirements"):
                 conn.execute(f"DELETE FROM {table}")
             conn.execute("DELETE FROM sqlite_sequence")

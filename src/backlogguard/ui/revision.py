@@ -12,7 +12,7 @@ from pydantic import ValidationError
 
 from backlogguard.board import SourceType
 from backlogguard.catalog.coverage import build_coverage
-from backlogguard.catalog import CatalogError, Draft, Proposal, ProposalKind, ProposalState
+from backlogguard.catalog import CatalogError, Draft, Proposal, ProposalKind, ProposalState, RequirementStatus
 from backlogguard.catalog.review import decide_batch, decide_one, decider_role, pending_batch, pending_individual
 from backlogguard.graph.setup import baseline_dir, user_sources_dir
 from backlogguard.rag import SourceLibrary
@@ -371,18 +371,29 @@ def coverage_section(controller: RunController, catalog) -> None:
             st.caption(f"{len(coverage.condiciones)} supuestos o dependencias de la propuesta no se cuentan como «vendido y no tratado».")
 
 
-def tab_catalog(controller: RunController) -> None:
+def tab_catalog(controller: RunController, who=None) -> None:
     catalog = controller.deps.catalog
     if catalog is None:
         st.info("Esta corrida no tiene catálogo.")
         return
     st.caption("La memoria del proyecto: cada requisito tiene un identificador que no cambia, sus versiones y las citas que lo sostienen. Se conserva entre corridas.")
     requirements = catalog.requirements()
-    columns = st.columns(4)
+    columns = st.columns(5)
     columns[0].metric("Requisitos activos", sum(1 for r in requirements if r.status.value == "activo"))
     columns[1].metric("Versiones", sum(len(r.versions) for r in requirements))
     columns[2].metric("Evidencias", sum(len(r.current.evidence) + len(r.conflicts) for r in requirements))
     columns[3].metric("Propuestas pendientes", len(catalog.proposals(state=ProposalState.PENDIENTE)))
+    columns[4].metric("Retirados", sum(1 for r in requirements if r.status is RequirementStatus.RETIRADO))
+    if notice := st.session_state.get("catalog_retire_result"):
+        with st.container(border=True):
+            st.success(f"{notice['requirement_id']} quedó retirado en BacklogGuard.")
+            st.caption(
+                "Azure todavía no fue modificado. Próximo paso: Avanzado → Backlog simulado, "
+                "analizar requisitos retirables, revisar el dry-run y aprobar el cambio a Removed."
+            )
+            if st.button("Cerrar aviso", key="catalog_retire_notice_dismiss"):
+                st.session_state.pop("catalog_retire_result", None)
+                st.rerun()
     coverage_section(controller, catalog)
     if not requirements:
         st.info("Todavía no hay requisitos. Se crean cuando aprobás propuestas en «Revisión».")
@@ -397,10 +408,64 @@ def tab_catalog(controller: RunController) -> None:
         ],
         width="stretch", hide_index=True,
     )
+    published_active = [
+        requirement
+        for requirement in requirements
+        if requirement.status is RequirementStatus.ACTIVO
+        and (publication := catalog.publication(requirement.id))
+        and publication["remote_id"]
+    ]
+    if published_active:
+        with st.expander("Retirar explícitamente un requisito publicado"):
+            st.warning(
+                "Retirar no borra físicamente el work item. Lo excluye de futuras corridas y lo prepara "
+                "para pasar a `Removed` en Azure; el cambio externo requiere un dry-run y otra aprobación."
+            )
+            options = {
+                f"{item.id} · {item.current.draft.title} · Azure #{catalog.publication(item.id)['remote_id']}": item.id
+                for item in published_active
+            }
+            selected = st.selectbox("Requisito a retirar", list(options), key="catalog_retire_selection")
+            reason = st.text_input("Motivo del retiro", key="catalog_retire_reason")
+            confirmed = st.checkbox(
+                "Confirmo retirar este requisito del catálogo y preparar su retiro en Azure",
+                key="catalog_retire_confirm",
+                disabled=not who or who.role != "full_stack_ia_engineer",
+            )
+            if not who or who.role != "full_stack_ia_engineer":
+                st.info("Esta decisión corresponde al Full Stack IA Engineer.")
+            if st.button(
+                "Retirar requisito",
+                key="catalog_retire_submit",
+                disabled=(
+                    not selected
+                    or not reason.strip()
+                    or not confirmed
+                    or not who
+                    or who.role != "full_stack_ia_engineer"
+                    or controller.read_only
+                    or controller.running
+                ),
+            ):
+                try:
+                    requirement_id = options[selected]
+                    catalog.retire_requirement(requirement_id, by=who.name, reason=reason)
+                except CatalogError as exc:
+                    st.error(str(exc))
+                else:
+                    st.session_state["catalog_retire_result"] = {
+                        "requirement_id": requirement_id
+                    }
+                    st.rerun()
     for r in requirements:
         with st.expander(f"{r.id} · v{r.current.number} · {r.current.draft.title}"):
             if r.replaced_by:
                 st.caption(f"Estado: {r.status.value}. Lo reemplaza: {', '.join(r.replaced_by)}.")
+            if decision := catalog.retirement_decision(r.id):
+                st.caption(
+                    f"Retiro explícito por {decision['retired_by']} · {decision['retired_at'][:10]} · "
+                    f"motivo: {decision['reason']}"
+                )
             st.markdown('<div class="bg-label">Historial</div>', unsafe_allow_html=True)
             for v in reversed(r.versions):
                 st.markdown(f"**v{v.number}** · {v.relation.value} · aprobada por el {_role(v.approved_by)} · {v.created_at[:10]}")

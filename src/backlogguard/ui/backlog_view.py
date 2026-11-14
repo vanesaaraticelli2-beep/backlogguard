@@ -1,4 +1,4 @@
-"""Vista del backlog simulado: jerarquía de work items, qué cambió en la corrida y la ficha de cada uno.
+"""Vista del backlog: jerarquía de work items, cambios de la corrida y ficha de cada uno.
 
 Funciones puras sobre los work items (dicts o `WorkItem`) y el tablero; la pantalla solo las dibuja.
 """
@@ -28,6 +28,7 @@ class Node:
     description: str
     criteria: list[str]
     rev: int
+    url: str | None
 
 
 def _dict(work_item) -> dict:
@@ -68,6 +69,7 @@ def build_nodes(items: list, before: list | None = None) -> list[Node]:
             parent_id=row.get("parent_id"), depth=depth, change=change_of(row, previous),
             origin="BacklogGuard" if board_id_of(tags) else "manual", board_id=board_id_of(tags),
             description=row.get("description", ""), criteria=list(row.get("acceptance_criteria", [])), rev=row.get("rev", 1),
+            url=row.get("url"),
         ))
         for child in children.get(row["id"], []):
             visit(child, depth + 1)
@@ -105,18 +107,21 @@ def counts(nodes: list[Node]) -> dict[str, int]:
 def rows(nodes: list[Node]) -> list[dict]:
     """Una fila por work item para la tabla; la sangría muestra la jerarquía."""
     titles = {n.id: n.title for n in nodes}
-    return [
-        {
-            "#": n.id,
-            "Tipo": n.type,
-            "Título": ("    " * n.depth + ("↳ " if n.depth else "") + n.title),
-            "Estado": n.state,
-            "Cambio": CHANGES.get(n.change, n.change),
-            "Origen": n.origin,
-            "Padre": f"#{n.parent_id} {titles[n.parent_id]}" if n.parent_id in titles else (f"#{n.parent_id}" if n.parent_id else "—"),
+    result = []
+    for node in nodes:
+        row = {
+            "#": node.id,
+            "Tipo": node.type,
+            "Título": ("    " * node.depth + ("↳ " if node.depth else "") + node.title),
+            "Estado": node.state,
+            "Cambio": CHANGES.get(node.change, node.change),
+            "Origen": node.origin,
+            "Padre": f"#{node.parent_id} {titles[node.parent_id]}" if node.parent_id in titles else (f"#{node.parent_id}" if node.parent_id else "—"),
         }
-        for n in nodes
-    ]
+        if node.url:
+            row["Azure DevOps"] = node.url
+        result.append(row)
+    return result
 
 
 def option_label(node: Node) -> str:
@@ -128,6 +133,8 @@ def detail_markdown(node: Node, board_item=None) -> str:
     lines = [f"**{node.type} #{node.id}** · {node.state} · versión {node.rev} · {CHANGES.get(node.change, '')}".rstrip(" ·")]
     if node.description:
         lines.append(f"**Descripción**\n\n{node.description}")
+    if node.url:
+        lines.append(f"[Abrir en Azure DevOps]({node.url})")
     if node.criteria:
         lines.append("**Criterios de aceptación**\n\n" + "\n".join(f"- {c.replace(chr(10), '  ' + chr(10) + '  ')}" for c in node.criteria))
     if node.origin == "manual":

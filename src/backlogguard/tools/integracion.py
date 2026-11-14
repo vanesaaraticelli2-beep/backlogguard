@@ -10,6 +10,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field
 
 from backlogguard.integrations import PublishService
+from backlogguard.integrations.reconciliation import ReconciliationService
 from backlogguard.tools.catalog import ExecutePlanArgs
 from backlogguard.tools.models import ToolResult
 
@@ -36,8 +37,13 @@ def _fail(content: str, error_type: str) -> ToolResult:
 
 
 class IntegrationToolkit:
-    def __init__(self, service: PublishService):
+    def __init__(
+        self,
+        service: PublishService,
+        reconciliation: ReconciliationService | None = None,
+    ):
         self.service = service
+        self.reconciliation = reconciliation
         self.last_plan_hash: str | None = None
 
     def buscar_en_backlog(self, args: dict) -> ToolResult:
@@ -83,10 +89,38 @@ class IntegrationToolkit:
         kind = "plan_drift" if report.error and "cambiaron" in report.error else "execution_failed"
         return ToolResult(ok=False, content=content, metadata={"error_type": kind, "written": report.written})
 
+    def ejecutar_retiros_aprobados(self, args: dict) -> ToolResult:
+        if self.reconciliation is None:
+            return _fail("No hay un plan de reconciliación armado.", "unknown_plan")
+        report = self.reconciliation.execute(args["plan_hash"])
+        content = report.model_dump_json()
+        if report.ok:
+            return ToolResult(
+                ok=True,
+                content=content,
+                metadata={"written": len(report.results), "plan_hash": report.plan_hash},
+            )
+        return ToolResult(
+            ok=False,
+            content=content,
+            metadata={"error_type": "execution_failed", "plan_hash": report.plan_hash},
+        )
+
     def implementations(self) -> dict:
         return {
             "buscar_en_backlog": (self.buscar_en_backlog, SearchBacklogArgs, True),
             "armar_plan_dry_run": (self.armar_plan_dry_run, ArmPlanArgs, True),
             "revalidar_plan": (self.revalidar_plan, RevalidateArgs, True),
             "ejecutar_plan_aprobado": (self.ejecutar_plan_aprobado, ExecutePlanArgs, False),
+            **(
+                {
+                    "ejecutar_retiros_aprobados": (
+                        self.ejecutar_retiros_aprobados,
+                        ExecutePlanArgs,
+                        False,
+                    )
+                }
+                if self.reconciliation is not None
+                else {}
+            ),
         }

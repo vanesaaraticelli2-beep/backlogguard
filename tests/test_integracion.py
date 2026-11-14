@@ -12,6 +12,7 @@ from backlogguard.integrations import (
     SimulatedBacklog,
     build_backlog,
 )
+from backlogguard.integrations.plan import idempotency_key
 from backlogguard.llm import FakeProvider, Settings
 from backlogguard.tools import ExecutionContext, ToolCall, ToolPolicy, build_catalog_registry
 from backlogguard.tools.integracion import IntegrationToolkit
@@ -79,9 +80,9 @@ def test_el_gateway_simulado_cumple_el_contrato(tmp_path):
     assert SimulatedBacklog(path).search() == []
 
 
-def test_el_modo_real_no_esta_disponible_todavia(tmp_path):
+def test_el_modo_real_exige_configuracion_antes_de_conectar(tmp_path):
     assert isinstance(build_backlog(Settings(azdo_mode="simulated")), SimulatedBacklog)
-    with pytest.raises(BacklogError, match="noviembre"):
+    with pytest.raises(BacklogError, match="AZDO_ORG_URL"):
         build_backlog(Settings(azdo_mode="real"))
 
 
@@ -120,6 +121,55 @@ def test_el_plan_asigna_la_accion_correcta(env):
     assert actions(second) == {"HU-A": "omitir", "HU-B": "omitir", "HU-C": "actualizar", "HU-D": "omitir", "HU-E": "crear"}
     reasons = {i.item_id: i.reason for i in second.items}
     assert "posible duplicado" in reasons["HU-D"] and "sin cambios" in reasons["HU-A"]
+
+
+def test_edita_un_work_item_existente_si_su_contenido_difiere_aunque_la_version_no_cambio(env):
+    board, backlog, service, _ = env
+    story = make_item("HU-RQ-001", "Acceso al portal").model_copy(
+        update={"requirement_id": "RQ-001", "requirement_version": 1}
+    )
+    add(board, story)
+    first_plan = service.arm()
+    assert service.execute(first_plan.plan_hash).ok
+    remote = backlog.search(tag="bg-item:HU-RQ-001")[0]
+    original_key = idempotency_key("ACME", story)
+
+    story.description = "Como usuario quiero autenticación reforzada."
+    update_plan = service.arm()
+
+    assert actions(update_plan) == {"HU-RQ-001": "actualizar"}
+    assert "difiere del plan revisado" in update_plan.items[0].reason
+    assert update_plan.items[0].current_description == remote.description
+    assert update_plan.items[0].description == story.description
+    report = execute_approved_plan(
+        update_plan.plan_hash, service=service, approved_by="full_stack_ia_engineer"
+    )
+    updated = backlog.get(remote.id)
+    assert report.ok and report.results[0].outcome == "actualizado"
+    assert updated.description == story.description and updated.id == remote.id
+    assert idempotency_key("ACME", story) == original_key
+    assert len(backlog.search(tag="bg-item:HU-RQ-001")) == 1
+
+
+def test_la_comparacion_de_contenido_no_confunde_formato_html_de_azure_con_un_cambio(env):
+    board, backlog, service, _ = env
+    story = make_item("HU-RQ-001", "Acceso al portal").model_copy(
+        update={"requirement_id": "RQ-001", "requirement_version": 1}
+    )
+    add(board, story)
+    key = idempotency_key("ACME", story)
+    backlog.create(
+        type="User Story",
+        title=story.title,
+        description=f"<div>{story.description}</div>",
+        acceptance_criteria=[f"<p>{GHERKIN}</p>"],
+        tags=["bg-item:HU-RQ-001", f"bg-key:{key}"],
+        parent_id=None,
+    )
+
+    plan = service.build()
+
+    assert actions(plan) == {"HU-RQ-001": "omitir"}
 
 
 def test_vincular_cuando_falta_el_padre(env):
@@ -305,9 +355,16 @@ def test_las_tools_de_integracion_son_solo_de_integracion(env):
         "armar_plan_dry_run": "draft",
         "revalidar_plan": "read",
         "ejecutar_plan_aprobado": "write",
+        "ejecutar_retiros_aprobados": "write",
     }
-    planning = {t.name for t in ToolPolicy().allowed_tools(registry, context.model_copy(update={"allow_external_writes": False}))}
+    planning = {
+        t.name
+        for t in ToolPolicy().allowed_tools(
+            registry, context.model_copy(update={"allow_external_writes": False})
+        )
+    }
     assert "ejecutar_plan_aprobado" not in planning
+    assert "ejecutar_retiros_aprobados" not in planning
     for role in (AgentRole.CRITICO, AgentRole.AUDITOR, AgentRole.REQUERIMIENTOS, AgentRole.SUPERVISOR):
         other = context.model_copy(update={"role": role})
         assert call(registry, other, "armar_plan_dry_run").metadata["error_type"] == "unavailable_tool"

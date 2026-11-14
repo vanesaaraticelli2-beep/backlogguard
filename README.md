@@ -70,7 +70,7 @@ Para la entrega, esto es lo que funciona de verdad y lo que está simulado:
 | Componente | Estado | Detalle |
 |---|---|---|
 | Modelos de lenguaje (Anthropic) | **Real** con `LIVE_MODE=1` | Sonnet, Opus y Haiku según `config/models.yaml`. Con `LIVE_MODE=0` la demo reproduce una corrida grabada, sin red ni costo. |
-| **Azure DevOps** | **Simulado** | `SimulatedBacklog` ([integrations/simulated.py](src/backlogguard/integrations/simulated.py)) guarda los work items en `data/backlog_simulado.json` y se comporta como Azure: ids numerados, versiones (`rev`), etiquetas, padres, conflictos por versión y fallas inyectables. **No existe un Azure DevOps real conectado**: `AZDO_MODE=real` devuelve «no disponible». La interfaz `BacklogGateway` ([integrations/gateway.py](src/backlogguard/integrations/gateway.py)) está pensada para reemplazar el simulado por un cliente real (MCP) sin tocar el plan ni la aprobación. |
+| **Azure DevOps** | **Simulado por defecto; cliente MCP sobre adaptador REST disponible** | `SimulatedBacklog` ([integrations/simulated.py](src/backlogguard/integrations/simulated.py)) sigue siendo el modo de demo y tests. En modo real, la aplicación consume un servidor MCP con Tools, Resource y Prompt; el servidor encapsula `AzureDevOpsBacklog` ([integrations/azure_devops.py](src/backlogguard/integrations/azure_devops.py)), que usa Azure DevOps Work Item Tracking REST API 7.1, descubre tipos/campos, mapea Scrum `User Story` a `Product Backlog Item` y gestiona JSON Patch y relaciones padre-hijo. Por defecto, cliente y servidor MCP corren en proceso; se puede ejecutar un endpoint Streamable HTTP de solo lectura. El PAT permanece en backend y las pruebas no escriben en Azure. |
 | Publicación segura | **Real** | Plan en *dry-run*, aprobación humana por rol, hash del plan, revalidación contra el backlog e idempotencia por requisito y versión: todo corre igual contra el simulado. |
 | Fuentes del proyecto | **Real** | Preventa en PDF y minutas o transcripciones (`.txt`, `.md`, `.vtt` y Word `.docx`) cargadas por la persona. |
 | Verificación de citas | **Real**, determinística | Cada cita se compara literalmente contra el fragmento de la fuente; las que no coinciden se descartan o se objetan. |
@@ -84,7 +84,7 @@ Para la entrega, esto es lo que funciona de verdad y lo que está simulado:
 | Requerimientos | `ingestar_y_fragmentar`, `buscar_en_fuentes`, `redactar_historia` | `refinamiento-backlog` |
 | Crítico | `verificar_cita`, `buscar_contraevidencia`, `evaluar_dor_invest` | `revision-adversarial` |
 | Auditor de Proyecto | `comparar_con_preventa`, `detectar_contradicciones`, `consultar_decisiones_vigentes`, `registrar_decision_aprobada` | `auditoria-de-alcance` |
-| Integración | `buscar_en_backlog`, `armar_plan_dry_run`, `revalidar_plan`, `ejecutar_plan_aprobado` | `publicacion-segura` |
+| Integración | `buscar_en_backlog`, `armar_plan_dry_run`, `revalidar_plan`, `ejecutar_plan_aprobado`, `ejecutar_retiros_aprobados` | `publicacion-segura` |
 
 ### Estado y memoria
 - **Estado de la corrida:** checkpoints del grafo en SQLite (`SqliteSaver` de LangGraph), con un `thread_id` por corrida, y snapshots versionados del tablero en JSON (patrón `JsonCheckpointStore` de la clase 11). Permite pausar, cerrar el proceso y reanudar.
@@ -110,7 +110,7 @@ Policy gate por rol (cada agente ve solo sus tools), imposibilidad de escribir s
 | LangGraph | Grafo con estado, checkpoints e `interrupt` para el Human-in-the-Loop. |
 | RAG con Qdrant local | Las citas dependen de recuperar fragmentos con reunión, fecha y orador. |
 | SQLite y JSON | SQLite para la memoria del proyecto y los checkpoints del grafo; JSON versionado para los snapshots del tablero. Es el enfoque del curso (clases 10 y 11): simple y reproducible. |
-| Adaptador de Azure DevOps (`BacklogGateway`) con implementación simulada | Tests y demo estables aunque el servicio externo no responda. El modo real (MCP) quedó como extensión: ver «Qué es real y qué es simulado». |
+| Gateway de Azure DevOps con implementación simulada y servidor MCP sobre REST | Tests y demo estables aunque el servicio externo no responda; el servidor MCP encapsula REST y el cliente conserva el contrato `BacklogGateway`. |
 | Skills en formato Agent Skills | Criterio de cada rol versionado y reutilizable fuera de los prompts. |
 | Validación con Pydantic y policy gate | Salidas estructuradas y autorización fuera del modelo. |
 
@@ -148,12 +148,24 @@ Copiá `.env.example` a `.env`. **No se versionan claves, tokens ni credenciales
 |---|---|
 | `LIVE_MODE` | `0` (por defecto): sin red ni costo; la pantalla reproduce la corrida grabada. `1`: usa los modelos reales. |
 | `ANTHROPIC_API_KEY`, `GEMINI_API_KEY` | Claves de los proveedores (solo con `LIVE_MODE=1`). |
-| `AZDO_MODE` | `simulated` (por defecto). El modo `real` (MCP) todavía no está disponible. |
-| `AZDO_PROJECT` | Nombre del proyecto del backlog simulado (si queda vacío, `ACME`). |
+| `AZDO_MODE` | `simulated` (por defecto y recomendado para tests/demo); `real` habilita el cliente MCP y su servidor REST interno solo con `APP_ENV=development`. |
+| `AZDO_ORG_URL`, `AZDO_PROJECT` | Organización y proyecto de Azure DevOps. En `.env.example` se configura `https://tp-itba.visualstudio.com/` y `TP-ITBA`. |
+| `AZDO_MCP_ENDPOINT` | Opcional; endpoint MCP remoto Streamable HTTP. Vacío conecta al servidor MCP en proceso. El servidor HTTP suministrado es de solo lectura. |
+| `AZDO_TOKEN` | PAT de desarrollo, únicamente en `.env` local ignorado por Git o un secret store del backend. Nunca usarlo en frontend, logs, prompts ni producción. No compartirlo por chat. |
+| `AZDO_EPIC_TYPE`, `AZDO_STORY_TYPE`, `AZDO_TASK_TYPE` | Opcionales para sobreescribir el descubrimiento; en Scrum la historia se mapea a `Product Backlog Item` si no existe `User Story`. |
 | `BACKLOGGUARD_DB_PATH`, `BACKLOGGUARD_CHECKPOINT_PATH` | Rutas de persistencia (ver `.env.example`). |
-| ⚠️ `AZDO_ORG_URL`, `AZDO_TOKEN` | Reservadas para el modo real; hoy no se usan. |
-
 Otros archivos de configuración: `config/models.yaml` (modelo por agente), `config/policy.yaml` (tools por rol y condiciones de pausa), `config/people.yaml` (personas y roles que pueden decidir), `config/budgets.yaml` (presupuesto de una corrida) y ⚠️ `config/context_budget.yaml` (presupuesto de contexto, pendiente).
+
+La autenticación PAT es solo una opción de desarrollo controlado y el adaptador la rechaza fuera de `APP_ENV=development`. Mantener `AZDO_MODE=simulated` para tests/demo; configurar `AZDO_MODE=real` no se debe hacer hasta validar permisos y proceso en el proyecto. El token nunca se serializa con la configuración segura (`Settings.safe_dict`).
+Las publicaciones simuladas y las reales usan registros de idempotencia separados (`publicaciones.sqlite` y `publicaciones_azure.sqlite`) para que una publicación local previa no se considere aplicada en Azure.
+
+Para levantar el servidor MCP HTTP de diagnóstico (solo lectura), configurar `AZDO_MODE=real` y las credenciales del backend en `.env`, y ejecutar:
+
+```bash
+python -m backlogguard.integrations.mcp_server
+```
+
+El servidor se liga únicamente a `127.0.0.1:8000`; un cliente puede usar `AZDO_MCP_ENDPOINT=http://127.0.0.1:8000/mcp`. El flujo de publicación de la aplicación usa el servidor en proceso y sigue exigiendo aprobación humana. No se realizan escrituras Azure por HTTP.
 
 ## 10. Ejecución
 **Local, sin Docker** (Windows: `.venv\Scripts\...`; Linux/Mac: `.venv/bin/...`):
@@ -189,8 +201,11 @@ Recorrido principal (⚠️ ajustar a la interfaz final):
 3. Ver en el tablero cómo se generan las historias con sus citas.
 4. Observar la objeción del Crítico y la corrección del productor.
 5. Resolver la pausa por cambio de alcance (service manager).
-6. Revisar el plan en dry-run y aprobarlo, editarlo o rechazarlo.
-7. Ver los work items publicados en el backlog **simulado** (Avanzado → Backlog simulado): jerarquía, qué cambió y la evidencia de cada uno.
+6. Revisar el plan en dry-run. Si un work item existe y difiere del resultado revisado, comparar en la pantalla los campos actuales con los propuestos; aprobar su actualización conserva el mismo ID en Azure.
+7. En **Sincronizar con Azure**, si no hay una aprobación pendiente porque la aplicación se reinició o la corrida terminó, seleccionar una corrida guardada y usar **Comparar historias con Azure**. El plan vuelve a comparar las historias aprobadas con el destino actual; elegir las operaciones y aprobarlas explícitamente para escribir.
+8. Ver los work items en el backlog (Avanzado → Backlog simulado conserva el nombre de la pantalla): en modo simulado son locales; en modo real se consulta el proyecto Azure configurado.
+9. Para retirar un requisito publicado, marcarlo explícitamente desde **Avanzado → Catálogo**, indicar el motivo y confirmar. Esto lo excluye de futuras corridas, pero todavía no escribe en Azure.
+10. En **Sincronizar con Azure**, analizar los cambios retirables, revisar el dry-run y aprobar aparte el retiro reversible: el work item y sus vínculos se conservan; su estado cambia a la categoría Azure `Removed`. Los ítems manuales, procesos sin ese estado y padres con hijos activos quedan bloqueados. La ausencia de un requisito en una nueva versión de un PDF no implica borrarlo. En modo simulado no se escribe en Azure.
 
 **Demo y video:** ⚠️ URL de la demo (si existe) y del video de respaldo de 3 a 5 minutos.
 
@@ -218,7 +233,7 @@ Recorrido principal (⚠️ ajustar a la interfaz final):
 ⚠️ A COMPLETAR al cierre. Limitaciones previstas:
 - Datos sintéticos; no se validó con material real de clientes.
 - La evaluación usa un dataset pequeño con errores sembrados.
-- **Azure DevOps está simulado**: la publicación se prueba contra `SimulatedBacklog`; la integración con un Azure real (MCP) quedó como extensión.
+- Las pruebas y la demo usan `SimulatedBacklog`; la conexión real REST aún debe validarse en el proyecto Azure autorizado. PAT solo para desarrollo, no para producción.
 - El Crítico y el productor usan modelos de lenguaje; la verificación textual de citas es determinística, pero el juicio de sustento no lo es.
 - Quedan fuera del alcance: notificaciones reales, deduplicación semántica avanzada y varios proyectos en simultáneo.
 

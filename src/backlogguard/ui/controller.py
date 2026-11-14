@@ -107,8 +107,10 @@ class RunController:
             objective = f"{objective}\n{COVERAGE_GOAL}"
         if own:  # la memoria durable (catálogo, decisiones, publicaciones) sigue de una corrida a la siguiente
             self._build()
-        else:
+        elif self.settings.azdo_mode == "simulated":
             self.reset_demo(seed=seed)
+        else:
+            self._build()
         self.thread_id = f"corrida-{uuid.uuid4().hex[:8]}"
         self.backlog_before = [w.model_dump() for w in self.deps.backlog.search()]
         self._spawn(run_pipeline, self.graph, objective, self.thread_id, requirement_ids)
@@ -136,12 +138,14 @@ class RunController:
             self.thread.join(timeout)
         return not self.running
 
-    DURABLE_FILES = ("publicaciones.sqlite", "memoria.sqlite", "backlog_simulado.json")
+    DURABLE_FILES = ("publicaciones.sqlite", "publicaciones_azure.sqlite", "memoria.sqlite", "backlog_simulado.json")
 
     def reset_demo(self, *, seed: bool = True) -> None:
         """Deja el backlog simulado, la memoria de decisiones y los registros como al comienzo (con las fuentes de ejemplo)."""
         if self.running:
             raise RuntimeError("No se puede reiniciar con una corrida en curso.")
+        if self.settings.azdo_mode != "simulated":
+            raise RuntimeError("Reiniciar la demo solo está disponible con AZDO_MODE=simulated.")
         for name in self.DURABLE_FILES:
             (self.data_dir / name).unlink(missing_ok=True)
         self._build()
@@ -241,6 +245,13 @@ class RunController:
         """El estado guardado de cada corrida, para juntar sus decisiones."""
         return [load_state(self.graph, run["thread_id"]) or {} for run in self.list_runs()]
 
+    def saved_run_state(self, thread_id: str) -> dict:
+        """Return a persisted run snapshot without changing the currently open run."""
+        state = load_state(self.graph, thread_id)
+        if state is None:
+            raise KeyError(f"No existe la corrida {thread_id}.")
+        return state
+
     def decision_history(self) -> list[dict]:
         """Todo lo que una persona ya decidió en el proyecto: propuestas, cambios de alcance y pedidos de las corridas."""
         catalog = self.deps.catalog
@@ -282,4 +293,3 @@ class RunController:
 
     def close(self) -> None:
         self.graph.checkpointer.conn.close()
-

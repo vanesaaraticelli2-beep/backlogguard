@@ -23,6 +23,14 @@ def _fold(text: str) -> str:
 
 
 class SimulatedBacklog:
+    DEFAULT_STATES = [
+        {"name": "New", "category": "Proposed"},
+        {"name": "Active", "category": "InProgress"},
+        {"name": "Resolved", "category": "Resolved"},
+        {"name": "Closed", "category": "Completed"},
+        {"name": "Removed", "category": "Removed"},
+    ]
+
     def __init__(self, path: str | Path | None = None, failures: list[str] | None = None):
         self.path = Path(path) if path else None
         self.failures = list(failures or [])
@@ -56,6 +64,12 @@ class SimulatedBacklog:
 
     # ---- lectura ----
 
+    def resolve_work_item_type(self, requested_type: str) -> str:
+        return requested_type
+
+    def list_work_item_states(self, work_item_type: str) -> list[dict[str, str]]:
+        return [dict(state) for state in self.DEFAULT_STATES]
+
     def search(self, *, text: str | None = None, tag: str | None = None) -> list[WorkItem]:
         found = list(self._items.values())
         if tag is not None:
@@ -68,6 +82,13 @@ class SimulatedBacklog:
     def get(self, work_item_id: int) -> WorkItem | None:
         item = self._items.get(work_item_id)
         return item.model_copy(deep=True) if item else None
+
+    def get_children(self, work_item_id: int) -> list[WorkItem]:
+        return [
+            item.model_copy(deep=True)
+            for item in self._items.values()
+            if item.parent_id == work_item_id
+        ]
 
     # ---- escritura ----
 
@@ -120,6 +141,17 @@ class SimulatedBacklog:
         item.rev += 1
         self.writes += 1
         self._save()
+        return item.model_copy(deep=True)
+
+    def transition_state(self, work_item_id, *, expected_rev, state):
+        item = self._versioned(work_item_id, expected_rev)
+        if state not in {candidate["name"] for candidate in self.DEFAULT_STATES}:
+            raise BacklogError(f"El estado {state!r} no está disponible.")
+        if item.state != state:
+            item.state = state
+            item.rev += 1
+            self.writes += 1
+            self._save()
         return item.model_copy(deep=True)
 
     # ---- datos de demostración ----

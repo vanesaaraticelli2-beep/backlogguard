@@ -39,6 +39,7 @@ from backlogguard.hitl import (
     validate_decision,
 )
 from backlogguard.integrations import BacklogError, PublishService
+from backlogguard.integrations.plan import mark_published_requirements
 from backlogguard.llm.errors import LLMError
 from backlogguard.llm.metering import Meter, MeteredProvider
 from backlogguard.llm.recording import ROLES
@@ -59,16 +60,6 @@ def _dump(board: Board) -> dict:
 
 
 BUDGET_STOPS = {"cuenta": "la cuenta del proveedor de modelos no acepta más pedidos (límite de gasto, saldo o clave)", "tokens": "se agotó el presupuesto de tokens de la corrida", "tiempo": "se agotó el tiempo de la corrida", "items": "se alcanzó el máximo de ítems a revisar"}
-
-
-def _mark_published(catalog, board: Board, report) -> None:
-    """Anota en el catálogo qué versión de cada requisito quedó publicada y en qué work item (así la próxima corrida no la repite)."""
-    if catalog is None:
-        return
-    for result in report.results:
-        item = board.items.get(result.item_id)
-        if item is not None and item.requirement_id and result.remote_id and result.outcome in ("publicado", "actualizado", "recuperado", "ya_publicado"):
-            catalog.mark_published(item.requirement_id, result.remote_id, item.requirement_version)
 
 
 def _error(node: str, exc: Exception, ref: str | None = None) -> dict:
@@ -628,7 +619,7 @@ def make_nodes(deps: RunDeps) -> dict[str, Node]:
             if planned.action != "omitir" and item is not None and item.state is ItemState.SUSTENTADO:
                 item.transition_to(ItemState.APROBADO, actor=decision.actor)
         report = execute_approved_plan(request.ref, service=service, approved_by=decision.actor, run_id=state.get("run_id", "run-local"))
-        _mark_published(deps.catalog, board, report)
+        mark_published_requirements(deps.catalog, board, report)
         return {
             "board": _dump(board),
             "plan_request": None,

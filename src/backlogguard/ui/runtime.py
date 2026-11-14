@@ -6,6 +6,7 @@ el estado que debe sobrevivir (la corrida en curso). No depende de Streamlit, as
 from __future__ import annotations
 
 import os
+import hashlib
 import threading
 from pathlib import Path
 
@@ -15,15 +16,25 @@ from backlogguard.ui.controller import RunController
 ROOT = Path(os.environ.get("BACKLOGGUARD_ROOT", Path(__file__).resolve().parents[3]))
 DEFAULT_RECORDING = ROOT / "evals" / "recordings" / "demo_acme.json"
 
-_controllers: dict[tuple[str, str, bool], RunController] = {}
+_controllers: dict[tuple[str, str, bool, str, str, str, str, str], RunController] = {}
 _lock = threading.Lock()
 
 
 def get_controller(data_dir: str, replay: str, live: bool) -> RunController:
-    key = (data_dir, replay, live)
+    settings = Settings.from_env(ROOT / ".env").model_copy(update={"live_mode": live})
+    token_fingerprint = hashlib.sha256((settings.azdo_token_value() or "").encode("utf-8")).hexdigest()
+    key = (
+        data_dir,
+        replay,
+        live,
+        settings.azdo_mode,
+        settings.azdo_org_url,
+        settings.azdo_project,
+        settings.azdo_mcp_endpoint or "",
+        token_fingerprint,
+    )
     with _lock:
         if key not in _controllers:
-            settings = Settings.from_env(ROOT / ".env").model_copy(update={"live_mode": live})
             _controllers[key] = RunController(ROOT, settings, Path(data_dir), Path(replay) if replay else None)
         return _controllers[key]
 

@@ -68,6 +68,13 @@ def test_la_ficha_incluye_descripcion_criterios_y_el_origen_manual():
     assert "Cargado a mano" in backlog_view.detail_markdown(nodes[100])
 
 
+def test_la_ficha_y_la_fila_incluyen_el_enlace_azure_si_existe():
+    item = {**work_item(107, "Product Backlog Item", "Una historia"), "url": "https://tp-itba.visualstudio.com/TP-ITBA/_workitems/edit/107"}
+    (node,) = backlog_view.build_nodes([item], None)
+    assert backlog_view.rows([node])[0]["Azure DevOps"] == item["url"]
+    assert f"[Abrir en Azure DevOps]({item['url']})" in backlog_view.detail_markdown(node)
+
+
 # ---- la pantalla ----
 
 

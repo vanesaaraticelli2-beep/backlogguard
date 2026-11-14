@@ -28,6 +28,7 @@ EXPECTED = {
         "armar_plan_dry_run",
         "revalidar_plan",
         "ejecutar_plan_aprobado",
+        "ejecutar_retiros_aprobados",
     },
 }
 
@@ -44,8 +45,8 @@ def visible(role: AgentRole, **overrides) -> set[str]:
     return {tool.name for tool in tools}
 
 
-def test_son_16_tools():
-    assert len(build_catalog_registry().tools) == 16
+def test_son_17_tools():
+    assert len(build_catalog_registry().tools) == 17
 
 
 @pytest.mark.parametrize("role", list(AgentRole))
@@ -66,6 +67,7 @@ def test_un_agente_no_puede_llamar_tools_de_otro_rol():
 
 def test_integracion_sin_permiso_de_escritura_no_ve_publicar():
     assert "ejecutar_plan_aprobado" not in visible(AgentRole.INTEGRACION, allow_external_writes=False)
+    assert "ejecutar_retiros_aprobados" not in visible(AgentRole.INTEGRACION, allow_external_writes=False)
 
 
 def test_integracion_sin_drafts_no_ve_dry_run():
@@ -109,4 +111,9 @@ def test_la_publicacion_tiene_tiempo_para_un_plan_grande_y_el_resto_conserva_el_
 
     tools = build_catalog_registry().tools
     assert tools["ejecutar_plan_aprobado"].timeout_s == PUBLISH_TIMEOUT_S >= 60
-    assert {t.timeout_s for name, t in tools.items() if name != "ejecutar_plan_aprobado"} == {3.0}
+    assert tools["ejecutar_retiros_aprobados"].timeout_s == PUBLISH_TIMEOUT_S
+    assert {
+        t.timeout_s
+        for name, t in tools.items()
+        if name not in {"ejecutar_plan_aprobado", "ejecutar_retiros_aprobados"}
+    } == {3.0}

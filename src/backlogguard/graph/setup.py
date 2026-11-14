@@ -16,7 +16,7 @@ from backlogguard.graph.budgets import load_budget
 from backlogguard.graph.builder import build_graph, sqlite_checkpointer
 from backlogguard.graph.deps import Providers, RunDeps, build_providers
 from backlogguard.hitl import load_people
-from backlogguard.integrations import PublicationLedger, SimulatedBacklog
+from backlogguard.integrations import PublicationLedger, build_backlog
 from backlogguard.llm import Settings
 from backlogguard.llm.model_costs import load_effective_models
 from backlogguard.llm.recording import Recording, replay_providers
@@ -36,6 +36,12 @@ def user_sources_dir(data_dir: Path) -> Path:
 def baseline_dir(data_dir: Path) -> Path:
     """Compromisos extraídos de la preventa (línea base), uno por preventa y ligados a su huella."""
     return data_dir / "linea_base"
+
+
+def publication_ledger_path(data_dir: Path, azdo_mode: str) -> Path:
+    """Keep simulated publication receipts separate from real Azure receipts."""
+    filename = "publicaciones_azure.sqlite" if azdo_mode == "real" else "publicaciones.sqlite"
+    return data_dir / filename
 
 
 def has_user_sources(directory: Path) -> bool:
@@ -73,8 +79,8 @@ def build_run_deps(
         memory=ProjectMemory(data / "memoria.sqlite", settings.azdo_project.lower()),
         policy=load_policy_config(root / "config" / "policy.yaml"),
         budget=budget,
-        backlog=SimulatedBacklog(data / "backlog_simulado.json"),
-        ledger=PublicationLedger(data / "publicaciones.sqlite"),
+        backlog=build_backlog(settings, data / "backlog_simulado.json"),
+        ledger=PublicationLedger(publication_ledger_path(data, settings.azdo_mode)),
         project=settings.azdo_project,
         people=load_people(root / "config" / "people.yaml"),
         catalog=Catalog(data / "catalogo.sqlite"),

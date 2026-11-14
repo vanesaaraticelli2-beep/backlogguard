@@ -34,6 +34,7 @@ class RequirementStatus(StrEnum):
     REEMPLAZADO = "reemplazado"
     DIVIDIDO = "dividido"
     FUSIONADO = "fusionado"
+    RETIRADO = "retirado"
 
 
 class ProposalKind(StrEnum):

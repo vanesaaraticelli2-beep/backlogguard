@@ -1,4 +1,4 @@
-"""Catálogo de las 16 Tools del sistema y su visibilidad por rol.
+"""Catálogo de las Tools del sistema y su visibilidad por rol.
 
 Los handlers son marcadores: cada agente reemplaza el suyo cuando se construye.
 Ahora existen para poder probar la política de visibilidad con las Tools reales.
@@ -79,13 +79,15 @@ _SPECS: list[tuple[str, AgentRole, ToolKind, str]] = [
      "Revalida el plan contra el backlog actual comparando su hash."),
     ("ejecutar_plan_aprobado", AgentRole.INTEGRACION, "write",
      "Publica en el backlog solo el plan aprobado, con clave de idempotencia por ítem."),
+    ("ejecutar_retiros_aprobados", AgentRole.INTEGRACION, "write",
+     "Retira work items propios de BacklogGuard únicamente desde un plan de reconciliación aprobado."),
 ]
 
 
 def build_catalog_registry(
     implementations: dict[str, tuple] | None = None,
 ) -> ToolRegistry:
-    """Registry con las 16 Tools; cada una visible solo para su rol.
+    """Registry con las Tools del sistema; cada una visible solo para su rol.
 
     `implementations` reemplaza el marcador de una Tool por su handler real:
     {nombre: (handler, args_model, idempotente[, guarda de autorización])}.
@@ -96,7 +98,10 @@ def build_catalog_registry(
         raise ValueError(f"Tools que no están en el catálogo: {sorted(unknown)}")
     registry = ToolRegistry()
     for name, role, kind, description in _SPECS:
-        is_publish = name == "ejecutar_plan_aprobado"
+        is_publish = name in {
+            "ejecutar_plan_aprobado",
+            "ejecutar_retiros_aprobados",
+        }
         handler, args_model, idempotent, *guard = implementations.get(
             name, (_not_implemented(name), ExecutePlanArgs if is_publish else None, not is_publish)
         )

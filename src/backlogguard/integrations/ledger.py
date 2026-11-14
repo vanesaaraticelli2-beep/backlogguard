@@ -26,6 +26,10 @@ class PublicationLedger:
                 "key TEXT PRIMARY KEY, item_id TEXT NOT NULL, remote_id INTEGER, status TEXT NOT NULL, updated_at TEXT NOT NULL)"
             )
             conn.execute("CREATE TABLE IF NOT EXISTS plans (hash TEXT PRIMARY KEY, json TEXT NOT NULL, created_at TEXT NOT NULL)")
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS reconciliations ("
+                "hash TEXT NOT NULL, approved_by TEXT NOT NULL, result_json TEXT NOT NULL, created_at TEXT NOT NULL)"
+            )
 
     def _connect(self) -> sqlite3.Connection:
         conn = sqlite3.connect(self.path)
@@ -62,3 +66,10 @@ class PublicationLedger:
         with closing(self._connect()) as conn:
             row = conn.execute("SELECT json FROM plans WHERE hash = ?", (plan_hash,)).fetchone()
         return row["json"] if row else None
+
+    def record_reconciliation(self, plan_hash: str, approved_by: str, result_json: str) -> None:
+        with closing(self._connect()) as conn, conn:
+            conn.execute(
+                "INSERT INTO reconciliations(hash, approved_by, result_json, created_at) VALUES (?, ?, ?, ?)",
+                (plan_hash, approved_by, result_json, _now()),
+            )

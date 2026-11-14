@@ -6,6 +6,7 @@ import pytest
 from test_demo import record_run
 
 from backlogguard.llm import Settings
+from backlogguard.integrations import MCPBacklog, SimulatedBacklog
 from backlogguard.ui import runtime
 from backlogguard.ui.controller import RunController
 
@@ -22,12 +23,45 @@ def screen(tmp_path, monkeypatch):
     recording.save(recording_path)
     data = tmp_path / "datos"
     monkeypatch.setenv("LIVE_MODE", "0")
+    monkeypatch.setenv("AZDO_MODE", "simulated")
     monkeypatch.setenv("BACKLOGGUARD_DATA", str(data))
     monkeypatch.setenv("BACKLOGGUARD_RECORDING", str(recording_path))
     at = streamlit_testing.AppTest.from_file(str(APP), default_timeout=30)
     at.run()
     controller = runtime.get_controller(str(data), str(recording_path), False)
     return at, controller
+
+
+def test_runtime_recrea_el_controlador_si_cambia_la_configuracion_azure(tmp_path, monkeypatch):
+    data = str(tmp_path / "cambia-configuracion-azure")
+    replay = ""
+    monkeypatch.setenv("AZDO_MODE", "real")
+    monkeypatch.setenv("AZDO_ORG_URL", "https://tp-itba.visualstudio.com/")
+    monkeypatch.setenv("AZDO_PROJECT", "TP-ITBA")
+    monkeypatch.setenv("AZDO_TOKEN", "test-token")
+    assert Settings.from_env(runtime.ROOT / ".env").azdo_mode == "real"
+    real = runtime.get_controller(data, replay, False)
+    assert isinstance(real.deps.backlog, MCPBacklog)
+
+    monkeypatch.setenv("AZDO_MODE", "simulated")
+    simulated = runtime.get_controller(data, replay, False)
+
+    assert simulated is not real and isinstance(simulated.deps.backlog, SimulatedBacklog)
+
+
+def test_runtime_recrea_el_controlador_si_cambia_el_endpoint_mcp(tmp_path, monkeypatch):
+    data = str(tmp_path / "cambia-endpoint-mcp")
+    monkeypatch.setenv("AZDO_MODE", "real")
+    monkeypatch.setenv("AZDO_ORG_URL", "https://tp-itba.visualstudio.com/")
+    monkeypatch.setenv("AZDO_PROJECT", "TP-ITBA")
+    monkeypatch.setenv("AZDO_TOKEN", "test-token")
+    monkeypatch.setenv("AZDO_MCP_ENDPOINT", "http://127.0.0.1:8000/mcp")
+    first = runtime.get_controller(data, "", False)
+
+    monkeypatch.setenv("AZDO_MCP_ENDPOINT", "http://127.0.0.1:8001/mcp")
+    second = runtime.get_controller(data, "", False)
+
+    assert second is not first
 
 
 def pick(at, name):

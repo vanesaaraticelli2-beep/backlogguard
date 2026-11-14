@@ -8,15 +8,25 @@ barra lateral y solo ve los pedidos que le corresponden por su rol.
 """
 from __future__ import annotations
 
+import logging
 import re
 from datetime import date
 
 import streamlit as st
 
+from backlogguard.agents.integracion import execute_approved_plan
 from backlogguard.board import Board, SourceType
 from backlogguard.catalog.ingest import estimate_ingest, ingest_meeting
 from backlogguard.graph.failures import explain_llm_failure, first_explained
 from backlogguard.graph.setup import baseline_dir, has_user_sources, user_sources_dir
+from backlogguard.agents.integracion import execute_approved_reconciliation
+from backlogguard.integrations import (
+    BacklogError,
+    PublishService,
+    ReconciliationService,
+    RetirementPlan,
+)
+from backlogguard.integrations.plan import PublishPlan, mark_published_requirements
 from backlogguard.graph.tasks import KIND_TITLES, PARTIES, summarize_tasks
 from backlogguard.llm.metering import load_pricing
 from backlogguard.rag import SourceLibrary, build_chunks
@@ -31,7 +41,7 @@ from backlogguard.ui import backlog_view, plan_view
 from backlogguard.ui.glossary import glossary_markdown
 from backlogguard.ui.models_view import models_card
 from backlogguard.ui.consumption_view import consumption_card
-from backlogguard.ui.guide import ADVANCED_TABS, AVANZADO, CORRIDA, DECISIONES, FUENTES, HELP, HISTORIAS, REVISION, TABS, render_guide
+from backlogguard.ui.guide import ADVANCED_TABS, AVANZADO, AZURE_SYNC, CORRIDA, DECISIONES, FUENTES, HELP, HISTORIAS, REVISION, TABS, render_guide
 from backlogguard.ui.revision import KIND_LABELS, tab_catalog, tab_review
 from backlogguard.ui.runtime import make_controller
 from backlogguard.ui.story_view import current_baseline, is_story, render_story
@@ -42,6 +52,7 @@ from backlogguard.ui.scroll import DECISION, anchor, apply_scroll, request_scrol
 from backlogguard.ui.working import runner_html, working
 
 SOURCE_LABELS = {"preventa": "Línea base (preventa)", "reunion": "Evidencia (reunión)", "minuta": "Evidencia (minuta)"}
+logger = logging.getLogger(__name__)
 ROLE_LABELS_DECISION = {"product_owner": "product owner", "service_manager": "service manager", "full_stack_ia_engineer": "ingeniero"}
 ROLE_LABELS = {"linea_base": "Línea base", "evidencia": "Evidencia"}
 STATE_LABELS = {
@@ -116,6 +127,36 @@ def evidence_cards(evidence: list[dict]) -> None:
         st.caption(f"{label + ' · ' if label else ''}{entry['source_name']} · {entry['source_date']}{where} · {entry.get('speaker') or 's/d'}")
 
 
+def _provider_error_copy(error: Exception) -> tuple[str, str]:
+    """Convierte una falla del proveedor en texto seguro y accionable para la interfaz."""
+    explanation = explain_llm_failure(f"{type(error).__name__}: {error}")
+    if explanation:
+        title = (
+            "La cuenta de API no tiene crédito disponible"
+            if "no tiene crédito" in explanation.lower()
+            else "El proveedor rechazó el acceso"
+        )
+        return title, explanation
+    return (
+        "No se pudo completar la extracción",
+        "El proveedor no pudo procesar la solicitud. Revisá la configuración o los registros del servidor; "
+        "por seguridad no mostramos el detalle técnico en esta pantalla.",
+    )
+
+
+def _show_provider_error(error_key: str) -> None:
+    error = st.session_state.get(error_key)
+    if not error:
+        return
+    with st.container(border=True):
+        st.markdown(f"#### ⚠️ {error['title']}")
+        st.write(error["message"])
+        st.caption("No se guardó una extracción incompleta. Corregí el problema y volvé a intentar.")
+        if st.button("Cerrar aviso", key=f"{error_key}_dismiss"):
+            st.session_state.pop(error_key, None)
+            st.rerun()
+
+
 def decision_payload(request: dict, who, action: str, comment: str, edited: dict | None) -> dict:
     return {
         "decision": action, "actor": who.name, "actor_role": who.role, "request_id": request["request_id"],
@@ -165,6 +206,48 @@ def plan_preview(payload: dict) -> None:
     for item in items:
         with st.expander(plan_view.item_heading(item), expanded=len(items) <= 3 and item["action"] != "omitir"):
             st.markdown(plan_view.item_markdown(item, titles.get(item.get("parent_item_id") or "")))
+            if item["action"] == "actualizar" and item.get("current_title") is not None:
+                current, proposed = st.columns(2)
+                current.text_area(
+                    "Contenido actual en Azure · título",
+                    value=item.get("current_title") or "",
+                    disabled=True,
+                    key=f"preview-{payload.get('hash', 'pending')}-{item['item_id']}-current-title",
+                )
+                proposed.text_area(
+                    "Propuesta · título",
+                    value=item["title"],
+                    disabled=True,
+                    key=f"preview-{payload.get('hash', 'pending')}-{item['item_id']}-proposed-title",
+                )
+                current.text_area(
+                    "Contenido actual en Azure · descripción",
+                    value=item.get("current_description") or "",
+                    height=140,
+                    disabled=True,
+                    key=f"preview-{payload.get('hash', 'pending')}-{item['item_id']}-current-description",
+                )
+                proposed.text_area(
+                    "Propuesta · descripción",
+                    value=item.get("description") or "",
+                    height=140,
+                    disabled=True,
+                    key=f"preview-{payload.get('hash', 'pending')}-{item['item_id']}-proposed-description",
+                )
+                current.text_area(
+                    "Criterios actuales en Azure",
+                    value="\n".join(item.get("current_acceptance_criteria") or []),
+                    height=100,
+                    disabled=True,
+                    key=f"preview-{payload.get('hash', 'pending')}-{item['item_id']}-current-criteria",
+                )
+                proposed.text_area(
+                    "Criterios propuestos",
+                    value="\n".join(item.get("acceptance_criteria") or []),
+                    height=100,
+                    disabled=True,
+                    key=f"preview-{payload.get('hash', 'pending')}-{item['item_id']}-proposed-criteria",
+                )
     st.caption(
         "Aprobar publica exactamente este plan. Para sacar ítems antes de publicar, usá «Excluir ítems del plan», debajo de tu decisión: "
         "genera una versión nueva para volver a revisar."
@@ -526,6 +609,165 @@ def publish_selection(controller: RunController, who, request: dict, chosen: set
     return controller.error
 
 
+def reconciliation_service(controller: RunController) -> ReconciliationService:
+    return ReconciliationService(
+        controller.deps.catalog,
+        controller.deps.backlog,
+        controller.deps.ledger,
+        controller.deps.project,
+    )
+
+
+def tab_reconciliation(controller: RunController, who=None) -> None:
+    """Final, separately approved soft-retirement plan for superseded published requirements."""
+    catalog = getattr(controller.deps, "catalog", None)
+    if catalog is None:
+        return
+    st.divider()
+    st.markdown("### Etapa final: aplicar cambios de alcance en Azure")
+    st.caption(
+        "No borra work items físicamente. Propone pasar a un estado de categoría “Removed” "
+        "los requisitos retirados explícitamente o reemplazados/divididos/fusionados que BacklogGuard publicó. "
+        "Los ítems manuales y los que tienen hijos activos quedan protegidos."
+    )
+    if controller.read_only:
+        st.info("Esta corrida guardada es de solo lectura.")
+        return
+    if controller.running:
+        st.info("La reconciliación aparece cuando termina la corrida y sus decisiones.")
+        return
+
+    session_key = f"reconciliation_{controller.deps.project}"
+    if st.button(
+        "Analizar requisitos retirables (solo lectura)",
+        key=f"{session_key}_analyze",
+        disabled=controller.running,
+    ):
+        try:
+            preview = reconciliation_service(controller).build()
+        except BacklogError as exc:
+            st.error(f"No se pudo analizar Azure: {exc}")
+        else:
+            st.session_state[session_key] = {
+                "preview": preview.model_dump(mode="json"),
+                "plan": None,
+                "report": None,
+            }
+
+    state = st.session_state.get(session_key)
+    if not state:
+        st.info("Cuando haya requisitos del catálogo reemplazados, divididos o fusionados y publicados, analizalos acá.")
+        return
+
+    preview = RetirementPlan.model_validate(state["preview"])
+    if not preview.items:
+        st.success("No hay work items publicados asociados a requisitos reemplazados.")
+        return
+    st.dataframe(
+        [
+            {
+                "Requisito": item.requirement_id,
+                "Work item": f"#{item.remote_id}",
+                "Título": item.title,
+                "Estado actual": item.current_state,
+                "Acción": item.action,
+                "Motivo": item.reason,
+            }
+            for item in preview.items
+        ],
+        width="stretch",
+        hide_index=True,
+    )
+    selectable = {
+        f"{item.requirement_id} · #{item.remote_id} · {item.title}": item.requirement_id
+        for item in preview.items
+        if item.action == "omitido" and item.reason.startswith("elegible;")
+    }
+    if not selectable:
+        st.info("No hay ítems elegibles para retirar. Los bloqueos se explican en la tabla.")
+        return
+    selected_labels = st.multiselect(
+        "Elegí individualmente qué work items retirar",
+        list(selectable),
+        key=f"{session_key}_selection",
+    )
+    selected_ids = {selectable[label] for label in selected_labels}
+    if st.button(
+        "Armar dry-run de retiro",
+        key=f"{session_key}_arm",
+        disabled=not selected_ids or controller.running,
+    ):
+        try:
+            plan = reconciliation_service(controller).arm(selected_ids)
+        except (BacklogError, ValueError) as exc:
+            st.error(f"No se pudo armar el plan: {exc}")
+        else:
+            st.session_state[session_key] = {
+                **state,
+                "plan": plan.model_dump(mode="json"),
+                "report": None,
+            }
+            st.rerun()
+
+    state = st.session_state.get(session_key, state)
+    if state.get("report"):
+        report = state["report"]
+        if report["ok"]:
+            st.success("Reconciliación completada.")
+        else:
+            st.error(report.get("error") or "La reconciliación se detuvo.")
+        st.dataframe(report["results"], width="stretch", hide_index=True)
+
+    if not state.get("plan"):
+        return
+    plan = RetirementPlan.model_validate(state["plan"])
+    st.markdown(f"**Dry-run {plan.plan_hash} · {len(plan.selected_items)} retiro(s)**")
+    confirm_key = f"{session_key}_{plan.plan_hash}_confirm"
+    confirmed = st.checkbox(
+        f"Confirmo retirar estos {len(plan.selected_items)} work item(s) cambiando su estado en Azure.",
+        key=confirm_key,
+        disabled=not who or who.role != "full_stack_ia_engineer",
+    )
+    endpoint_is_read_only = bool(controller.settings.azdo_mcp_endpoint)
+    if endpoint_is_read_only:
+        st.warning("El endpoint MCP configurado es de solo lectura; la ejecución está deshabilitada.")
+    if not who or who.role != "full_stack_ia_engineer":
+        st.info("La aprobación final corresponde al Full Stack IA Engineer.")
+    if st.button(
+        "Aprobar y retirar los seleccionados",
+        key=f"{session_key}_{plan.plan_hash}_execute",
+        disabled=(
+            not confirmed
+            or controller.running
+            or endpoint_is_read_only
+            or not who
+            or who.role != "full_stack_ia_engineer"
+        ),
+    ):
+        publish_service = PublishService(
+            Board(),
+            controller.deps.backlog,
+            controller.deps.ledger,
+            controller.deps.project,
+        )
+        try:
+            report = execute_approved_reconciliation(
+                plan.plan_hash,
+                service=publish_service,
+                reconciliation=reconciliation_service(controller),
+                approved_by=who.name,
+                run_id=controller.thread_id or "reconciliacion-local",
+            )
+        except BacklogError as exc:
+            st.error(f"No se pudo ejecutar el plan: {exc}")
+        else:
+            st.session_state[session_key] = {
+                **state,
+                "report": report.model_dump(mode="json"),
+            }
+            st.rerun()
+
+
 def plan_selector(controller: RunController, who) -> None:
     """Desde el backlog simulado, el ingeniero elige qué work items se envían a Azure DevOps y cuáles no (o rechaza todo)."""
     payload = controller.pending()
@@ -534,7 +776,11 @@ def plan_selector(controller: RunController, who) -> None:
         return
     request = payload["request"]
     items = request["payload"]["items"]
-    st.markdown("### Plan de publicación pendiente: elegí qué se envía a Azure DevOps")
+    st.markdown("### Revisá altas y ediciones antes de aplicarlas en Azure DevOps")
+    st.caption(
+        "Los elementos nuevos se crearán; los ya publicados que cambiaron se actualizarán. "
+        "La tabla muestra cada operación para revisar y aprobar. Ningún cambio se envía hasta aprobar el plan."
+    )
     coverage_section(controller.state())
     if payload.get("last_error"):
         st.warning(f"Tu última decisión no se aplicó: {payload['last_error']}")
@@ -558,6 +804,49 @@ def plan_selector(controller: RunController, who) -> None:
         elif st.checkbox(plan_view.item_heading(item), value=item["item_id"] not in excluded, disabled=not can_decide, key=box[item["item_id"]]):
             chosen.add(item["item_id"])
         st.caption(item["reason"])
+        if item["action"] == "actualizar":
+            with st.expander(f"Comparar Azure #{item['remote_id']} con la versión revisada"):
+                current, proposed = st.columns(2)
+                current.text_area(
+                    "Contenido actual en Azure · título",
+                    value=item.get("current_title") or "",
+                    disabled=True,
+                    key=f"{key}-{item['item_id']}-current-title",
+                )
+                proposed.text_area(
+                    "Propuesta revisada · título",
+                    value=item["title"],
+                    disabled=True,
+                    key=f"{key}-{item['item_id']}-proposed-title",
+                )
+                current.text_area(
+                    "Contenido actual en Azure · descripción",
+                    value=item.get("current_description") or "",
+                    height=160,
+                    disabled=True,
+                    key=f"{key}-{item['item_id']}-current-description",
+                )
+                proposed.text_area(
+                    "Propuesta revisada · descripción",
+                    value=item.get("description") or "",
+                    height=160,
+                    disabled=True,
+                    key=f"{key}-{item['item_id']}-proposed-description",
+                )
+                current.text_area(
+                    "Criterios actuales en Azure",
+                    value="\n".join(item.get("current_acceptance_criteria", [])),
+                    height=120,
+                    disabled=True,
+                    key=f"{key}-{item['item_id']}-current-criteria",
+                )
+                proposed.text_area(
+                    "Criterios propuestos",
+                    value="\n".join(item.get("acceptance_criteria", [])),
+                    height=120,
+                    disabled=True,
+                    key=f"{key}-{item['item_id']}-proposed-criteria",
+                )
     st.markdown(plan_view.selection_line(items, chosen))
     for warning in plan_view.orphan_warnings(items, chosen):
         st.warning(warning)
@@ -587,16 +876,187 @@ def plan_selector(controller: RunController, who) -> None:
     st.divider()
 
 
-def tab_backlog(controller: RunController, who=None) -> None:
-    """Lo que hay en el backlog simulado de Azure DevOps: jerarquía, qué cambió en la corrida y la ficha de cada work item."""
-    if who is not None:
+def tab_saved_publication(controller: RunController, who) -> None:
+    """Rebuild a reviewable publication dry-run from an already processed run."""
+    st.markdown("### Preparar publicación desde historias ya procesadas")
+    st.caption(
+        "Si la corrida terminó o la aplicación se reinició, elegí una corrida guardada para volver a comparar "
+        "sus historias aprobadas con Azure. Preparar el plan solo consulta Azure; no crea ni modifica work items."
+    )
+    runs = [run for run in controller.list_runs() if run["items"] and not run["waiting"]]
+    if not runs:
+        st.info("No hay corridas guardadas con historias listas para preparar una publicación.")
+        return
+    labels = {
+        f"{run['thread_id']} · {STATUS_TEXT.get(run['status'], run['status'])} · {run['items']} ítem(s)": run["thread_id"]
+        for run in runs
+    }
+    selected_label = st.selectbox("Corrida procesada", list(labels), key="azure_backfill_run")
+    run_id = labels[selected_label]
+    mode = controller.settings.azdo_mode
+    state_key = f"azure_publication_{controller.deps.project}_{mode}_{run_id}"
+    if st.button("Comparar historias con Azure", key="azure_backfill_build", disabled=controller.running):
+        try:
+            snapshot = controller.saved_run_state(run_id)
+            if not snapshot.get("board"):
+                raise BacklogError("La corrida guardada no contiene un tablero para publicar.")
+            board = Board.model_validate(snapshot["board"])
+            service = PublishService(board, controller.deps.backlog, controller.deps.ledger, controller.deps.project)
+            plan = service.arm()
+        except (BacklogError, KeyError, ValueError) as exc:
+            st.error(f"No se pudo preparar el dry-run: {exc}")
+        else:
+            st.session_state[state_key] = {
+                "run_id": run_id,
+                "mode": mode,
+                "project": controller.deps.project,
+                "plan": plan.model_dump(mode="json"),
+                "available_ids": [item.item_id for item in plan.items if item.action != "omitir"],
+                "selected_ids": [item.item_id for item in plan.items if item.action != "omitir"],
+                "item_titles": {item.item_id: item.title for item in plan.items},
+                "report": None,
+            }
+
+    staged = st.session_state.get(state_key)
+    if not staged:
+        return
+    available_ids = staged.get("available_ids", [])
+    if available_ids:
+        selected_ids = st.multiselect(
+            "Operaciones a incluir en el dry-run",
+            available_ids,
+            default=staged.get("selected_ids", available_ids),
+            format_func=lambda item_id: f"{item_id} · {staged['item_titles'].get(item_id, item_id)}",
+            key=f"{state_key}_selection",
+        )
+        if set(selected_ids) != set(staged.get("selected_ids", available_ids)):
+            if st.button("Actualizar dry-run con esta selección", key=f"{state_key}_update_selection"):
+                try:
+                    snapshot = controller.saved_run_state(run_id)
+                    board = Board.model_validate(snapshot["board"])
+                    excluded = frozenset(set(available_ids) - set(selected_ids))
+                    service = PublishService(
+                        board,
+                        controller.deps.backlog,
+                        controller.deps.ledger,
+                        controller.deps.project,
+                        excluded,
+                    )
+                    plan = service.arm()
+                except (BacklogError, KeyError, ValueError) as exc:
+                    st.error(f"No se pudo actualizar el dry-run: {exc}")
+                else:
+                    st.session_state[state_key] = {
+                        **staged,
+                        "plan": plan.model_dump(mode="json"),
+                        "selected_ids": list(selected_ids),
+                        "report": None,
+                    }
+                    st.rerun()
+    plan = PublishPlan.model_validate(staged["plan"])
+    st.caption(f"Dry-run · proyecto {plan.project} · hash `{plan.plan_hash}`")
+    plan_preview(
+        {
+            "hash": plan.plan_hash,
+            "items": [
+                {
+                    "item_id": item.item_id,
+                    "action": item.action,
+                    "type": item.work_item_type,
+                    "title": item.title,
+                    "reason": item.reason,
+                    "description": item.description,
+                    "acceptance_criteria": item.acceptance_criteria,
+                    "parent_item_id": item.parent_item_id,
+                    "remote_id": item.remote_id,
+                    "current_title": item.current_title,
+                    "current_description": item.current_description,
+                    "current_acceptance_criteria": item.current_acceptance_criteria,
+                }
+                for item in plan.items
+            ],
+        }
+    )
+    if not plan.has_changes:
+        st.info("No hay altas, ediciones ni vínculos pendientes. Los ítems ya coinciden con Azure o están omitidos por seguridad.")
+    elif staged.get("report"):
+        report = staged["report"]
+        if report["ok"]:
+            st.success("Publicación completada.")
+        else:
+            st.error(report.get("error") or "La publicación se detuvo; revisá los resultados parciales antes de reintentar.")
+        st.dataframe(report["results"], width="stretch", hide_index=True)
+    else:
+        can_write = mode == "real" and who and who.role == "full_stack_ia_engineer"
+        read_only_endpoint = bool(controller.settings.azdo_mcp_endpoint)
+        if mode != "real":
+            st.warning("Este plan se armó en modo simulado. No puede escribir en Azure; activá el modo real y volvé a preparar el dry-run.")
+        elif read_only_endpoint:
+            st.warning("El endpoint MCP configurado es de solo lectura; la ejecución está deshabilitada.")
+        elif not can_write:
+            st.info("La aprobación final corresponde al Full Stack IA Engineer.")
+        approved = st.checkbox(
+            f"Apruebo el plan `{plan.plan_hash}` para el proyecto {plan.project}, con {sum(item.action != 'omitir' for item in plan.items)} operación(es).",
+            key=f"{state_key}_approve",
+            disabled=not can_write or read_only_endpoint,
+        )
+        if st.button(
+            "Aprobar y aplicar en Azure",
+            key=f"{state_key}_execute",
+            type="primary",
+            disabled=not approved or not can_write or read_only_endpoint or controller.running,
+        ):
+            try:
+                snapshot = controller.saved_run_state(run_id)
+                board = Board.model_validate(snapshot["board"])
+                service = PublishService(board, controller.deps.backlog, controller.deps.ledger, controller.deps.project)
+                report = execute_approved_plan(
+                    plan.plan_hash,
+                    service=service,
+                    approved_by=who.name,
+                    run_id=run_id,
+                )
+                mark_published_requirements(controller.deps.catalog, board, report)
+            except (BacklogError, KeyError, ValueError) as exc:
+                st.error(f"No se pudo aplicar el plan: {exc}")
+            else:
+                st.session_state[state_key] = {**staged, "report": report.model_dump(mode="json")}
+                st.rerun()
+
+
+def tab_azure_sync(controller: RunController, who) -> None:
+    """Final UI for reviewing and separately approving Azure creates, updates, and retirements."""
+    settings = getattr(controller, "settings", None)
+    if getattr(settings, "azdo_mode", "simulated") == "simulated":
+        st.info("Modo simulado: los cambios se aplican solo al backlog local; no se escribe en Azure.")
+    else:
+        st.info(
+            f"Destino configurado: Azure DevOps · {settings.azdo_project}. "
+            "Verificá la conexión en Avanzado → Azure DevOps / Conexión."
+        )
+    st.markdown("### Aplicar a Azure el resultado ya revisado")
+    st.caption(
+        "Las altas y ediciones provienen del plan de publicación de la corrida y requieren aprobación. "
+        "Para retirar un work item, primero marcá el requisito explícitamente en Avanzado → Catálogo; "
+        "luego revisá y aprobá el plan de retiro de forma separada."
+    )
+    plan_selector(controller, who)
+    tab_saved_publication(controller, who)
+    st.divider()
+    tab_reconciliation(controller, who)
+
+
+def tab_backlog(controller: RunController, who=None, *, include_sync: bool = True) -> None:
+    """Lo que hay en Azure DevOps: jerarquía, qué cambió en la corrida y la ficha de cada work item."""
+    if include_sync and who is not None:
         plan_selector(controller, who)
     if not controller.running:
         controller.deps.backlog.reload()  # otro proceso pudo haber publicado
-    st.info(
-        "**Azure DevOps SIMULADO.** Estos work items se guardan en `data/backlog_simulado.json` y se comportan como Azure "
-        "(ids, versiones, etiquetas y padres), pero no existen en un Azure DevOps real: la integración real todavía no está conectada."
-    )
+    settings = getattr(controller, "settings", None)
+    if getattr(settings, "azdo_mode", "simulated") == "simulated":
+        st.info("**Azure DevOps SIMULADO.** Estos work items se guardan localmente en `data/backlog_simulado.json`; no existen en la organización real.")
+    else:
+        st.info(f"**Azure DevOps real · {settings.azdo_project}.** La lectura es en vivo; la publicación requiere aprobar el plan.")
     before = None if controller.read_only else controller.backlog_before
     nodes = backlog_view.build_nodes(controller.deps.backlog.search(), before)
     if controller.read_only:
@@ -609,7 +1069,13 @@ def tab_backlog(controller: RunController, who=None) -> None:
     else:
         view = st.segmented_control("Mostrar", backlog_view.FILTERS, default=backlog_view.FILTERS[0], required=True, key="backlog_filtro")
         shown = backlog_view.apply_filter(nodes, view)
-        st.dataframe(backlog_view.rows(shown), width="stretch", hide_index=True)
+        rows = backlog_view.rows(shown)
+        column_config = (
+            {"Azure DevOps": st.column_config.LinkColumn("Azure DevOps", display_text="Abrir")}
+            if any(row.get("Azure DevOps") for row in rows)
+            else None
+        )
+        st.dataframe(rows, column_config=column_config, width="stretch", hide_index=True)
         if shown:
             by_label = {backlog_view.option_label(n): n for n in shown}
             pick = st.selectbox("Ver el detalle de un work item", list(by_label), key="backlog_detalle")
@@ -630,6 +1096,51 @@ def tab_backlog(controller: RunController, who=None) -> None:
             or [{"ítem": "—", "resultado": publication.get("error", ""), "work item": "", "detalle": ""}],
             width="stretch", hide_index=True,
         )
+    if include_sync:
+        tab_reconciliation(controller, who)
+
+
+def tab_azure_connection(controller: RunController) -> None:
+    """Configuración visible y prueba de conectividad; el secreto nunca se muestra en el navegador."""
+    settings = controller.settings
+    st.caption("Organización, proyecto y autenticación se configuran en el backend. No ingreses un PAT en esta pantalla.")
+    st.write(f"**Organización:** {settings.azdo_org_url or 'sin configurar'}")
+    st.write(f"**Proyecto:** {settings.azdo_project}")
+    mcp_endpoint_configured = bool(settings.azdo_mcp_endpoint)
+    if settings.azdo_mode == "real":
+        if mcp_endpoint_configured:
+            st.write("**Autenticación:** gestionada por el servidor MCP (backend).")
+        else:
+            st.write("**Autenticación:** PAT de desarrollo configurado en backend/secret store." if settings.azdo_token_value() else "**Autenticación:** no configurada.")
+    else:
+        st.write("**Autenticación:** no se usa en modo simulado.")
+    if settings.azdo_mode != "real":
+        st.info("Modo simulado: no se realizan llamadas a Azure DevOps. Para comprobar la conexión, configura AZDO_MODE=real en desarrollo.")
+        return
+    if not mcp_endpoint_configured and not settings.azdo_token_value():
+        st.error("Falta AZDO_TOKEN en la configuración segura del backend.")
+        return
+
+    if st.button("Probar conexión y descubrir tipos", key="probar-conexion-azure", disabled=controller.running):
+        try:
+            with st.spinner("Consultando organización, proyecto y proceso…"):
+                result = controller.deps.backlog.test_connection()
+        except BacklogError as exc:
+            st.error(f"No se pudo conectar: {exc}")
+        else:
+            st.success(f"Conexión correcta con {result['project']}.")
+            st.write("**Tipos de work item disponibles:** " + ", ".join(result["work_item_types"]))
+    if st.button("Listar proyectos accesibles", key="listar-proyectos-azure", disabled=controller.running):
+        try:
+            with st.spinner("Consultando proyectos autorizados…"):
+                projects = controller.deps.backlog.list_projects()
+        except BacklogError as exc:
+            st.error(f"No se pudieron consultar los proyectos: {exc}")
+        else:
+            if projects:
+                st.dataframe(projects, hide_index=True, width="stretch")
+            else:
+                st.info("La identidad no tiene proyectos visibles en esta organización.")
 
 
 def tab_activity(controller: RunController) -> None:
@@ -776,13 +1287,22 @@ def baseline_section(controller: RunController, library: SourceLibrary) -> None:
                 st.info("La extracción necesita modelos reales (LIVE_MODE=1).")
             sure = st.checkbox("Confirmo el gasto", key=f"confirmar-linea-base-{presale}")
             if st.button("Extraer compromisos", key=f"extraer-{presale}", disabled=controller.running or controller.mode != "real" or not sure):
-                with working("Extrayendo los compromisos de la preventa…"):
-                    bar = st.progress(0.0, text="Extrayendo los compromisos…")
-                    extract_commitments(
-                        document, controller.deps.providers.auditor, store, confirmed=True, pricing=load_pricing(),
-                        on_progress=lambda done, total: bar.progress(done / total, text=f"Ventana {done} de {total} lista"),
-                    )
-                st.rerun()
+                error_key = f"linea-base-error-{presale}"
+                st.session_state.pop(error_key, None)
+                try:
+                    with working("Extrayendo los compromisos de la preventa…"):
+                        bar = st.progress(0.0, text="Extrayendo los compromisos…")
+                        extract_commitments(
+                            document, controller.deps.providers.auditor, store, confirmed=True, pricing=load_pricing(),
+                            on_progress=lambda done, total: bar.progress(done / total, text=f"Ventana {done} de {total} lista"),
+                        )
+                except Exception as exc:
+                    logger.exception("Falló la extracción de compromisos (fuente=%s)", presale)
+                    title, message = _provider_error_copy(exc)
+                    st.session_state[error_key] = {"title": title, "message": message}
+                else:
+                    st.rerun()
+            _show_provider_error(f"linea-base-error-{presale}")
         baseline = store.current(document)
         if baseline is None:
             continue
@@ -898,6 +1418,7 @@ def main() -> None:
     who = people.get(name)
     st.sidebar.caption(f"Rol: {who.role}")
     st.sidebar.caption(f"Modo: {controller.mode}")
+    st.sidebar.caption(f"Azure DevOps: {controller.settings.azdo_mode}")
     with st.sidebar.expander("Referencia de siglas"):
         st.markdown(glossary_markdown())
     models_card(controller)
@@ -908,7 +1429,7 @@ def main() -> None:
         if st.sidebar.button("Empezar proyecto nuevo", key="proyecto-nuevo", disabled=controller.running or not sure):
             controller.new_project()
             st.rerun()
-    elif st.sidebar.button("Reiniciar demo", key="reiniciar", disabled=controller.running):
+    elif controller.settings.azdo_mode == "simulated" and st.sidebar.button("Reiniciar demo", key="reiniciar", disabled=controller.running):
         controller.reset_demo()
         st.rerun()
 
@@ -916,7 +1437,7 @@ def main() -> None:
     top_band("Del dicho al backlog")
     live_status(controller)
     render_guide(controller, who)
-    sources, review, run, board, decisions, advanced = st.tabs(TABS, key="nav", on_change="rerun")
+    sources, review, run, board, decisions, azure_sync, advanced = st.tabs(TABS, key="nav", on_change="rerun")
     with sources:
         help_line(HELP[FUENTES])
         tab_sources(controller)
@@ -932,17 +1453,22 @@ def main() -> None:
     with decisions:
         help_line(HELP[DECISIONES])
         tab_decisions(controller, who)
+    with azure_sync:
+        help_line(HELP[AZURE_SYNC])
+        tab_azure_sync(controller, who)
     with advanced:
         help_line(HELP[AVANZADO])
-        detail, catalog, saved, backlog = st.tabs(ADVANCED_TABS)
+        detail, catalog, saved, backlog, azure = st.tabs(ADVANCED_TABS)
         with detail:
             tab_detail(controller)
         with catalog:
-            tab_catalog(controller)
+            tab_catalog(controller, who)
         with saved:
             tab_runs(controller)
         with backlog:
-            tab_backlog(controller, who)
+            tab_backlog(controller, include_sync=False)
+        with azure:
+            tab_azure_connection(controller)
     apply_scroll(DECISION)
 
 

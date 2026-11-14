@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
+from contextvars import copy_context
 from time import perf_counter, sleep
 
 from pydantic import ValidationError
@@ -172,7 +173,8 @@ class ToolRegistry:
             started = perf_counter()
 
             try:
-                future = executor.submit(tool.fn, args)
+                execution_context = copy_context()
+                future = executor.submit(execution_context.run, tool.fn, args)
                 raw_result = future.result(timeout=tool.timeout_s)
                 elapsed_ms = (perf_counter() - started) * 1000
 

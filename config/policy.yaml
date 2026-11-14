@@ -19,7 +19,7 @@ roles:
       - registrar_decision_aprobada
   integracion:
     kinds: [read, compute, draft, external_effect, write]
-    tools: [buscar_en_backlog, armar_plan_dry_run, revalidar_plan, ejecutar_plan_aprobado]
+    tools: [buscar_en_backlog, armar_plan_dry_run, revalidar_plan, ejecutar_plan_aprobado, ejecutar_retiros_aprobados]
 
 pauses:
   - condition: cambio_de_alcance

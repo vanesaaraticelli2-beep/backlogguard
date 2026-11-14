@@ -15,8 +15,9 @@ from backlogguard.catalog.review import decider_role
 FUENTES, REVISION, CORRIDA, DECISIONES, HISTORIAS, AVANZADO = (
     "Fuentes", "Revisión", "Corrida", "Mis decisiones", "Historias de usuario", "Avanzado",
 )
-TABS = [FUENTES, REVISION, CORRIDA, HISTORIAS, DECISIONES, AVANZADO]
-ADVANCED_TABS = ["Detalle de la corrida", "Catálogo", "Corridas guardadas", "Backlog simulado"]
+AZURE_SYNC = "Sincronizar con Azure"
+TABS = [FUENTES, REVISION, CORRIDA, HISTORIAS, DECISIONES, AZURE_SYNC, AVANZADO]
+ADVANCED_TABS = ["Detalle de la corrida", "Catálogo", "Corridas guardadas", "Backlog simulado", "Azure DevOps / Conexión"]
 ENGINEER = "full_stack_ia_engineer"  # carga fuentes y aprueba el plan de publicación; la corrida la puede iniciar cualquier rol
 ROLE_NAMES = {"product_owner": "product owner", "service_manager": "service manager", "full_stack_ia_engineer": "ingeniero"}
 HELP = {
@@ -25,6 +26,7 @@ HELP = {
     CORRIDA: "Paso 3. Los agentes redactan una historia por cada requisito aprobado. Acá se inicia y se sigue la corrida.",
     DECISIONES: "Paso 4. Todo lo que ya se decidió en el proyecto, por rol: propuestas, cambios de alcance y pedidos de las corridas. Los pedidos nuevos se responden en «Corrida».",
     HISTORIAS: "Paso 5. Las historias de usuario terminadas: se leen completas y se descargan en Word, una por una.",
+    AZURE_SYNC: "Paso final. Revisá las altas y ediciones propuestas; los retiros requieren una acción explícita y una segunda aprobación antes de impactar Azure.",
     AVANZADO: "Detalle técnico para revisar cómo trabajaron los agentes y qué quedó guardado. No hace falta para avanzar.",
 }
 

@@ -21,13 +21,18 @@ def page():
     from backlogguard.ui.revision import tab_catalog, tab_review
 
     data = Path(os.environ["BG_TEST_DATA"])
-    controller = SimpleNamespace(deps=SimpleNamespace(catalog=Catalog(data / "catalogo.sqlite")), data_dir=data)
+    controller = SimpleNamespace(
+        deps=SimpleNamespace(catalog=Catalog(data / "catalogo.sqlite")),
+        data_dir=data,
+        read_only=False,
+        running=False,
+    )
     who = SimpleNamespace(role=os.environ["BG_TEST_ROLE"], name="x")
     review, catalog = st.tabs(["Revisión", "Catálogo"])
     with review:
         tab_review(controller, who)
     with catalog:
-        tab_catalog(controller)
+        tab_catalog(controller, who)
 
 
 @pytest.fixture
@@ -74,6 +79,24 @@ def test_otro_rol_ve_los_botones_deshabilitados_y_nada_cambia(world):
     at = run("full_stack_ia_engineer")
     assert button(at, "Aprobar").disabled and button(at, "Rechazar").disabled and button(at, "Aprobar ese lote").disabled
     assert world.requirements() == []
+
+
+def test_retiro_explicito_requiere_confirmacion_y_no_escribe_azure(world):
+    decided = world.decide("P-001", approve=True, by="product_owner")
+    requirement_id = world.apply(decided.id).affected[0]
+    world.mark_published(requirement_id, remote_id=8123)
+    before = run("full_stack_ia_engineer")
+
+    assert not before.exception
+    assert button(before, "Retirar requisito").disabled
+    before.text_input(key="catalog_retire_reason").set_value("Ya no forma parte del alcance").run()
+    before.checkbox(key="catalog_retire_confirm").check().run()
+    button(before, "Retirar requisito").click().run()
+
+    assert not before.exception
+    assert world.requirement(requirement_id).status.value == "retirado"
+    assert world.retirement_decision(requirement_id)["retired_by"] == "x"
+    assert any("Azure todavía no fue modificado" in item.value for item in before.caption)
 
 
 def test_el_lote_solo_aprueba_lo_que_supera_el_umbral(world):

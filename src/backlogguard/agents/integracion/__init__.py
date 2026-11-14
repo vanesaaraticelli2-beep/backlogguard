@@ -6,6 +6,7 @@ llega a armarlo, se arma igual. Publicar exige un plan aprobado por una persona 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Callable
 
@@ -14,7 +15,14 @@ from backlogguard.skills import skill_instructions
 from backlogguard.agents.decider import LLMDecider
 from backlogguard.agents.loop import run_basic_agent
 from backlogguard.board import AgentRole
-from backlogguard.integrations import ExecutionReport, PublishPlan, PublishService
+from backlogguard.integrations import (
+    ExecutionReport,
+    MCPBacklog,
+    PublishPlan,
+    PublishService,
+    ReconciliationService,
+    RetirementReport,
+)
 from backlogguard.llm.providers import LLMProvider
 from backlogguard.tools import ExecutionContext, ToolCall, ToolPolicy, build_catalog_registry
 from backlogguard.tools.integracion import IntegrationToolkit
@@ -96,11 +104,67 @@ def execute_approved_plan(
         approved_plan_hash=plan_hash,
         approved_by=approved_by,
     )
-    result = registry.run(
-        ToolCall(tool_name="ejecutar_plan_aprobado", arguments={"plan_hash": plan_hash}), context=context, policy=ToolPolicy()
+    write_scope = (
+        service.backlog.authorize_writes()
+        if isinstance(service.backlog, MCPBacklog)
+        else nullcontext()
     )
+    with write_scope:
+        result = registry.run(
+            ToolCall(tool_name="ejecutar_plan_aprobado", arguments={"plan_hash": plan_hash}),
+            context=context,
+            policy=ToolPolicy(),
+        )
     if result.metadata.get("error_type") in ("execution_failed", "plan_drift"):
         return ExecutionReport.model_validate_json(result.content)
     if not result.ok:
         return ExecutionReport(ok=False, error=result.content)
     return ExecutionReport.model_validate_json(result.content)
+
+
+def execute_approved_reconciliation(
+    plan_hash: str,
+    *,
+    service: PublishService,
+    reconciliation: ReconciliationService,
+    approved_by: str,
+    run_id: str = "run-local",
+) -> RetirementReport:
+    """Retire selected items through the integration write policy after a separate human approval."""
+    toolkit = IntegrationToolkit(service, reconciliation)
+    registry = build_catalog_registry(toolkit.implementations())
+    context = ExecutionContext(
+        user_id=approved_by,
+        role=AgentRole.INTEGRACION,
+        run_id=run_id,
+        allow_drafts=True,
+        allow_external_writes=True,
+        approved_plan_hash=plan_hash,
+        approved_by=approved_by,
+    )
+    write_scope = (
+        service.backlog.authorize_writes()
+        if isinstance(service.backlog, MCPBacklog)
+        else nullcontext()
+    )
+    with write_scope:
+        result = registry.run(
+            ToolCall(
+                tool_name="ejecutar_retiros_aprobados",
+                arguments={"plan_hash": plan_hash},
+            ),
+            context=context,
+            policy=ToolPolicy(),
+        )
+    if result.metadata.get("error_type") == "execution_failed":
+        report = RetirementReport.model_validate_json(result.content)
+    elif not result.ok:
+        report = RetirementReport(
+            ok=False,
+            plan_hash=plan_hash,
+            error=result.content,
+        )
+    else:
+        report = RetirementReport.model_validate_json(result.content)
+    reconciliation.record_approval(plan_hash, approved_by, report)
+    return report

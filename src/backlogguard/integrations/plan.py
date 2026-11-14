@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from html.parser import HTMLParser
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -45,6 +46,9 @@ class PlanItem(BaseModel):
     parent_item_id: str | None = None
     remote_id: int | None = None
     expected_rev: int | None = None
+    current_title: str | None = None
+    current_description: str | None = None
+    current_acceptance_criteria: list[str] = Field(default_factory=list)
 
     @property
     def item_tag(self) -> str:
@@ -97,9 +101,61 @@ class ExecutionReport(BaseModel):
         return sum(1 for r in self.results if r.outcome in ("publicado", "actualizado", "vinculado"))
 
 
+def mark_published_requirements(catalog, board: Board, report: ExecutionReport) -> None:
+    """Persist successful remote IDs, including partial results, back into the requirement catalog."""
+    if catalog is None:
+        return
+    for result in report.results:
+        item = board.items.get(result.item_id)
+        if (
+            item is not None
+            and item.requirement_id
+            and result.remote_id
+            and result.outcome in ("publicado", "actualizado", "recuperado", "ya_publicado")
+        ):
+            catalog.mark_published(item.requirement_id, result.remote_id, item.requirement_version)
+
+
 def content_hash(item: BacklogItem) -> str:
     payload = [item.kind.value, item.title, item.description, item.acceptance_criteria]
     return hashlib.sha1(json.dumps(payload, ensure_ascii=False).encode("utf-8")).hexdigest()
+
+
+class _TextContent(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.parts: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in {"br", "div", "p", "li", "ul", "ol"}:
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in {"div", "p", "li", "ul", "ol"}:
+            self.parts.append("\n")
+
+    def handle_data(self, data: str) -> None:
+        self.parts.append(data)
+
+
+def _plain_lines(value: str) -> list[str]:
+    parser = _TextContent()
+    parser.feed(value)
+    parser.close()
+    return [" ".join(line.split()) for line in "".join(parser.parts).splitlines() if line.strip()]
+
+
+def _same_content(item: BacklogItem | PlanItem, remote: WorkItem) -> bool:
+    """Compara el contenido revisado ignorando formato HTML y diferencias de espacios de Azure."""
+    expected_description = " ".join(_plain_lines(item.description))
+    remote_description = " ".join(_plain_lines(remote.description))
+    expected_criteria = [line for criterion in item.acceptance_criteria for line in _plain_lines(criterion)]
+    remote_criteria = [line for criterion in remote.acceptance_criteria for line in _plain_lines(criterion)]
+    return (
+        item.title == remote.title
+        and expected_description == remote_description
+        and expected_criteria == remote_criteria
+    )
 
 
 def idempotency_key(project: str, item: BacklogItem) -> str:
@@ -162,7 +218,8 @@ class PublishService:
         plan_items: list[PlanItem] = []
         kept: list[BacklogItem] = []  # ítems a crear en este plan, para no publicar dos casi iguales
         for item in sorted(publishable.values(), key=lambda i: i.id):
-            wi_type, key = WORK_ITEM_TYPE[item.kind], idempotency_key(self.project, item)
+            wi_type = self.backlog.resolve_work_item_type(WORK_ITEM_TYPE[item.kind])
+            key = idempotency_key(self.project, item)
             tag, key_tag = f"{ITEM_PREFIX}{item.id}", f"{KEY_PREFIX}{key}"
             parent = item.parent_id if item.parent_id in publishable else None
             remote = next(iter(self.backlog.search(tag=tag)), None)
@@ -183,9 +240,24 @@ class PublishService:
                 else:
                     kept.append(item)
                     plan_items.append(PlanItem(**base, action="crear", reason="no existe en el backlog"))
-            elif key_tag not in remote.tags:
-                plan_items.append(PlanItem(**base, action="actualizar", remote_id=remote.id, expected_rev=remote.rev,
-                                           reason=f"el contenido cambió desde la versión publicada en #{remote.id}"))
+            elif key_tag not in remote.tags or not _same_content(item, remote):
+                reason = (
+                    f"el contenido del work item #{remote.id} difiere del plan revisado"
+                    if key_tag in remote.tags
+                    else f"el contenido cambió desde la versión publicada en #{remote.id}"
+                )
+                plan_items.append(
+                    PlanItem(
+                        **base,
+                        action="actualizar",
+                        remote_id=remote.id,
+                        expected_rev=remote.rev,
+                        current_title=remote.title,
+                        current_description=remote.description,
+                        current_acceptance_criteria=list(remote.acceptance_criteria),
+                        reason=reason,
+                    )
+                )
             else:
                 wanted = next(iter(self.backlog.search(tag=f"{ITEM_PREFIX}{parent}")), None) if parent else None
                 if parent and (wanted is None or remote.parent_id != wanted.id):
@@ -270,12 +342,18 @@ class PublishService:
             return done("vinculado", linked.id)
 
         previous = self.ledger.get(item.idempotency_key)
-        if previous and previous["status"] == "done":
+        if previous and previous["status"] == "done" and item.action != "actualizar":
             return done("ya_publicado", previous["remote_id"], "ya figuraba como publicado")
 
+        if item.action == "actualizar":
+            current = self.backlog.get(item.remote_id)
+            if current and item.key_tag in current.tags and _same_content(item, current):
+                self.ledger.mark_done(item.idempotency_key, current.id)
+                return done("recuperado", current.id, "el work item ya coincide con el contenido aprobado")
+
         self.ledger.record_intent(item.idempotency_key, item.item_id)
-        applied = next(iter(self.backlog.search(tag=item.key_tag)), None)  # ¿ya se aplicó antes (resultado ambiguo)?
-        if applied and item.action in ("crear", "actualizar"):
+        applied = next(iter(self.backlog.search(tag=item.key_tag)), None) if item.action == "crear" else None
+        if applied and item.action == "crear":
             self.ledger.mark_done(item.idempotency_key, applied.id)
             return done("recuperado", applied.id, "la operación anterior sí se había aplicado")
 
